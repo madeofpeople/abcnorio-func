@@ -4,6 +4,7 @@ namespace abcnorio\CustomFunc;
 
 use abcnorio\CustomFunc\ContentModel\PostTypeRegistrar;
 use abcnorio\CustomFunc\ContentModel\TaxonomyRegistrar;
+use abcnorio\CustomFunc\ContentModel\ACFFieldGroups;
 
 final class Plugin
 {
@@ -34,8 +35,10 @@ final class Plugin
 
     public static function boot(): void
     {
-        BlockEditorFields::registerHooks();
+        ACFFieldGroups::registerHooks();
+        add_action('enqueue_block_editor_assets', [self::class, 'enqueueEditorAssets']);
         add_action('init', [self::class, 'registerContentModels']);
+
     }
 
     public static function registerContentModels(): void

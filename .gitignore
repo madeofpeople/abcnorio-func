@@ -3,7 +3,6 @@
 
 # Build output and package managers
 build/
-dist/
 node_modules/
 vendor/
 

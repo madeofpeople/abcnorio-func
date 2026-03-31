@@ -5,6 +5,7 @@
 build/
 node_modules/
 vendor/
+.yarn/
 
 # Env variables
 .env

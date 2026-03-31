@@ -4,9 +4,9 @@ namespace abcnorio\CustomFunc;
 use abcnorio\CustomFunc\ContentModel\ACFFieldGroups;
 use abcnorio\CustomFunc\ContentModel\PostTypeRegistrar;
 use abcnorio\CustomFunc\ContentModel\TaxonomyRegistrar;
-
 use abcnorio\CustomFunc\ContentModel\CollectivePostSeeder;
 use abcnorio\CustomFunc\ContentModel\TaxonomyTermSeeder;
+use abcnorio\CustomFunc\Headless\AdminExperience;
 
 final class Plugin
 {
@@ -19,6 +19,7 @@ final class Plugin
 
     public static function boot(): void
     {
+        AdminExperience::registerHooks();
         ACFFieldGroups::registerHooks();
         add_action('enqueue_block_editor_assets', [self::class, 'enqueueEditorAssets']);
         add_action('init', [self::class, 'registerContentModels']);

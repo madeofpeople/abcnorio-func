@@ -7,12 +7,14 @@ use abcnorio\CustomFunc\ContentModel\TaxonomyRegistrar;
 use abcnorio\CustomFunc\ContentModel\CollectivePostSeeder;
 use abcnorio\CustomFunc\ContentModel\TaxonomyTermSeeder;
 use abcnorio\CustomFunc\Headless\AdminExperience;
+use abcnorio\CustomFunc\Security\CapabilityManager;
 
 final class Plugin
 {
     public static function activate(): void
     {
         self::registerContentModels();
+        CapabilityManager::forceMigrateCapabilities();
         TaxonomyTermSeeder::forceSeedDefaults();
         CollectivePostSeeder::forceSeedDefaults();
     }
@@ -22,6 +24,7 @@ final class Plugin
         AdminExperience::registerHooks();
         ACFFieldGroups::registerHooks();
         add_action('enqueue_block_editor_assets', [self::class, 'enqueueEditorAssets']);
+        add_action('admin_init', [CapabilityManager::class, 'maybeMigrateCapabilities'], 1);
         add_action('init', [self::class, 'registerContentModels']);
         add_action('init', [TaxonomyTermSeeder::class, 'maybeSeedDefaults'], 20);
         add_action('init', [CollectivePostSeeder::class, 'maybeSeedDefaults'], 30);

@@ -1,16 +1,38 @@
 <?php
 
 namespace abcnorio\CustomFunc;
-
+use abcnorio\CustomFunc\ContentModel\ACFFieldGroups;
 use abcnorio\CustomFunc\ContentModel\PostTypeRegistrar;
 use abcnorio\CustomFunc\ContentModel\TaxonomyRegistrar;
-use abcnorio\CustomFunc\ContentModel\ACFFieldGroups;
+
+use abcnorio\CustomFunc\ContentModel\CollectivePostSeeder;
+use abcnorio\CustomFunc\ContentModel\TaxonomyTermSeeder;
 
 final class Plugin
 {
     public static function activate(): void
     {
         self::registerContentModels();
+        TaxonomyTermSeeder::forceSeedDefaults();
+        CollectivePostSeeder::forceSeedDefaults();
+    }
+
+    public static function boot(): void
+    {
+        ACFFieldGroups::registerHooks();
+        add_action('enqueue_block_editor_assets', [self::class, 'enqueueEditorAssets']);
+        add_action('init', [self::class, 'registerContentModels']);
+        add_action('init', [TaxonomyTermSeeder::class, 'maybeSeedDefaults'], 20);
+        add_action('init', [CollectivePostSeeder::class, 'maybeSeedDefaults'], 30);
+
+    }
+
+    public static function registerContentModels(): void
+    {
+        $postTypes = require __DIR__ . '/ContentModel/post-types.php';
+        $taxonomies = require __DIR__ . '/ContentModel/taxonomies.php';
+        PostTypeRegistrar::registerMany($postTypes);
+        TaxonomyRegistrar::registerMany($taxonomies);
     }
 
     public static function enqueueEditorAssets(): void
@@ -31,21 +53,5 @@ final class Plugin
             $asset['version'],
             true
         );
-    }
-
-    public static function boot(): void
-    {
-        ACFFieldGroups::registerHooks();
-        add_action('enqueue_block_editor_assets', [self::class, 'enqueueEditorAssets']);
-        add_action('init', [self::class, 'registerContentModels']);
-
-    }
-
-    public static function registerContentModels(): void
-    {
-        $postTypes = require __DIR__ . '/ContentModel/post-types.php';
-        $taxonomies = require __DIR__ . '/ContentModel/taxonomies.php';
-        PostTypeRegistrar::registerMany($postTypes);
-        TaxonomyRegistrar::registerMany($taxonomies);
     }
 }

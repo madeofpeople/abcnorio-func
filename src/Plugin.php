@@ -7,6 +7,8 @@ use abcnorio\CustomFunc\ContentModel\TaxonomyRegistrar;
 use abcnorio\CustomFunc\ContentModel\CollectivePostSeeder;
 use abcnorio\CustomFunc\ContentModel\TaxonomyTermSeeder;
 use abcnorio\CustomFunc\Headless\AdminExperience;
+use abcnorio\CustomFunc\ImageStyles\BlockImageAttributeEnricher;
+use abcnorio\CustomFunc\ImageStyles\ImageStyleRegistrar;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 
 final class Plugin
@@ -23,6 +25,8 @@ final class Plugin
     {
         AdminExperience::registerHooks();
         ACFFieldGroups::registerHooks();
+        ImageStyleRegistrar::registerHooks();
+        BlockImageAttributeEnricher::registerHooks();
         add_action('enqueue_block_editor_assets', [self::class, 'enqueueEditorAssets']);
         add_action('admin_init', [CapabilityManager::class, 'maybeMigrateCapabilities'], 1);
         add_action('init', [self::class, 'registerContentModels']);

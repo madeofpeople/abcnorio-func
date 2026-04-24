@@ -1,0 +1,39 @@
+/*
+ * Admin-only styles for the abcnorio custom functionality plugin.
+ * Edit this file to customize the WordPress admin UI.
+ */
+
+.column-abcnorio_term_editor {
+	min-width: 260px;
+}
+
+.abcnorio-term-editor {
+	display: grid;
+	gap: 6px;
+}
+
+.abcnorio-term-editor__label {
+	display: block;
+	font-size: 11px;
+	font-weight: 600;
+	color: #50575e;
+}
+
+.abcnorio-term-editor__select {
+	width: 100%;
+	min-height: 34px;
+}
+
+.abcnorio-term-editor__status {
+	margin: 0;
+	font-size: 11px;
+	color: #50575e;
+}
+
+.abcnorio-term-editor__status.is-success {
+	color: #1d6f42;
+}
+
+.abcnorio-term-editor__status.is-error {
+	color: #b32d2e;
+}

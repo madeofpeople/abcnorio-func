@@ -6,7 +6,11 @@ final class CapabilityManager
 {
     private const OPTION_KEY = 'custom_func_capability_schema_version';
     // Bump when role capability assignments in Security/capabilities.php change.
-    private const SCHEMA_VERSION = '2';
+    private const SCHEMA_VERSION = '5';
+    private const DEPRECATED_CAPABILITIES = [
+        'manage_navigation_menus',
+        'edit_theme_options',
+    ];
 
     public static function maybeMigrateCapabilities(): void
     {
@@ -40,6 +44,10 @@ final class CapabilityManager
 
             $desired = array_map('strval', (array) $capabilities);
 
+            foreach (self::DEPRECATED_CAPABILITIES as $capability) {
+                $role->remove_cap($capability);
+            }
+
             foreach ($managedCapabilities as $capability) {
                 if (! in_array($capability, $desired, true)) {
                     $role->remove_cap($capability);
@@ -48,6 +56,61 @@ final class CapabilityManager
 
             foreach ($desired as $capability) {
                 $role->add_cap((string) $capability);
+            }
+        }
+
+        self::syncUserCapabilities();
+    }
+
+    private static function syncUserCapabilities(): void
+    {
+        $userCapabilitiesPath = __DIR__ . '/user-capabilities.php';
+
+        if (! file_exists($userCapabilitiesPath)) {
+            return;
+        }
+
+        $userCapabilities = require $userCapabilitiesPath;
+
+        if (! is_array($userCapabilities) || $userCapabilities === []) {
+            return;
+        }
+
+        $managedCapabilities = self::collectManagedCapabilities($userCapabilities);
+        if ($managedCapabilities === []) {
+            return;
+        }
+
+        $userIds = get_users([
+            'fields' => 'ID',
+        ]);
+
+        foreach ($userIds as $userId) {
+            $user = get_user_by('id', (int) $userId);
+            if (! $user) {
+                continue;
+            }
+
+            foreach ($managedCapabilities as $capability) {
+                $user->remove_cap($capability);
+            }
+        }
+
+        foreach ($userCapabilities as $username => $capabilities) {
+            if (! is_string($username) || $username === '') {
+                continue;
+            }
+
+            $user = get_user_by('login', $username);
+
+            if (! $user) {
+                continue;
+            }
+
+            $desired = array_values(array_unique(array_map('strval', (array) $capabilities)));
+
+            foreach ($desired as $capability) {
+                $user->add_cap($capability);
             }
         }
     }

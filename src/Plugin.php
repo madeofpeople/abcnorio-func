@@ -12,6 +12,7 @@ use abcnorio\CustomFunc\ImageStyles\BlockImageAttributeEnricher;
 use abcnorio\CustomFunc\ImageStyles\ImageStyleRegistrar;
 use abcnorio\CustomFunc\Navigation\MenuRegistrar;
 use abcnorio\CustomFunc\RestApi\EventQueryFilters;
+use abcnorio\CustomFunc\RestApi\ICalEndpoint;
 use abcnorio\CustomFunc\Search\SearchEndpoint;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 
@@ -30,6 +31,7 @@ final class Plugin
         AdminExperience::registerHooks();
         Deployment::registerHooks();
         EventQueryFilters::registerHooks();
+        ICalEndpoint::registerHooks();
         SearchEndpoint::registerHooks();
         ACFFieldGroups::registerHooks();
         ImageStyleRegistrar::registerHooks();

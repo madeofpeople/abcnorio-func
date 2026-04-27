@@ -9,6 +9,8 @@ vendor/
 
 # Env variables
 .env
+*.env
+
 
 # Mac Junk
 .DS_Store

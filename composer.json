@@ -19,5 +19,8 @@
         "psr-4": {
             "abcnorio\\CustomFunc\\": "src/"
         }
+    },
+    "extra": {
+        "installer-name": "abcnorio-func"
     }
 }

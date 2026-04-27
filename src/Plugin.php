@@ -7,7 +7,7 @@ use abcnorio\CustomFunc\ContentModel\TaxonomyRegistrar;
 use abcnorio\CustomFunc\ContentModel\CollectivePostSeeder;
 use abcnorio\CustomFunc\ContentModel\TaxonomyTermSeeder;
 use abcnorio\CustomFunc\AdminExperience\AdminExperience;
-use abcnorio\CustomFunc\AdminExperience\Deployment;
+use abcnorio\CustomFunc\Deployment\Deployment;
 use abcnorio\CustomFunc\ImageStyles\BlockImageAttributeEnricher;
 use abcnorio\CustomFunc\ImageStyles\ImageStyleRegistrar;
 use abcnorio\CustomFunc\Navigation\MenuRegistrar;

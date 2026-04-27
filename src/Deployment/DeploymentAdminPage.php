@@ -1,0 +1,318 @@
+<?php
+
+namespace abcnorio\CustomFunc\Deployment;
+
+final class DeploymentAdminPage
+{
+    public static function addMenuPage(): void
+    {
+        add_menu_page(
+            __('Deployment', 'abcnorio-func'),
+            __('Deployment', 'abcnorio-func'),
+            'manage_options',
+            'abcnorio-deployment',
+            [self::class, 'renderPage'],
+            'dashicons-controls-repeat',
+            3
+        );
+    }
+
+    public static function renderAdminNoticeIfDeploymentPage(): void
+    {
+        $page = sanitize_key((string) ($_GET['page'] ?? ''));
+        if ($page !== 'abcnorio-deployment') {
+            return;
+        }
+
+        $noticeType = sanitize_key((string) ($_GET['deployment_notice'] ?? ''));
+        $noticeMessage = sanitize_text_field((string) ($_GET['deployment_message'] ?? ''));
+
+        if ($noticeType !== '' && $noticeMessage !== '') {
+            $class = $noticeType === 'error' ? 'notice notice-error is-dismissible' : 'notice notice-success is-dismissible';
+            printf(
+                '<div class="%1$s"><p>%2$s</p></div>',
+                esc_attr($class),
+                esc_html($noticeMessage)
+            );
+        }
+
+        $restored = sanitize_file_name((string) ($_GET['restored'] ?? ''));
+        if ($restored !== '') {
+            printf(
+                '<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+                esc_html(sprintf(__('Restore completed: %s', 'abcnorio-func'), $restored))
+            );
+        }
+
+        $deployed = sanitize_key((string) ($_GET['deployed'] ?? ''));
+        if ($deployed !== '') {
+            $message = $deployed === 'production'
+                ? __('Backup and deployment complete.', 'abcnorio-func')
+                : sprintf(
+                    __('Deployment complete for %s.', 'abcnorio-func'),
+                    ucfirst($deployed)
+                );
+
+            printf(
+                '<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+                esc_html($message)
+            );
+        }
+    }
+
+    /**
+     * @return array{statusOk: bool, statusMessage: string, targets: array<string, array{previewUrl: string, hasBuild: bool, backups: array<int, array{name: string, mtime: int}>}>}
+     */
+    private static function deploymentTargets(): array
+    {
+        $status = DeploymentStatus::read();
+        $targets = [];
+        $previewEnvMap = [
+            'dev' => 'DEV_FRONTEND_URL',
+            'staging' => 'STAGING_FRONTEND_URL',
+            'production' => 'PRODUCTION_FRONTEND_URL',
+        ];
+
+        foreach (Deployment::envKeys() as $env) {
+            $envStatus = $status['ok'] ? ($status['status']['envs'][$env] ?? []) : [];
+            $currentBuild = is_array($envStatus) ? ($envStatus['currentBuild'] ?? []) : [];
+            $hasBuild = is_array($currentBuild) && isset($currentBuild['hasBuild']) && is_bool($currentBuild['hasBuild'])
+                ? $currentBuild['hasBuild']
+                : false;
+
+            $targets[$env] = [
+                'previewUrl' => (string) (getenv($previewEnvMap[$env]) ?: ''),
+                'hasBuild' => $hasBuild,
+                'backups' => DeploymentStatus::normalizeBackups($envStatus),
+            ];
+        }
+
+        return [
+            'statusOk' => $status['ok'],
+            'statusMessage' => $status['message'],
+            'targets' => $targets,
+        ];
+    }
+
+    public static function enqueueAssets(string $hook): void
+    {
+        if ($hook !== 'toplevel_page_abcnorio-deployment') {
+            return;
+        }
+
+        $view = self::deploymentTargets();
+        $jsUrl = plugins_url('resources/js/deployment.js', ABCNORIO_CUSTOM_FUNC_FILE);
+        wp_enqueue_script('abcnorio-deployment', $jsUrl, [], '1.0.0', true);
+        wp_localize_script('abcnorio-deployment', 'abcnorioDeployment', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'triggerNonce' => wp_create_nonce('abcnorio_trigger_build'),
+            'pollNonce' => wp_create_nonce('abcnorio_poll_build_status'),
+            'targets' => $view['targets'],
+            'statusOk' => $view['statusOk'],
+        ]);
+    }
+
+    public static function renderPage(): void
+    {
+        $activeTab = sanitize_key((string) ($_GET['tab'] ?? 'dev'));
+        if (!Deployment::isValidEnv($activeTab)) {
+            $activeTab = 'dev';
+        }
+
+        $view = self::deploymentTargets();
+        $targets = $view['targets'];
+        $statusOk = $view['statusOk'];
+        $statusMessage = $view['statusMessage'];
+        $backupDownloadNonce = wp_create_nonce('abcnorio_download_backup');
+        $backupRestoreNonce = wp_create_nonce('abcnorio_restore_backup');
+        ?>
+        <div class="wrap">
+            <h1><?php esc_html_e('Deployment', 'abcnorio-func'); ?></h1>
+
+            <?php if (!$statusOk) : ?>
+                <div class="notice notice-error" style="margin: 1rem 0;">
+                    <p><strong><?php esc_html_e('Deployment actions are currently blocked.', 'abcnorio-func'); ?></strong></p>
+                    <p><?php echo esc_html($statusMessage); ?></p>
+                    <p style="margin-bottom: 0;">
+                        <?php esc_html_e('Troubleshooting: verify orchestrator is running, run one successful deploy to regenerate status, then refresh this page.', 'abcnorio-func'); ?>
+                    </p>
+                </div>
+            <?php endif; ?>
+
+            <nav class="nav-tab-wrapper" id="deployment-tabs">
+                <a href="#tab-dev" class="nav-tab<?php echo $activeTab === 'dev' ? ' nav-tab-active' : ''; ?>" data-tab="dev">
+                    <?php esc_html_e('Dev', 'abcnorio-func'); ?>
+                </a>
+                <a href="#tab-staging" class="nav-tab<?php echo $activeTab === 'staging' ? ' nav-tab-active' : ''; ?>" data-tab="staging">
+                    <?php esc_html_e('Staging', 'abcnorio-func'); ?>
+                </a>
+                <a href="#tab-production" class="nav-tab<?php echo $activeTab === 'production' ? ' nav-tab-active' : ''; ?>" data-tab="production">
+                    <?php esc_html_e('Production', 'abcnorio-func'); ?>
+                </a>
+            </nav>
+
+            <?php foreach (['dev', 'staging'] as $env) : ?>
+            <div
+                id="tab-<?php echo esc_attr($env); ?>"
+                class="deployment-tab<?php echo $activeTab !== $env ? ' hidden' : ''; ?>"
+            >
+                <div style="margin-top: 1.5rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <button
+                        class="button button-primary js-trigger-build"
+                        data-target="<?php echo esc_attr($env); ?>"
+                        data-label="<?php esc_attr_e('Run Static Build', 'abcnorio-func'); ?>"
+                        <?php disabled(!$statusOk); ?>
+                    >
+                        <?php esc_html_e('Run Static Build', 'abcnorio-func'); ?>
+                    </button>
+                    <a
+                        href="<?php echo esc_url($targets[$env]['previewUrl'] ?: '#'); ?>"
+                        class="button js-preview-link<?php echo (empty($targets[$env]['previewUrl']) || !$targets[$env]['hasBuild']) ? ' hidden' : ''; ?>"
+                        data-env="<?php echo esc_attr($env); ?>"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        <?php esc_html_e('Preview', 'abcnorio-func'); ?>
+                    </a>
+                    <?php if ($env === 'dev') : ?>
+                    <a
+                        href="<?php echo esc_url($targets['dev']['previewUrl'] ?: '#'); ?>"
+                        class="button js-live-preview-link<?php echo empty($targets['dev']['previewUrl']) ? ' hidden' : ''; ?>"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        <?php esc_html_e('Development Preview', 'abcnorio-func'); ?>
+                    </a>
+                    <?php endif; ?>
+                    <span class="js-build-status" style="color: #666;"></span>
+                </div>
+
+                <div style="margin-top: 1rem;">
+                    <strong>
+                        <?php
+                        printf(
+                            esc_html__('%s Backups', 'abcnorio-func'),
+                            esc_html(ucfirst($env))
+                        );
+                        ?>
+                    </strong>
+                    <?php if ($targets[$env]['backups'] === []) : ?>
+                        <p style="margin: 0.5rem 0 0; color: #666;">
+                            <?php esc_html_e('No backup archives found yet.', 'abcnorio-func'); ?>
+                        </p>
+                    <?php else : ?>
+                        <ul style="margin: 0.5rem 0 0 1.25rem;">
+                            <?php foreach ($targets[$env]['backups'] as $backup) : ?>
+                                <li>
+                                    <span><?php echo esc_html($backup['name']); ?></span>
+                                    <span style="margin-left: 0.5rem; display: inline-flex; gap: 0.5rem;">
+                                    <a
+                                        href="<?php echo esc_url(add_query_arg([
+                                            'action' => 'abcnorio_download_backup',
+                                            'env' => rawurlencode($env),
+                                            'nonce' => $backupDownloadNonce,
+                                            'file' => rawurlencode($backup['name']),
+                                        ], admin_url('admin-ajax.php'))); ?>"
+                                        class="button button-secondary button-small"
+                                    >
+                                        <?php esc_html_e('Download', 'abcnorio-func'); ?>
+                                    </a>
+                                    <a
+                                        href="<?php echo esc_url(add_query_arg([
+                                            'action' => 'abcnorio_restore_backup',
+                                            'env' => rawurlencode($env),
+                                            'nonce' => $backupRestoreNonce,
+                                            'file' => rawurlencode($backup['name']),
+                                        ], admin_url('admin-ajax.php'))); ?>"
+                                        class="button button-small<?php echo !$statusOk ? ' disabled' : ''; ?>"
+                                        <?php if (!$statusOk) : ?>aria-disabled="true" onclick="return false;"<?php else : ?>
+                                        onclick="return confirm('<?php echo esc_js(sprintf(__('Restore this backup to %s? This replaces current files for that environment.', 'abcnorio-func'), ucfirst($env))); ?>');"
+                                        <?php endif; ?>
+                                    >
+                                        <?php esc_html_e('Restore', 'abcnorio-func'); ?>
+                                    </a>
+                                    </span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
+
+            <div id="tab-production" class="deployment-tab<?php echo $activeTab !== 'production' ? ' hidden' : ''; ?>">
+                <div style="margin-top: 1.5rem;">
+                    <p style="color: #666; margin-bottom: 1rem;">
+                        <?php esc_html_e('Backs up the current production build, then deploys the latest build to production.', 'abcnorio-func'); ?>
+                    </p>
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                        <button
+                            class="button button-primary js-trigger-build"
+                            data-target="production"
+                            data-label="<?php esc_attr_e('Deploy to Production', 'abcnorio-func'); ?>"
+                            data-confirm="<?php esc_attr_e('Deploy to production? This will replace the live site. Continue?', 'abcnorio-func'); ?>"
+                            <?php disabled(!$statusOk); ?>
+                        >
+                            <?php esc_html_e('Deploy to Production', 'abcnorio-func'); ?>
+                        </button>
+                        <span class="js-build-status" style="color: #666;"></span>
+                        <a
+                            href="<?php echo esc_url($targets['production']['previewUrl'] ?: '#'); ?>"
+                            class="button js-preview-link<?php echo (empty($targets['production']['previewUrl']) || !$targets['production']['hasBuild']) ? ' hidden' : ''; ?>"
+                            data-env="production"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            <?php esc_html_e('View Site', 'abcnorio-func'); ?>
+                        </a>
+                    </div>
+
+                    <div style="margin-top: 1rem;">
+                        <strong><?php esc_html_e('Recent Production Backups', 'abcnorio-func'); ?></strong>
+                        <?php if ($targets['production']['backups'] === []) : ?>
+                            <p style="margin: 0.5rem 0 0; color: #666;">
+                                <?php esc_html_e('No backup archives found yet.', 'abcnorio-func'); ?>
+                            </p>
+                        <?php else : ?>
+                            <ul style="margin: 0.5rem 0 0 1.25rem;">
+                                <?php foreach ($targets['production']['backups'] as $backup) : ?>
+                                    <li>
+                                        <span><?php echo esc_html($backup['name']); ?></span>
+                                        <span style="margin-left: 0.5rem; display: inline-flex; gap: 0.5rem;">
+                                        <a
+                                            href="<?php echo esc_url(add_query_arg([
+                                                'action' => 'abcnorio_download_backup',
+                                                'env' => 'production',
+                                                'nonce' => $backupDownloadNonce,
+                                                'file' => rawurlencode($backup['name']),
+                                            ], admin_url('admin-ajax.php'))); ?>"
+                                            class="button button-secondary button-small"
+                                        >
+                                            <?php esc_html_e('Download', 'abcnorio-func'); ?>
+                                        </a>
+                                        <a
+                                            href="<?php echo esc_url(add_query_arg([
+                                                'action' => 'abcnorio_restore_backup',
+                                                'env' => 'production',
+                                                'nonce' => $backupRestoreNonce,
+                                                'file' => rawurlencode($backup['name']),
+                                            ], admin_url('admin-ajax.php'))); ?>"
+                                            class="button button-small<?php echo !$statusOk ? ' disabled' : ''; ?>"
+                                            <?php if (!$statusOk) : ?>aria-disabled="true" onclick="return false;"<?php else : ?>
+                                            onclick="return confirm('<?php echo esc_js(__('Restore this backup to production? This replaces current production files.', 'abcnorio-func')); ?>');"
+                                            <?php endif; ?>
+                                        >
+                                            <?php esc_html_e('Restore', 'abcnorio-func'); ?>
+                                        </a>
+                                        </span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+}

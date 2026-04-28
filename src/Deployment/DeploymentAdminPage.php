@@ -84,7 +84,7 @@ final class DeploymentAdminPage
             $targets[$env] = [
                 'previewUrl' => (string) (getenv($previewEnvMap[$env]) ?: ''),
                 'hasBuild' => $hasBuild,
-                'backups' => DeploymentStatus::normalizeBackups($envStatus),
+                'backups' => in_array($env, ['dev', 'staging'], true) ? [] : DeploymentStatus::normalizeBackups($envStatus),
             ];
         }
 
@@ -130,15 +130,6 @@ final class DeploymentAdminPage
         ?>
         <div class="wrap">
             <h1><?php esc_html_e('Deployment', 'abcnorio-func'); ?></h1>
-            <style>
-                @keyframes abcnorio-highlight-new {
-                    0%   { background-color: #ffffff; }
-                    60%  { background-color: #e3fdc7; }
-                    100% { background-color: transparent; }
-                }
-                .backup-item-new { animation: abcnorio-highlight-new 3s ease-out forwards; border-radius: 3px; }
-            </style>
-
             <?php if (!$statusOk) : ?>
                 <div class="notice notice-error" style="margin: 1rem 0;">
                     <p><strong><?php esc_html_e('Deployment actions are currently blocked.', 'abcnorio-func'); ?></strong></p>
@@ -166,30 +157,20 @@ final class DeploymentAdminPage
                 id="tab-<?php echo esc_attr($env); ?>"
                 class="deployment-tab<?php echo $activeTab !== $env ? ' hidden' : ''; ?>"
             >
-                <span class="js-build-status" style="color: #666; display: block; margin-top: 1.5rem;"></span>
-                <div style="margin-top: 0.75rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                    <button
-                        class="button button-primary js-trigger-build"
-                        data-target="<?php echo esc_attr($env); ?>"
-                        data-label="<?php esc_attr_e('Run Static Build', 'abcnorio-func'); ?>"
-                        <?php disabled(!$statusOk); ?>
-                    >
-                        <?php esc_html_e('Run Static Build', 'abcnorio-func'); ?>
-                    </button>
+                <div style="margin-top: 1.5rem;">
                     <a
                         href="<?php echo esc_url($targets[$env]['previewUrl'] ?: '#'); ?>"
-                        class="button js-preview-link<?php echo (empty($targets[$env]['previewUrl']) || !$targets[$env]['hasBuild']) ? ' hidden' : ''; ?>"
-                        data-env="<?php echo esc_attr($env); ?>"
+                        class="button"
                         target="_blank"
                         rel="noopener"
+                        <?php echo empty($targets[$env]['previewUrl']) ? 'hidden' : ''; ?>
                     >
-                        <?php esc_html_e('Preview', 'abcnorio-func'); ?>
+                        <?php echo esc_html(sprintf(__('View %s Site', 'abcnorio-func'), ucfirst($env))); ?>
                     </a>
                 </div>
-
-                <div style="margin-top: 1rem; color: #666;">
-                    <em><?php esc_html_e('Backup and restore actions are available in the Production tab only.', 'abcnorio-func'); ?></em>
-                </div>
+                <p style="margin: 1rem 0 0; color: #666;">
+                    <em><?php esc_html_e('Dev and staging frontends update live from the CMS. Build and restore actions are production-only.', 'abcnorio-func'); ?></em>
+                </p>
             </div>
             <?php endforeach; ?>
 
@@ -198,7 +179,7 @@ final class DeploymentAdminPage
                 <div style="margin-top: 0.75rem;">
                     <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                         <button
-                            class="button js-trigger-build"
+                            class="button button-primary js-trigger-build"
                             data-target="preview"
                             data-label="<?php esc_attr_e('Generate Production Preview', 'abcnorio-func'); ?>"
                             <?php disabled(!$statusOk); ?>
@@ -232,8 +213,7 @@ final class DeploymentAdminPage
                         </button>
                         <a
                             href="<?php echo esc_url($targets['production']['previewUrl'] ?: '#'); ?>"
-                            class="button js-preview-link<?php echo (empty($targets['production']['previewUrl']) || !$targets['production']['hasBuild']) ? ' hidden' : ''; ?>"
-                            data-env="production"
+                            class="button<?php echo empty($targets['production']['previewUrl']) ? ' hidden' : ''; ?>"
                             target="_blank"
                             rel="noopener"
                         >
@@ -248,13 +228,9 @@ final class DeploymentAdminPage
                                 <?php esc_html_e('No backup archives found yet.', 'abcnorio-func'); ?>
                             </p>
                         <?php else : ?>
-                            <style>
-                                .js-backup-list li { background-color: #fcfcfc; }
-                                .js-backup-list li:nth-child(even) { background-color: #fff; }
-                            </style>
-                            <ul style="padding: 0; max-width: max-content; margin: 0.5rem 0" class="js-backup-list">
+                            <ul class="js-backup-list">
                                 <?php foreach ($targets['production']['backups'] as $backup) : ?>
-                                    <li style="padding: 0.5rem; display: flex; justify-content: space-between; align-items: center;" class="backup-item">
+                                    <li class="backup-item">
                                         <span class="backup-item-name"><?php echo esc_html($backup['name']); ?></span>
                                         <span style="margin-left: 0.5rem; display: inline-flex; gap: 0.5rem;">
                                         <a

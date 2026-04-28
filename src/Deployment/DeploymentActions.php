@@ -47,6 +47,10 @@ final class DeploymentActions
             wp_send_json_error(['message' => 'Invalid target'], 400);
         }
 
+        if (in_array($target, ['dev', 'staging'], true)) {
+            wp_send_json_error(['message' => 'Build triggers are not available for dev and staging'], 403);
+        }
+
         $response = wp_remote_post(Deployment::orchestratorBaseUrl() . '/trigger', [
             'headers' => [
                 'Content-Type' => 'application/json',

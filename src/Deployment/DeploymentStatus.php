@@ -21,33 +21,6 @@ final class DeploymentStatus
         return $configured !== '' ? $configured : self::backupArchiveDir() . '/deployment-status.json';
     }
 
-    public static function buildRootDir(string $env): string
-    {
-        $envKeyMap = [
-            'dev'        => 'DEV_BUILD_PATH',
-            'staging'    => 'STAGING_BUILD_PATH',
-            'production' => 'PRODUCTION_BUILD_PATH',
-            'preview'    => 'PREVIEW_BUILD_PATH',
-        ];
-
-        $envKey = $envKeyMap[$env] ?? null;
-        if ($envKey !== null) {
-            $configured = trim((string) (getenv($envKey) ?: ''));
-            if ($configured !== '') {
-                return rtrim($configured, '/');
-            }
-        }
-
-        $staticRoot = rtrim((string) (getenv('STATIC_SERVER_SITE_DIR') ?: ''), '/');
-        if ($staticRoot === '') {
-            return '';
-        }
-
-        $dirNameMap = ['dev' => 'dev', 'staging' => 'staging', 'production' => 'prod', 'preview' => 'preview'];
-        $dirName = $dirNameMap[$env] ?? null;
-        return $dirName !== null ? $staticRoot . '/' . $dirName : '';
-    }
-
     /**
      * @return array{ok: bool, message: string, status: array<string, mixed>}
      */

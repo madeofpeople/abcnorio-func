@@ -1,8 +1,9 @@
 /* global abcnorioDeployment */
 (function () {
-    const { ajaxUrl, triggerNonce, pollNonce, targets = {} } = abcnorioDeployment;
+    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, targets = {} } = abcnorioDeployment;
 
     let pollTimer = null;
+    let pushPollTimer = null;
     let buildStartTime = null;
     let timerInterval = null;
 
@@ -299,4 +300,63 @@
                 });
         });
     });
+    // --- Push to staging ---
+    const pushBtn = document.querySelector('.js-push-to-staging');
+    if (pushBtn) {
+        pushBtn.addEventListener('click', () => {
+            const panel = pushBtn.closest('.deployment-tab');
+            const statusEl = panel && panel.querySelector('.js-push-status');
+
+            setButtonRunning(pushBtn);
+            if (statusEl) statusEl.textContent = 'Pushing\u2026';
+
+            const body = new URLSearchParams({
+                action: 'abcnorio_push_to_staging',
+                nonce: pushToStagingNonce,
+            });
+
+            fetch(ajaxUrl, { method: 'POST', body })
+                .then((r) => r.json())
+                .then((data) => {
+                    if (!data.success) {
+                        setButtonIdle(pushBtn);
+                        const msg = data.data && data.data.message ? data.data.message : 'Unknown error';
+                        if (statusEl) statusEl.textContent = 'Error: ' + msg;
+                        return;
+                    }
+
+                    if (pushPollTimer) clearInterval(pushPollTimer);
+                    pushPollTimer = setInterval(() => {
+                        const pollBody = new URLSearchParams({
+                            action: 'abcnorio_poll_push_status',
+                            nonce: pollPushNonce,
+                        });
+                        fetch(ajaxUrl, { method: 'POST', body: pollBody })
+                            .then((r) => r.json())
+                            .then((pollData) => {
+                                if (!pollData.success) return;
+                                const st = pollData.data;
+                                if (st.status === 'done') {
+                                    clearInterval(pushPollTimer);
+                                    pushPollTimer = null;
+                                    setButtonIdle(pushBtn);
+                                    if (statusEl) statusEl.textContent = st.message || 'Push complete.';
+                                    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 5000);
+                                } else if (st.status === 'failed') {
+                                    clearInterval(pushPollTimer);
+                                    pushPollTimer = null;
+                                    setButtonIdle(pushBtn);
+                                    if (statusEl) statusEl.textContent = 'Push failed: ' + (st.message || 'check logs.');
+                                }
+                            })
+                            .catch(() => { /* network hiccup — keep polling */ });
+                    }, 2000);
+                })
+                .catch(() => {
+                    setButtonIdle(pushBtn);
+                    if (statusEl) statusEl.textContent = 'Request failed.';
+                });
+        });
+    }
+
 }());

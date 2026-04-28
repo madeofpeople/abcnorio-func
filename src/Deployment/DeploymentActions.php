@@ -271,4 +271,58 @@ final class DeploymentActions
         wp_safe_redirect($redirect);
         exit;
     }
+
+    public static function pushToStaging(): void
+    {
+        check_ajax_referer('abcnorio_push_to_staging', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $response = wp_remote_post(Deployment::orchestratorBaseUrl() . '/dev-tools/push-to-staging', [
+            'headers' => ['Authorization' => 'Bearer ' . Deployment::orchestratorSecret()],
+            'timeout' => 10,
+        ]);
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(['message' => $response->get_error_message()], 502);
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if ($code === 409) {
+            wp_send_json_error(['message' => 'Push already in progress'], 409);
+        }
+
+        if ($code !== 202) {
+            $orchestratorMessage = is_array($body) ? (string) ($body['error'] ?? $body['message'] ?? '') : '';
+            $errorMessage = $orchestratorMessage !== '' ? 'Push failed: ' . $orchestratorMessage : 'Push failed (HTTP ' . $code . ')';
+            wp_send_json_error(['message' => $errorMessage], $code);
+        }
+
+        wp_send_json_success($body);
+    }
+
+    public static function pollPushStatus(): void
+    {
+        check_ajax_referer('abcnorio_poll_push_status', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $response = wp_remote_get(Deployment::orchestratorBaseUrl() . '/dev-tools/status', [
+            'headers' => ['Authorization' => 'Bearer ' . Deployment::orchestratorSecret()],
+            'timeout' => 5,
+        ]);
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(['message' => $response->get_error_message()], 502);
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        wp_send_json_success($body);
+    }
 }

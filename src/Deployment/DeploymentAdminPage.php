@@ -103,7 +103,7 @@ final class DeploymentAdminPage
 
         $view = self::deploymentTargets();
         $jsUrl = plugins_url('resources/js/deployment.js', ABCNORIO_CUSTOM_FUNC_FILE);
-        wp_enqueue_script('abcnorio-deployment', $jsUrl, [], '1.0.0', true);
+        wp_enqueue_script('abcnorio-deployment', $jsUrl, [], '1.0.1', true);
         wp_localize_script('abcnorio-deployment', 'abcnorioDeployment', [
             'ajaxUrl'             => admin_url('admin-ajax.php'),
             'triggerNonce'        => wp_create_nonce('abcnorio_trigger_build'),
@@ -234,11 +234,11 @@ final class DeploymentAdminPage
                         <button
                             class="button button-primary js-trigger-build"
                             data-target="production"
-                            data-label="<?php esc_attr_e('Deploy to Production', 'abcnorio-func'); ?>"
-                            data-confirm="<?php esc_attr_e('Deploy to production? This will replace the live site. Continue?', 'abcnorio-func'); ?>"
+                            data-label="<?php esc_attr_e('Deploy Staging to Production', 'abcnorio-func'); ?>"
+                            data-confirm="<?php esc_attr_e('Deploy Staging to production? This will replace the live site. Continue?', 'abcnorio-func'); ?>"
                             <?php disabled(!$statusOk); ?>
                         >
-                            <?php esc_html_e('Deploy to Production', 'abcnorio-func'); ?>
+                            <?php esc_html_e('Deploy Staging to Production', 'abcnorio-func'); ?>
                         </button>
                         <a
                             href="<?php echo esc_url($targets['production']['previewUrl'] ?: '#'); ?>"

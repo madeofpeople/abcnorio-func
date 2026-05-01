@@ -12,6 +12,7 @@ use abcnorio\CustomFunc\ImageStyles\BlockImageAttributeEnricher;
 use abcnorio\CustomFunc\ImageStyles\ImageStyleRegistrar;
 use abcnorio\CustomFunc\Navigation\MenuRegistrar;
 use abcnorio\CustomFunc\RestApi\EventQueryFilters;
+use abcnorio\CustomFunc\RestApi\FeaturedImageField;
 use abcnorio\CustomFunc\RestApi\ICalEndpoint;
 use abcnorio\CustomFunc\Search\SearchEndpoint;
 use abcnorio\CustomFunc\Security\CapabilityManager;
@@ -33,6 +34,7 @@ final class Plugin
         Dashboard::registerHooks();
         Deployment::registerHooks();
         EventQueryFilters::registerHooks();
+        FeaturedImageField::registerHooks();
         ICalEndpoint::registerHooks();
         SearchEndpoint::registerHooks();
         ACFFieldGroups::registerHooks();

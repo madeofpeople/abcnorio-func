@@ -6,6 +6,8 @@
     let buildStartTime = null;
     let timerInterval = null;
 
+    const NOTICE_TIMEOUT_MS = 4000;
+
     // --- Tab switching ---
     document.querySelectorAll('#deployment-tabs .nav-tab').forEach((tab) => {
         tab.addEventListener('click', (e) => {
@@ -71,6 +73,12 @@
         buildStartTime = null;
     }
 
+    function dismissNotice(notice) {
+        notice.style.transition = 'opacity 0.3s';
+        notice.style.opacity = '0';
+        setTimeout(() => notice.remove(), 500);
+    }
+
     function showAdminNotice(message, type = 'success') {
         const wrap = document.querySelector('.wrap');
         if (!wrap) return;
@@ -78,7 +86,16 @@
         const notice = document.createElement('div');
         notice.className = 'notice notice-' + type + ' is-dismissible';
         notice.innerHTML = '<p>' + message + '</p>';
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'notice-dismiss';
+        btn.innerHTML = '<span class="screen-reader-text">Dismiss this notice.</span>';
+        btn.addEventListener('click', () => dismissNotice(notice));
+        notice.appendChild(btn);
+
         wrap.insertBefore(notice, wrap.firstChild);
+        setTimeout(() => dismissNotice(notice), NOTICE_TIMEOUT_MS);
     }
 
     function redirectToDeploymentNotice(envKey, type = 'success', message = '') {
@@ -285,6 +302,11 @@
 
     // Resume spinner + polling if a build is already running when the page loads.
     initFromOrchestratorStatus();
+
+    // Auto-dismiss PHP-rendered notices (from redirect query params).
+    document.querySelectorAll('#wpbody-content .notice.is-dismissible').forEach((notice) => {
+        setTimeout(() => dismissNotice(notice), NOTICE_TIMEOUT_MS);
+    });
 
     // Strip transient notice params from the URL so a page reload doesn't re-show them.
     (function stripNoticeParams() {

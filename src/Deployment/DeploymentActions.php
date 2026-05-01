@@ -343,7 +343,7 @@ final class DeploymentActions
 
     public static function pollCopyMediaStatus(): void
     {
-        self::devToolPoll('abcnorio_poll_copy_media_status', 'copyMedia');
+        self::devToolPoll('abcnorio_poll_copy_media_status', 'copyMediaFromStagingToDev');
     }
 
     public static function pullFromStaging(): void
@@ -353,7 +353,7 @@ final class DeploymentActions
 
     public static function pollPullFromStagingStatus(): void
     {
-        self::devToolPoll('abcnorio_poll_pull_from_staging_status', 'pullFromStaging');
+        self::devToolPoll('abcnorio_poll_pull_from_staging_status', 'pullFromStagingToDev');
     }
 
     public static function copyMediaToStaging(): void
@@ -363,7 +363,7 @@ final class DeploymentActions
 
     public static function pollCopyMediaToStagingStatus(): void
     {
-        self::devToolPoll('abcnorio_poll_copy_media_to_staging_status', 'copyMediaToStaging');
+        self::devToolPoll('abcnorio_poll_copy_media_to_staging_status', 'copyMediaToStagingFromDev');
     }
 
     public static function pullFromDev(): void
@@ -373,6 +373,6 @@ final class DeploymentActions
 
     public static function pollPullFromDevStatus(): void
     {
-        self::devToolPoll('abcnorio_poll_pull_from_dev_status', 'pullFromDev');
+        self::devToolPoll('abcnorio_poll_pull_from_dev_status', 'pullDBFromDevToStaging');
     }
 }

@@ -7,7 +7,7 @@ final class SearchEndpoint
     private const NAMESPACE = 'abcnorio/v1';
     private const ROUTE     = '/search';
     public const CACHE_GROUP = 'abcnorio_search';
-    private const CACHE_TTL = 120;
+    private const CACHE_TTL = 3600;
     private const CACHE_VERSION_SEED = 'v1';
     private const CACHE_VERSION_OPTION = 'abcnorio_search_cache_version';
 
@@ -442,19 +442,12 @@ final class SearchEndpoint
         $found = false;
         $cached = wp_cache_get($cacheKey, self::CACHE_GROUP, false, $found);
 
-        if ($found && is_array($cached)) {
-            return $cached;
-        }
-
-        $transient = get_transient($cacheKey);
-
-        return is_array($transient) ? $transient : null;
+        return ($found && is_array($cached)) ? $cached : null;
     }
 
     private static function cacheSet(string $cacheKey, array $payload): void
     {
         wp_cache_set($cacheKey, $payload, self::CACHE_GROUP, self::CACHE_TTL);
-        set_transient($cacheKey, $payload, self::CACHE_TTL);
     }
 
     /** @return array<string, mixed> */

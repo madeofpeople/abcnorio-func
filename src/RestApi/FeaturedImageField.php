@@ -22,8 +22,10 @@ final class FeaturedImageField
                     'type'        => 'object',
                     'context'     => ['view'],
                     'properties'  => [
-                        'url' => ['type' => 'string'],
-                        'alt' => ['type' => 'string'],
+                        'url'    => ['type' => 'string'],
+                        'alt'    => ['type' => 'string'],
+                        'width'  => ['type' => 'integer'],
+                        'height' => ['type' => 'integer'],
                     ],
                 ],
             ]);
@@ -42,15 +44,17 @@ final class FeaturedImageField
             return null;
         }
 
-        $src = wp_get_attachment_image_src($thumbnailId, 'full');
+        $src = wp_get_attachment_image_src($thumbnailId, 'abcnorio-card');
 
         if ($src === false) {
             return null;
         }
 
         return [
-            'url' => $src[0],
-            'alt' => (string) get_post_meta($thumbnailId, '_wp_attachment_image_alt', true),
+            'url'    => $src[0],
+            'alt'    => (string) get_post_meta($thumbnailId, '_wp_attachment_image_alt', true),
+            'width'  => $src[1],
+            'height' => $src[2],
         ];
     }
 }

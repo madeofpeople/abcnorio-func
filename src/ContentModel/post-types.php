@@ -44,11 +44,13 @@ return [
         'singular_name' => 'Collective',
         'rewrite_slug' => 'collectives',
         'show_in_nav_menus' => true,
+        'hierarchical' => true,
         'supports' => [
             'title',
             'editor',
             'thumbnail',
-            'custom-fields'
+            'custom-fields',
+            'page-attributes'
         ],
         'has_archive' => true,
         'menu_icon' => 'dashicons-groups',

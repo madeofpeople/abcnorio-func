@@ -9,6 +9,7 @@ final class AdminExperience
         AllowedBlocks::registerHooks();
         TaxonomyColumnSorter::registerHooks();
         ListTableTermEditor::registerHooks();
+        CollectiveSubPages::registerHooks();
         add_action('admin_menu', [self::class, 'customizeAdminMenu']);
         add_action('admin_menu', [self::class,'customizeACFMenu']);
         add_action('rest_api_init', [self::class, 'registerRestLinkRewrites']);

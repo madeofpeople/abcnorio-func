@@ -43,6 +43,7 @@ final class PostTypeRegistrar
                 'slug' => $definition['rewrite_slug'] ?? $slug,
                 'with_front' => $definition['with_front'] ?? false,
             ],
+            'hierarchical' => $definition['hierarchical'] ?? false,
             'supports' => $definition['supports'] ?? ['title', 'editor'],
             'has_archive' => $definition['has_archive'] ?? false,
             'menu_icon' => $definition['menu_icon'] ?? 'dashicons-admin-post',

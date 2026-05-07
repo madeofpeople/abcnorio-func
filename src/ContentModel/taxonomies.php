@@ -71,7 +71,7 @@ return [
     'collective_association' => [
         'name' => 'Collective Associations',
         'singular_name' => 'Collective Association',
-        'object_types' => ['event', 'collective'],
+        'object_types' => ['event', 'collective', 'page'],
         'public' => false,
         'show_ui' => true,
         'show_in_rest' => true,

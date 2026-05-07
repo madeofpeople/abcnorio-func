@@ -5,7 +5,7 @@ namespace abcnorio\CustomFunc\ContentModel;
 final class TaxonomyTermSeeder
 {
     private const OPTION_KEY = 'custom_func_taxonomy_terms_schema_version';
-    private const SCHEMA_VERSION = '2';
+    private const SCHEMA_VERSION = '4';
 
     public static function maybeSeedDefaults(): void
     {
@@ -33,14 +33,16 @@ final class TaxonomyTermSeeder
             'Meeting',
         ]);
 
-        self::seedTerms('collective_association', [
+        $collectives = [
             'Punk/Hardcore Collective',
             'Visual Arts Collective',
             'Zine Library Collective',
             'Silkscreen PrintShop',
             'Darkroom Collective',
             'Computer Center',
-        ]);
+        ];
+
+        self::seedTerms('collective_association', $collectives);
     }
 
     private static function seedTerms(string $taxonomy, array $terms): void

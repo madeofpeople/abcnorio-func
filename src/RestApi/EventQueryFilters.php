@@ -7,6 +7,7 @@ final class EventQueryFilters
     public static function registerHooks(): void
     {
         add_action('init', [self::class, 'registerEventMeta']);
+        add_action('save_post_event', [self::class, 'computeEffectiveEnd'], 10, 1);
         add_filter('rest_event_query', [self::class, 'applyMetaFilters'], 10, 2);
         add_filter('rest_event_collection_params', [self::class, 'addOrderbyParams']);
         add_filter('rest_event_query', [self::class, 'applyOrderby'], 10, 2);
@@ -27,6 +28,35 @@ final class EventQueryFilters
             'single'         => true,
             'type'           => 'string',
         ]);
+
+        // Internal computed field — not exposed via REST.
+        // Written on save: event_end_date if set, otherwise midnight of event_start_date.
+        // Used by the event_effective_end_after filter to find ongoing and upcoming events.
+        register_meta('post', 'event_effective_end', [
+            'object_subtype' => 'event',
+            'show_in_rest'   => false,
+            'single'         => true,
+            'type'           => 'string',
+        ]);
+    }
+
+    // On post save: compute and store event_effective_end.
+    // If the event has an end date, use it.
+    // If not, fall back to midnight of the start date (event is visible all day it starts).
+    public static function computeEffectiveEnd(int $post_id): void
+    {
+        $end_date   = get_post_meta($post_id, 'event_end_date', true);
+        $start_date = get_post_meta($post_id, 'event_start_date', true);
+
+        if ($end_date) {
+            $effective_end = $end_date;
+        } elseif ($start_date) {
+            $effective_end = substr($start_date, 0, 10) . ' 00:00:00';
+        } else {
+            return;
+        }
+
+        update_post_meta($post_id, 'event_effective_end', $effective_end);
     }
 
     public static function addOrderbyParams(array $params): array
@@ -34,6 +64,13 @@ final class EventQueryFilters
         if (isset($params['orderby']['enum'])) {
             $params['orderby']['enum'][] = 'event_start_date';
         }
+
+        $params['event_effective_end_after'] = [
+            'description' => 'Return events whose effective end date is on or after this datetime (Y-m-d H:i:s). Matches ongoing events (end_date >= value) and events with no end date whose start date falls on or after the given date.',
+            'type'        => 'string',
+            'required'    => false,
+        ];
+
         return $params;
     }
 
@@ -49,8 +86,9 @@ final class EventQueryFilters
 
     public static function applyMetaFilters(array $args, \WP_REST_Request $request): array
     {
-        $after  = $request->get_param('event_start_after');
-        $before = $request->get_param('event_start_before');
+        $after                 = $request->get_param('event_start_after');
+        $before                = $request->get_param('event_start_before');
+        $effective_end_after   = $request->get_param('event_effective_end_after');
 
         $clauses = [self::buildHasStartDateClause()];
 
@@ -60,6 +98,15 @@ final class EventQueryFilters
 
         if ($before) {
             $clauses[] = self::buildEffectiveEndClause('<=', sanitize_text_field($before));
+        }
+
+        if ($effective_end_after) {
+            $clauses[] = [
+                'key'     => 'event_effective_end',
+                'value'   => sanitize_text_field($effective_end_after),
+                'compare' => '>=',
+                'type'    => 'DATETIME',
+            ];
         }
 
         $existingMetaQuery = isset($args['meta_query']) && is_array($args['meta_query'])

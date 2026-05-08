@@ -61,9 +61,7 @@ final class EventQueryFilters
 
     public static function addOrderbyParams(array $params): array
     {
-        if (isset($params['orderby']['enum'])) {
-            $params['orderby']['enum'][] = 'event_start_date';
-        }
+        $params['orderby']['enum'][] = 'event_start_date';
 
         $params['event_effective_end_after'] = [
             'description' => 'Return events whose effective end date is on or after this datetime (Y-m-d H:i:s). Matches ongoing events (end_date >= value) and events with no end date whose start date falls on or after the given date.',

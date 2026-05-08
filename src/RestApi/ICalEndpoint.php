@@ -70,11 +70,7 @@ final class ICalEndpoint
             $tz_id     = get_field('event_timezone', $post->ID) ?: $site_tz;
             $venue     = get_field('event_venue_name', $post->ID) ?: '';
             $address   = get_field('event_venue_address', $post->ID) ?: '';
-            $tickets   = get_field('event_tickets_url', $post->ID) ?: '';
-
-            if (!$start_raw) {
-                continue;
-            }
+            $tickets   = get_field('event_tickets_url', $post->ID);
 
             $tz      = new \DateTimeZone($tz_id);
             $dtstart = \DateTime::createFromFormat('Y-m-d H:i:s', $start_raw, $tz);

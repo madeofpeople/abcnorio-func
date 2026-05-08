@@ -86,10 +86,7 @@ final class DeploymentStatus
 
         $names = [];
         foreach ($envStatus['backups'] as $entry) {
-            if (!is_array($entry)) {
-                continue;
-            }
-            $name = trim((string) ($entry['name'] ?? ''));
+            $name = trim($entry['name']);
             if ($name !== '') {
                 $names[] = $name;
             }
@@ -126,16 +123,12 @@ final class DeploymentStatus
 
         $out = [];
         foreach ($envStatus['backups'] as $entry) {
-            if (!is_array($entry)) {
-                continue;
-            }
-
-            $name = trim((string) ($entry['name'] ?? ''));
+            $name = trim($entry['name']);
             if ($name === '') {
                 continue;
             }
 
-            $mtime = self::normalizeBackupMtime($entry['mtime'] ?? null);
+            $mtime = self::normalizeBackupMtime($entry['mtime']);
             if ($mtime === 0 && isset($entry['createdAt']) && is_string($entry['createdAt'])) {
                 $parsed = strtotime($entry['createdAt']);
                 $mtime = is_int($parsed) ? $parsed : 0;

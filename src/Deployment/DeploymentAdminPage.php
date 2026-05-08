@@ -77,9 +77,7 @@ final class DeploymentAdminPage
         foreach (Deployment::envKeys() as $env) {
             $envStatus = $status['ok'] ? ($status['status']['envs'][$env] ?? []) : [];
             $currentBuild = is_array($envStatus) ? ($envStatus['currentBuild'] ?? []) : [];
-            $hasBuild = is_array($currentBuild) && isset($currentBuild['hasBuild']) && is_bool($currentBuild['hasBuild'])
-                ? $currentBuild['hasBuild']
-                : false;
+            $hasBuild = $currentBuild['hasBuild'] ?? false;
 
             $targets[$env] = [
                 'previewUrl' => (string) (getenv($previewEnvMap[$env]) ?: ''),

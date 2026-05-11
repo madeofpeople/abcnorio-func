@@ -21,11 +21,7 @@
 
 return apply_filters('abcnorio_search_config', [
 
-    'synonyms' => [
-        'gig'      => ['concert', 'performance'],
-        'workshop' => ['class', 'course'],
-        'show'     => ['performance', 'concert'],
-    ],
+    'synonyms' => \abcnorio\CustomFunc\Search\SearchAdminPage::getSynonymsConfig(),
 
     'post_types' => [
 
@@ -38,7 +34,6 @@ return apply_filters('abcnorio_search_config', [
             ],
             'acf_fields' => [
                 'event_subtitle' => ['relevance' => 7],
-                'event_details'  => ['relevance' => 3],
             ],
             'taxonomies' => [
                 'event_type' => ['relevance' => 5],

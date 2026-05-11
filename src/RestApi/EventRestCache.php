@@ -15,13 +15,17 @@ namespace abcnorio\CustomFunc\RestApi;
 final class EventRestCache
 {
     private const ROUTE_PREFIX  = '/wp/v2/events';
-    private const TTL           = 5 * MINUTE_IN_SECONDS;
-    private const BUCKET_SECS   = 5 * MINUTE_IN_SECONDS;
+    private const TTL           = 30 * MINUTE_IN_SECONDS;
+    private const BUCKET_SECS   = 30 * MINUTE_IN_SECONDS;
     private const TRANSIENT_KEY = 'abcnorio_event_rest_';
     private const VERSION_KEY   = 'abcnorio_event_rest_version';
 
     public static function registerHooks(): void
     {
+        if (getenv('WP_ENV') !== 'production') {
+            return;
+        }
+
         add_filter('rest_pre_dispatch',  [self::class, 'maybeServeFromCache'], 10, 3);
         add_filter('rest_post_dispatch', [self::class, 'maybeCacheResponse'],  10, 3);
         add_action('save_post_event',    [self::class, 'bustCache']);

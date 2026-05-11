@@ -15,6 +15,7 @@ use abcnorio\CustomFunc\RestApi\EventQueryFilters;
 use abcnorio\CustomFunc\RestApi\EventRestCache;
 use abcnorio\CustomFunc\RestApi\FeaturedImageField;
 use abcnorio\CustomFunc\RestApi\ICalEndpoint;
+use abcnorio\CustomFunc\Search\SearchAdminPage;
 use abcnorio\CustomFunc\Search\SearchEndpoint;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Dashboard\Dashboard;
@@ -38,6 +39,7 @@ final class Plugin
         EventRestCache::registerHooks();
         FeaturedImageField::registerHooks();
         ICalEndpoint::registerHooks();
+        SearchAdminPage::registerHooks();
         SearchEndpoint::registerHooks();
         ACFFieldGroups::registerHooks();
         ImageStyleRegistrar::registerHooks();

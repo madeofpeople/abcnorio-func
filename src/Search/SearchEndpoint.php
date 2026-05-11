@@ -149,18 +149,14 @@ final class SearchEndpoint
 
         // --- Query 3: ACF meta fields LIKE across all configured keys ---
         $acfMatches = !empty($allAcfKeys)
-            ? self::queryAcfFields($term, $allAcfKeys)
+            ? self::queryAcfFields($taxTerms, $allAcfKeys)
             : [];
-
-        // --- Query 4: event_details repeater rows (event-only, targeted keys) ---
-        $eventDetailsRepeaterIds = self::queryEventDetailsRepeater($term);
 
         // Merge all matched post IDs.
         $allIds = array_unique(array_merge(
             $titleContentIds,
             array_keys($taxonomyMatches),
-            array_keys($acfMatches),
-            $eventDetailsRepeaterIds
+            array_keys($acfMatches)
         ));
 
         if (empty($allIds)) {
@@ -184,7 +180,6 @@ final class SearchEndpoint
         $scored  = [];
         $lowerTerm = strtolower($term);
         $titleContentIdsSet = array_fill_keys($titleContentIds, true);
-        $eventDetailsRepeaterIdsSet = array_fill_keys($eventDetailsRepeaterIds, true);
 
         foreach ($posts as $post) {
             $ptConfig = $config[$post->post_type] ?? null;
@@ -221,10 +216,6 @@ final class SearchEndpoint
                 foreach ($acfMatches[$post->ID] as $matchedKey) {
                     $score += $ptConfig['acf_fields'][$matchedKey]['relevance'] ?? 0;
                 }
-            }
-
-            if ($post->post_type === 'event' && isset($eventDetailsRepeaterIdsSet[$post->ID])) {
-                $score += $ptConfig['acf_fields']['event_details']['relevance'] ?? 0;
             }
 
             $scored[] = [
@@ -313,19 +304,25 @@ final class SearchEndpoint
      * @param  string[] $keys ACF/meta keys to search
      * @return array<int, string[]>
      */
-    private static function queryAcfFields(string $term, array $keys): array
+    private static function queryAcfFields(array $terms, array $keys): array
     {
         global $wpdb;
 
         $keyPlaceholders = implode(',', array_fill(0, count($keys), '%s'));
-        $like            = '%' . $wpdb->esc_like($term) . '%';
+        $likeClauses     = [];
+        $likeValues      = [];
+        foreach ($terms as $t) {
+            $likeClauses[] = 'meta_value LIKE %s';
+            $likeValues[]  = '%' . $wpdb->esc_like($t) . '%';
+        }
+        $likeSQL = implode(' OR ', $likeClauses);
 
         $sql = $wpdb->prepare(
             "SELECT post_id, meta_key
              FROM {$wpdb->postmeta}
              WHERE meta_key IN ($keyPlaceholders)
-               AND meta_value LIKE %s",
-            array_merge($keys, [$like])
+               AND ($likeSQL)",
+            array_merge($keys, $likeValues)
         );
 
         $rows    = $wpdb->get_results($sql);
@@ -334,34 +331,6 @@ final class SearchEndpoint
             $matches[(int) $row->post_id][] = $row->meta_key;
         }
         return $matches;
-    }
-
-    /** @return int[] */
-    private static function queryEventDetailsRepeater(string $term): array
-    {
-        global $wpdb;
-
-        $like = '%' . $wpdb->esc_like($term) . '%';
-
-        $sql = $wpdb->prepare(
-            "SELECT DISTINCT pm.post_id
-             FROM {$wpdb->postmeta} pm
-             INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-             WHERE p.post_type = %s
-               AND p.post_status = %s
-               AND (
-                   pm.meta_key LIKE %s
-                   OR pm.meta_key LIKE %s
-               )
-               AND pm.meta_value LIKE %s",
-            'event',
-            'publish',
-            'event_details_%_detail_label',
-            'event_details_%_detail_text',
-            $like
-        );
-
-        return array_map('intval', $wpdb->get_col($sql));
     }
 
     // -------------------------------------------------------------------------

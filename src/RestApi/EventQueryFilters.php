@@ -29,12 +29,12 @@ final class EventQueryFilters
             'type'           => 'string',
         ]);
 
-        // Internal computed field — not exposed via REST.
-        // Written on save: event_end_date if set, otherwise midnight of event_start_date.
-        // Used by the event_effective_end_after filter to find ongoing and upcoming events.
+        // Computed field: event_end_date if set, otherwise midnight of event_start_date.
+        // Exposed via REST so build-time collections can use it for date filtering
+        // without re-implementing the computation in JS.
         register_meta('post', 'event_effective_end', [
             'object_subtype' => 'event',
-            'show_in_rest'   => false,
+            'show_in_rest'   => true,
             'single'         => true,
             'type'           => 'string',
         ]);
@@ -75,20 +75,24 @@ final class EventQueryFilters
     public static function applyOrderby(array $args, \WP_REST_Request $request): array
     {
         if ($request->get_param('orderby') === 'event_start_date') {
-            $args['meta_key'] = 'event_start_date';
-            $args['orderby']  = 'meta_value';
-            $args['order']    = strtoupper($request->get_param('order') ?? 'ASC');
+            // Use a named meta_query clause for ordering so WP can resolve a single JOIN alias.
+            // Top-level meta_key conflicts with meta_query clauses on the same key.
+            $args['meta_query']['event_start_date_order'] = [
+                'key'     => 'event_start_date',
+                'compare' => 'EXISTS',
+            ];
+            $args['orderby'] = ['event_start_date_order' => strtoupper($request->get_param('order') ?? 'ASC')];
         }
         return $args;
     }
 
     public static function applyMetaFilters(array $args, \WP_REST_Request $request): array
     {
-        $after                 = $request->get_param('event_start_after');
-        $before                = $request->get_param('event_start_before');
-        $effective_end_after   = $request->get_param('event_effective_end_after');
+        $after               = $request->get_param('event_start_after');
+        $before              = $request->get_param('event_start_before');
+        $effective_end_after = $request->get_param('event_effective_end_after');
 
-        $clauses = [self::buildHasStartDateClause()];
+        $clauses = [];
 
         if ($after) {
             $clauses[] = self::buildEffectiveEndClause('>=', sanitize_text_field($after));
@@ -105,6 +109,10 @@ final class EventQueryFilters
                 'compare' => '>=',
                 'type'    => 'DATETIME',
             ];
+        }
+
+        if (empty($clauses)) {
+            return $args;
         }
 
         $existingMetaQuery = isset($args['meta_query']) && is_array($args['meta_query'])
@@ -124,26 +132,8 @@ final class EventQueryFilters
         return $args;
     }
 
-    private static function buildHasStartDateClause(): array
-    {
-        return [
-            'relation' => 'AND',
-            [
-                'key'     => 'event_start_date',
-                'compare' => 'EXISTS',
-            ],
-            [
-                'key'     => 'event_start_date',
-                'value'   => '',
-                'compare' => '!=',
-            ],
-        ];
-    }
-
     private static function buildEffectiveEndClause(string $compare, string $value): array
     {
-        // Filter on event_start_date only — avoids the multi-JOIN OR/NOT-EXISTS
-        // pattern needed for end-date fallback, which causes query timeouts.
         return [
             'key'     => 'event_start_date',
             'value'   => $value,

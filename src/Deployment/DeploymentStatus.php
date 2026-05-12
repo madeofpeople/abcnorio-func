@@ -138,6 +138,7 @@ final class DeploymentStatus
         }
 
         usort($out, static fn(array $a, array $b): int => $b['mtime'] <=> $a['mtime']);
-        return array_slice($out, 0, 3);
+        $limit = max(1, (int) (getenv('MAX_BACKUPS') ?: 12));
+        return array_slice($out, 0, $limit);
     }
 }

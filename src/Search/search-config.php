@@ -21,8 +21,6 @@
 
 return apply_filters('abcnorio_search_config', [
 
-    'synonyms' => \abcnorio\CustomFunc\Search\SearchAdminPage::getSynonymsConfig(),
-
     'post_types' => [
 
         'event' => [
@@ -32,9 +30,7 @@ return apply_filters('abcnorio_search_config', [
                 'post_title'   => ['relevance' => 10],
                 'post_content' => ['relevance' => 3],
             ],
-            'acf_fields' => [
-                'event_subtitle' => ['relevance' => 7],
-            ],
+            'acf_fields' => [],
             'taxonomies' => [
                 'event_type' => ['relevance' => 5],
                 'event_tag'  => ['relevance' => 4],

@@ -6,16 +6,22 @@ final class ImageStyleRegistrar
 {
     private const IMAGE_STYLES = [
         'abcnorio-card' => [
-            'width' => 640,
-            'height' => 360,
-            'crop' => true,
-            'label' => 'ABC No Rio Card (640x360)',
+            'width' => 353,
+            'height' => 9999,
+            'crop' => false,
+            'label' => 'ABC No Rio Card (353 wide)',
+        ],
+        'abcnorio-large' => [
+            'width' => 738,
+            'height' => 9999,
+            'crop' => false,
+            'label' => 'ABC No Rio Poster Large (738 wide)',
         ],
         'abcnorio-hero' => [
-            'width' => 1600,
-            'height' => 900,
-            'crop' => true,
-            'label' => 'ABC No Rio Hero (1600x900)',
+            'width' => 1080,
+            'height' => 9999,
+            'crop' => false,
+            'label' => 'ABC No Rio Hero (1080 wide)',
         ],
     ];
 

@@ -37,6 +37,7 @@ final class MenuRegistrar
     public static function registerMenuLocations(): void
     {
         register_nav_menus([
+            'primary_navigation' => __('Primary Navigation', 'custom-func'),
             'footer' => __('Footer Navigation', 'custom-func'),
         ]);
     }

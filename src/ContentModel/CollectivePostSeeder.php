@@ -73,4 +73,24 @@ final class CollectivePostSeeder {
 
         wp_set_object_terms((int) $postId, (int) $term->term_id, 'collective_association');
     }
+
+    public static function maybeAssignTermOnSave(int $postId): void {
+        if (! taxonomy_exists('collective_association')) {
+            return;
+        }
+
+        $title = get_the_title($postId);
+
+        if (! $title) {
+            return;
+        }
+
+        $term = get_term_by('name', $title, 'collective_association');
+
+        if (! $term) {
+            return;
+        }
+
+        wp_set_object_terms($postId, (int) $term->term_id, 'collective_association', true);
+    }
 }

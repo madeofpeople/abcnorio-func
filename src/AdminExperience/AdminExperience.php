@@ -22,6 +22,12 @@ final class AdminExperience
         add_filter('page_link', [self::class, 'rewriteLinkToFrontend'], 10, 2);
         add_filter('post_type_link', [self::class, 'rewriteLinkToFrontend'], 10, 2);
         add_filter('preview_post_link', [self::class, 'rewriteLinkToFrontend'], 10, 2);
+        add_filter('big_image_size_threshold', [self::class, 'bigImageSizeThreshold']);
+    }
+
+    public static function bigImageSizeThreshold(): int
+    {
+        return 1600;
     }
 
     public static function remove_draft_widget(): void

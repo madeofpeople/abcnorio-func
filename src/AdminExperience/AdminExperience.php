@@ -15,6 +15,7 @@ final class AdminExperience
         add_action('rest_api_init', [self::class, 'registerRestLinkRewrites']);
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminStyles']);
         add_action('enqueue_block_editor_assets', [self::class, 'enqueueEditorTokens']);
+        add_action('enqueue_block_assets', [self::class, 'enqueueEditorTokens']);
         add_action('admin_menu', [self::class, 'remove_default_post_type']);
         add_action('admin_bar_menu', [self::class, 'remove_default_post_type_menu_bar'], 999);
         add_action('wp_dashboard_setup', [self::class, 'remove_draft_widget'], 999);
@@ -105,6 +106,10 @@ final class AdminExperience
 
     public static function enqueueEditorTokens(): void
     {
+        if (! is_admin()) {
+            return;
+        }
+
         $relativePath = 'resources/css/admin-styles.css';
         $absolutePath = plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . $relativePath;
 

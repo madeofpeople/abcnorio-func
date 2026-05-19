@@ -15,6 +15,7 @@ use abcnorio\CustomFunc\RestApi\EventQueryFilters;
 use abcnorio\CustomFunc\RestApi\FeaturedImageField;
 use abcnorio\CustomFunc\RestApi\ICalEndpoint;
 use abcnorio\CustomFunc\Security\CapabilityManager;
+use abcnorio\CustomFunc\Blocks\Patterns;
 use abcnorio\CustomFunc\Dashboard\Dashboard;
 
 final class Plugin
@@ -31,6 +32,7 @@ final class Plugin
     {
         AdminExperience::registerHooks();
         Dashboard::registerHooks();
+        Patterns::registerHooks();
         Deployment::registerHooks();
         EventQueryFilters::registerHooks();
         FeaturedImageField::registerHooks();

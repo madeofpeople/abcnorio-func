@@ -28,7 +28,7 @@ final class AdminExperience
 
     public static function bigImageSizeThreshold(): int
     {
-        return 1600;
+        return 1200;
     }
 
     public static function remove_draft_widget(): void

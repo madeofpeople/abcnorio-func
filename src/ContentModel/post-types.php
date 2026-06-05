@@ -61,11 +61,11 @@ return [
         ],
         'map_meta_cap' => true,
     ],
-    'news_item' => [
-        'name' => 'News',
-        'singular_name' => 'News Item',
-        'rest_base' => 'news_items',
-        'rewrite_slug' => 'news_items',
+    'article' => [
+        'name' => 'Articles',
+        'singular_name' => 'Article',
+        'rest_base' => 'articles',
+        'rewrite_slug' => 'articles',
         'supports' => [
             'title',
             'editor',
@@ -79,8 +79,8 @@ return [
             'collective_association'
         ],
         'capability_type' => [
-            'news_item',
-            'news_items'
+            'article',
+            'articles'
         ],
         'map_meta_cap' => true,
     ],

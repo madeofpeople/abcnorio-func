@@ -19,7 +19,7 @@ final class MenuRegistrar
             $show = [
                 'add-post-type-collective',
                 'add-post-type-event',
-                'add-post-type-news_item',
+                'add-post-type-article',
                 'add-post-type-press_item',
                 'add-taxonomy-event_type',
                 'add-taxonomy-collective_association',

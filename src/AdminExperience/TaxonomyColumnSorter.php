@@ -19,7 +19,7 @@ final class TaxonomyColumnSorter
     /** @var array<string, list<string>> post_type => filterable taxonomy slugs */
     private const FILTER_MAP = [
         'event'      => ['event_type', 'event_tag', 'collective_association'],
-        'news_item'  => ['collective_association'],
+        'article'    => ['collective_association'],
         'press_item' => ['press_flag'],
     ];
 

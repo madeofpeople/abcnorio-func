@@ -13,7 +13,7 @@ final class ACFFieldGroups
     public static function register(): void
     {
         self::registerEventFields();
-        self::registerNewsItemFields();
+        self::registerArticleFields();
         self::registerCollectiveFields();
         self::registerPressItemFields();
     }
@@ -127,11 +127,11 @@ final class ACFFieldGroups
         ]);
     }
 
-    private static function registerNewsItemFields(): void
+    private static function registerArticleFields(): void
     {
         acf_add_local_field_group([
-            'key'      => 'group_news_item_details',
-            'title'    => 'News Details',
+            'key'      => 'group_article_details',
+            'title'    => 'Article Details',
             'show_in_rest' => true,
             'position' => 'side',
             'location' => [
@@ -139,21 +139,21 @@ final class ACFFieldGroups
                     [
                         'param'    => 'post_type',
                         'operator' => '==',
-                        'value'    => 'news_item',
+                        'value'    => 'article',
                     ],
                 ],
             ],
             'fields' => [
                 [
-                    'key'             => 'field_news_item_date',
-                    'name'            => 'news_item_date',
+                    'key'             => 'field_article_date',
+                    'name'            => 'item_date',
                     'label'           => __('Date', 'abcnorio-func'),
                     'type'            => 'date_picker',
                     'display_format'  => 'd/m/Y',
                     'return_format'   => 'Y-m-d',
                     'first_day'       => 1,
                     'required'        => 1,
-                    'validation_message' => __('Please update News Details -> Date (news_item_date).', 'abcnorio-func'),
+                    'validation_message' => __('Please update Article Details -> Date (item_date).', 'abcnorio-func'),
                 ],
             ],
         ]);

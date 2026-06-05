@@ -5,6 +5,7 @@ use abcnorio\CustomFunc\ContentModel\ACFFieldGroups;
 use abcnorio\CustomFunc\ContentModel\PostTypeRegistrar;
 use abcnorio\CustomFunc\ContentModel\TaxonomyRegistrar;
 use abcnorio\CustomFunc\ContentModel\CollectivePostSeeder;
+use abcnorio\CustomFunc\ContentModel\MinimalContentSeeder;
 use abcnorio\CustomFunc\ContentModel\TaxonomyTermSeeder;
 use abcnorio\CustomFunc\AdminExperience\AdminExperience;
 use abcnorio\CustomFunc\Deployment\Deployment;
@@ -31,6 +32,7 @@ final class Plugin
 
     public static function boot(): void
     {
+        MinimalContentSeeder::registerCliCommand();
         AdminExperience::registerHooks();
         Dashboard::registerHooks();
         Patterns::registerHooks();
@@ -64,7 +66,7 @@ final class Plugin
 
     public static function enableFeaturedImages(): void
     {
-        add_theme_support('post-thumbnails', ['post', 'page', 'event', 'collective', 'news_item']);
+        add_theme_support('post-thumbnails', ['post', 'page', 'event', 'collective', 'article']);
     }
 
     public static function unregisterSeedPostType(): void

@@ -195,7 +195,7 @@ final class AdminExperience
 
     private static function isFrontendPathSupported(string $path): bool
     {
-        foreach (['/press/', '/news_items/'] as $unsupportedPrefix) {
+        foreach (['/press/'] as $unsupportedPrefix) {
             if (str_starts_with($path, $unsupportedPrefix)) {
                 return false;
             }

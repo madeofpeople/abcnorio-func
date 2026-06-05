@@ -15,6 +15,7 @@ use abcnorio\CustomFunc\RestApi\EventQueryFilters;
 use abcnorio\CustomFunc\RestApi\FeaturedImageField;
 use abcnorio\CustomFunc\RestApi\ICalEndpoint;
 use abcnorio\CustomFunc\Security\CapabilityManager;
+use abcnorio\CustomFunc\Security\LoginAlias;
 use abcnorio\CustomFunc\Blocks\Patterns;
 use abcnorio\CustomFunc\Dashboard\Dashboard;
 
@@ -37,6 +38,7 @@ final class Plugin
         EventQueryFilters::registerHooks();
         FeaturedImageField::registerHooks();
         ICalEndpoint::registerHooks();
+        LoginAlias::registerHooks();
         ACFFieldGroups::registerHooks();
         ImageStyleRegistrar::registerHooks();
         BlockImageAttributeEnricher::registerHooks();

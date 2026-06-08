@@ -19,6 +19,7 @@ use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
 use abcnorio\CustomFunc\Blocks\Patterns;
 use abcnorio\CustomFunc\Dashboard\Dashboard;
+use abcnorio\CustomFunc\Components\ComponentIngestor;
 
 final class Plugin
 {
@@ -53,9 +54,32 @@ final class Plugin
         add_action('init', [TaxonomyTermSeeder::class, 'maybeSeedDefaults'], 20);
         add_action('init', [CollectivePostSeeder::class, 'maybeSeedDefaults'], 30);
         add_action('save_post_collective', [CollectivePostSeeder::class, 'maybeAssignTermOnSave'], 10, 1);
+        add_action('init', [self::class, 'ingestAstroComponentLibrary'], 40);
         add_action('init', [self::class, 'unregisterSeedPostType'], 999);
     }
 
+    public static function ingestAstroComponentLibrary(): void
+    {
+        try {
+            $manifest = ComponentIngestor::load();
+            
+            // Automate asset handling based on compiled artifacts
+            foreach (array_keys($manifest) as $component_name) {
+                ComponentIngestor::register_block_assets($component_name);
+                
+                // Dynamically create the Gutenberg block type registration hook
+                register_block_type("abcnorio/{$component_name}", [
+                    'render_callback' => function($attributes, $content) use ($component_name) {
+                        return ComponentIngestor::render($component_name, $content);
+                    }
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Fail loudly if the file infrastructure or manifest contract breaks
+            wp_die($e->getMessage(), 'Components Engine Failure', ['response' => 500]);
+        }
+    }
+    
     public static function registerContentModels(): void
     {
         $postTypes = require __DIR__ . '/ContentModel/post-types.php';

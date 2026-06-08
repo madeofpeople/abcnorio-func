@@ -1,5 +1,6 @@
 import { registerPlugin } from '@wordpress/plugins';
 import { useEffect } from '@wordpress/element';
+import './eventTeaserPreview';
 
 const LINK_SELECTORS = [
     '.editor-post-preview',

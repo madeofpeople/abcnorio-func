@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "wp-scripts build resources/js/index.js --output-path=build",
+    "ingest:components": "bash scripts/ingest-components-dist.sh",
+    "build": "npm run ingest:components && wp-scripts build resources/js/index.js --output-path=build",
     "start": "wp-scripts start resources/js/index.js --output-path=build"
   },
   "devDependencies": {
@@ -23,6 +24,10 @@
     "minimatch": "^9.0.7"
   },
   "dependencies": {
+    "abcnorio-webcomponents": "github:madeofpeople/abcnorio-webcomponents#v0.2.1",
     "select2": "github:woocommerce/selectWoo"
+  },
+  "allowScripts": {
+    "github:madeofpeople/abcnorio-webcomponents#9907a2a39acf38508f12c48cfe89e64dac9cb667": true
   }
 }

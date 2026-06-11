@@ -2,27 +2,24 @@
 namespace abcnorio\CustomFunc\Components;
 
 class ComponentIngestor {
-    private const COMPONENT_DIST_DIR_ENV = 'COMPONENT_DIST_DIR';
+    private const COMPONENT_DIST_RELATIVE_PATH = 'resources/vendor/components/dist';
 
     private static ?array $manifest = null;
 
     /**
-     * Load the manifest straight from the local bind mount. Fail loudly if missing.
+     * Load manifest from plugin-local dist artifacts. Fail loudly if missing.
      */
     public static function load(): array {
         if (self::$manifest !== null) {
             return self::$manifest;
         }
 
-        $component_dist_dir = trim((string) getenv(self::COMPONENT_DIST_DIR_ENV));
-        if ($component_dist_dir === '') {
-            throw new \RuntimeException("Components System Error: Missing required env var '" . self::COMPONENT_DIST_DIR_ENV . "'.");
-        }
+        $component_dist_dir = self::distDir();
 
         $manifest_path = $component_dist_dir . '/fixtures-manifest.json';
 
         if (!file_exists($manifest_path)) {
-            throw new \RuntimeException("Components System Error: Manifest missing at '{$manifest_path}'. Ensure the Docker bind mount is active and 'npm run build' has run.");
+            throw new \RuntimeException("Components System Error: Manifest missing at '{$manifest_path}'. Run plugin build to ingest component dist artifacts.");
         }
 
         self::$manifest = json_decode(file_get_contents($manifest_path), true);
@@ -34,8 +31,57 @@ class ComponentIngestor {
         return self::$manifest;
     }
 
+    public static function distDir(): string {
+        $component_dist_dir = plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . self::COMPONENT_DIST_RELATIVE_PATH;
+
+        if (!is_dir($component_dist_dir)) {
+            throw new \RuntimeException("Components System Error: Dist directory missing at '{$component_dist_dir}'.");
+        }
+
+        return $component_dist_dir;
+    }
+
+    public static function distUrl(): string {
+        return plugin_dir_url(ABCNORIO_CUSTOM_FUNC_FILE) . self::COMPONENT_DIST_RELATIVE_PATH . '/';
+    }
+
+    public static function runtimeCssUrl(): string {
+        $runtime_css_path = self::distDir() . '/styles/components.css';
+
+        if (!file_exists($runtime_css_path)) {
+            throw new \RuntimeException("Components System Error: Runtime CSS missing at '{$runtime_css_path}'.");
+        }
+
+        return self::distUrl() . 'styles/components.css';
+    }
+
+    public static function enqueueRuntimeStyles(): void {
+        if (! wp_style_is('abcnorio-components-runtime', 'registered')) {
+            wp_register_style(
+                'abcnorio-components-runtime',
+                self::runtimeCssUrl(),
+                [],
+                null
+            );
+        }
+
+        wp_enqueue_style('abcnorio-components-runtime');
+    }
+
+    public static function readDistHtml(string $relative_path): string {
+        $dist_dir = self::distDir();
+        $normalized_path = ltrim($relative_path, '/');
+        $absolute_path = $dist_dir . '/' . $normalized_path;
+
+        if (!file_exists($absolute_path)) {
+            throw new \RuntimeException("Components System Error: Fixture missing at '{$absolute_path}'.");
+        }
+
+        return trim((string) file_get_contents($absolute_path));
+    }
+
     /**
-     * Registers individual block assets natively under the current WordPress domain
+     * Register component block assets from plugin-local dist URLs.
      */
     public static function register_block_assets(string $component_name): void {
         $manifest = self::load();
@@ -46,8 +92,7 @@ class ComponentIngestor {
 
         $meta = $manifest[$component_name];
         
-        // Convert the local bind mount directory path into a native local asset URL
-        $base_url = '/mu-plugins/abcnorio-components/dist/';
+        $base_url = self::distUrl();
 
         if (!empty($meta['scriptPath'])) {
             wp_register_script(
@@ -70,13 +115,13 @@ class ComponentIngestor {
     }
 
     /**
-     * Injects the raw pre-rendered HTML fixture string directly into the WordPress engine
+     * Render prebuilt fixture HTML and enqueue only required component assets.
      */
     public static function render(string $component_name, string $content = ''): string {
         $manifest = self::load();
         
         if (!isset($manifest[$component_name])) {
-            throw new \InvalidArgumentException("❌ Components System Error: Unable to render '{$component_name}'. Element data key is absent from the manifest.");
+            throw new \InvalidArgumentException("Components System Error: Unable to render '{$component_name}'. Element data key is absent from the manifest.");
         }
 
         $raw_html = $manifest[$component_name]['html'];

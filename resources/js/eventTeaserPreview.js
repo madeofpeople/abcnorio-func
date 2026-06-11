@@ -1,5 +1,5 @@
-import '../../../abcnorio-components/events/teaser.js';
-import { buildEventTeaserPayload } from '../../../abcnorio-components/events/event-teaser-payload.js';
+import 'abcnorio-webcomponents/event-teaser/element';
+import { buildEventTeaserPayload } from 'abcnorio-webcomponents/event-teaser/payload';
 
 const { wp } = window;
 
@@ -74,7 +74,7 @@ if (wp?.plugins && wp?.element && wp?.data && wp?.editPost) {
                 {
                     name: 'abcnorio-event-teaser-preview',
                     title: 'Event teaser preview',
-                    className: 'abcn-event-teaser-preview-panel',
+                    className: 'event-teaser-preview-panel',
                 },
                 createElement('p', null, 'Loading event teaser preview...')
             );
@@ -88,10 +88,10 @@ if (wp?.plugins && wp?.element && wp?.data && wp?.editPost) {
             {
                 name: 'abcnorio-event-teaser-preview',
                 title: 'Event teaser preview',
-                className: 'abcn-event-teaser-preview-panel',
+                className: 'event-teaser-preview-panel',
             },
             createElement(
-                'abcn-event-teaser',
+                'event-teaser',
                 {
                     key: payloadJson,
                     className: `events-wc-teaser${payload.isPastEvent ? ' past' : ''}`,

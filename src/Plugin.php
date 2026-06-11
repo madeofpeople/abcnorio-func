@@ -14,10 +14,12 @@ use abcnorio\CustomFunc\ImageStyles\ImageStyleRegistrar;
 use abcnorio\CustomFunc\Navigation\MenuRegistrar;
 use abcnorio\CustomFunc\RestApi\EventQueryFilters;
 use abcnorio\CustomFunc\RestApi\FeaturedImageField;
+use abcnorio\CustomFunc\RestApi\ContentListingEndpoint;
 use abcnorio\CustomFunc\RestApi\ICalEndpoint;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
 use abcnorio\CustomFunc\Blocks\Patterns;
+use abcnorio\CustomFunc\Blocks\EventListingQuery;
 use abcnorio\CustomFunc\Dashboard\Dashboard;
 use abcnorio\CustomFunc\Components\ComponentIngestor;
 
@@ -37,9 +39,11 @@ final class Plugin
         AdminExperience::registerHooks();
         Dashboard::registerHooks();
         Patterns::registerHooks();
+        EventListingQuery::registerHooks();
         Deployment::registerHooks();
         EventQueryFilters::registerHooks();
         FeaturedImageField::registerHooks();
+        ContentListingEndpoint::registerHooks();
         ICalEndpoint::registerHooks();
         LoginAlias::registerHooks();
         ACFFieldGroups::registerHooks();
@@ -47,6 +51,7 @@ final class Plugin
         BlockImageAttributeEnricher::registerHooks();
         MenuRegistrar::registerHooks();
         add_action('after_setup_theme', [self::class, 'enableFeaturedImages']);
+        add_action('enqueue_block_assets', [self::class, 'enqueueComponentRuntimeStyles']);
         add_action('enqueue_block_editor_assets', [self::class, 'enqueueEditorAssets']);
         add_action('admin_init', [CapabilityManager::class, 'maybeMigrateCapabilities'], 1);
         add_action('init', [self::class, 'registerContentModels']);
@@ -56,15 +61,23 @@ final class Plugin
         add_action('save_post_collective', [CollectivePostSeeder::class, 'maybeAssignTermOnSave'], 10, 1);
         add_action('init', [self::class, 'ingestAstroComponentLibrary'], 40);
         add_action('init', [self::class, 'unregisterSeedPostType'], 999);
+        remove_action( 'enqueue_block_editor_assets', [self::class, 'wp_enqueue_editor_block_directory_assets'], 999);
     }
 
     public static function ingestAstroComponentLibrary(): void
     {
         try {
             $manifest = ComponentIngestor::load();
+            $skipBlocks = [
+                'event-listing',
+            ];
             
             // Automate asset handling based on compiled artifacts
             foreach (array_keys($manifest) as $component_name) {
+                if (in_array($component_name, $skipBlocks, true)) {
+                    continue;
+                }
+
                 ComponentIngestor::register_block_assets($component_name);
                 
                 // Dynamically create the Gutenberg block type registration hook
@@ -151,8 +164,15 @@ final class Plugin
             plugin_dir_url(ABCNORIO_CUSTOM_FUNC_FILE) . 'build/index.js',
             $asset['dependencies'],
             $asset['version'],
-            true
+            false
         );
+
+        self::enqueueComponentRuntimeStyles();
+    }
+
+    public static function enqueueComponentRuntimeStyles(): void
+    {
+        ComponentIngestor::enqueueRuntimeStyles();
     }
 
 }

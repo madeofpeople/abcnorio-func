@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "abcnorio/event-listing",
+  "title": "Event Listing Block",
+  "category": "widgets",
+  "icon": "calendar-alt",
+  "description": "Lists events matching configured criteria.",
+  "keywords": ["events", "listing", "abcnorio"],
+  "attributes": {
+    "dateFilter": {
+      "type": "string",
+      "default": "upcoming"
+    },
+    "collectiveAssociation": {
+      "type": "string",
+      "default": ""
+    },
+    "eventType": {
+      "type": "string",
+      "default": ""
+    },
+    "order": {
+      "type": "string",
+      "default": "desc"
+    },
+    "itemCount": {
+      "type": "number",
+      "default": 6
+    }
+  },
+  "supports": {
+    "align": false,
+    "html": false
+  }
+}

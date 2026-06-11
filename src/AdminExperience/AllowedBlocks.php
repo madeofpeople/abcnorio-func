@@ -66,6 +66,8 @@ final class AllowedBlocks
             // 'core/spacer',
             'core/embed',
             'core/html',
+            'abcnorio/event-listing',
+            
         ],
     ];
 

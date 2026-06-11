@@ -82,7 +82,7 @@ final class DeploymentAdminPage
             $targets[$env] = [
                 'previewUrl' => (string) (getenv($previewEnvMap[$env]) ?: ''),
                 'hasBuild' => $hasBuild,
-                'backups' => in_array($env, ['dev', 'staging'], true) ? [] : DeploymentStatus::normalizeBackups($envStatus),
+                'backups' => in_array($env, ['dev', 'staging'], true) ? [] : DeploymentStatus::normalizeProductionBackups($env, $envStatus),
             ];
         }
 

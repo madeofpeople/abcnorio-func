@@ -4,6 +4,45 @@ namespace abcnorio\CustomFunc\Deployment;
 
 final class DeploymentStatus
 {
+    /**
+     * @return array<int, array{name: string, mtime: int}>
+     */
+    private static function listProductionBackupsFromArchiveDir(): array
+    {
+        $archiveDir = self::backupArchiveDir();
+        if (!is_dir($archiveDir) || !is_readable($archiveDir)) {
+            return [];
+        }
+
+        $entries = scandir($archiveDir);
+        if (!is_array($entries)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($entries as $name) {
+            if (!is_string($name) || $name === '' || $name === '.' || $name === '..') {
+                continue;
+            }
+
+            if (!preg_match('/^abcnorio-astro-production-(?!candidate-).+\\.zip$/', $name)) {
+                continue;
+            }
+
+            $fullPath = $archiveDir . '/' . $name;
+            if (!is_file($fullPath)) {
+                continue;
+            }
+
+            $mtime = filemtime($fullPath);
+            $out[] = ['name' => $name, 'mtime' => is_int($mtime) ? $mtime : 0];
+        }
+
+        usort($out, static fn(array $a, array $b): int => $b['mtime'] <=> $a['mtime']);
+        $limit = max(1, (int) (getenv('MAX_BACKUPS') ?: 12));
+        return array_slice($out, 0, $limit);
+    }
+
     public static function backupArchiveDir(): string
     {
         $configured = trim((string) (getenv('ASTRO_BUILD_ARCHIVE_DIR') ?: ''));
@@ -71,12 +110,25 @@ final class DeploymentStatus
     public static function backupNamesForEnv(string $env): array
     {
         $status = self::read();
-        if (!$status['ok']) {
+        if (!$status['ok'] && $env !== 'production') {
             return ['ok' => false, 'message' => $status['message'], 'names' => []];
         }
 
-        $envStatus = $status['status']['envs'][$env] ?? null;
-        if (!is_array($envStatus) || !isset($envStatus['backups']) || !is_array($envStatus['backups'])) {
+        $envStatus = $status['ok'] ? ($status['status']['envs'][$env] ?? null) : null;
+        $backups = (is_array($envStatus) && isset($envStatus['backups']) && is_array($envStatus['backups']))
+            ? $envStatus['backups']
+            : [];
+
+        if ($backups === [] && $env === 'production') {
+            $fallback = self::listProductionBackupsFromArchiveDir();
+            return [
+                'ok' => true,
+                'message' => '',
+                'names' => array_map(static fn(array $entry): string => $entry['name'], $fallback),
+            ];
+        }
+
+        if ($backups === []) {
             return [
                 'ok'      => false,
                 'message' => __('Backup metadata is missing for selected environment.', 'abcnorio-func'),
@@ -85,7 +137,7 @@ final class DeploymentStatus
         }
 
         $names = [];
-        foreach ($envStatus['backups'] as $entry) {
+        foreach ($backups as $entry) {
             $name = trim($entry['name']);
             if ($name !== '') {
                 $names[] = $name;
@@ -140,5 +192,19 @@ final class DeploymentStatus
         usort($out, static fn(array $a, array $b): int => $b['mtime'] <=> $a['mtime']);
         $limit = max(1, (int) (getenv('MAX_BACKUPS') ?: 12));
         return array_slice($out, 0, $limit);
+    }
+
+    /**
+     * @param mixed $envStatus
+     * @return array<int, array{name: string, mtime: int}>
+     */
+    public static function normalizeProductionBackups(string $env, $envStatus): array
+    {
+        $normalized = self::normalizeBackups($envStatus);
+        if ($normalized !== [] || $env !== 'production') {
+            return $normalized;
+        }
+
+        return self::listProductionBackupsFromArchiveDir();
     }
 }

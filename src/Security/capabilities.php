@@ -11,6 +11,7 @@ $editorCapabilities = [
     'publish_events',
     'read_private_events',
     'edit_published_events',
+    // 
     'edit_collective',
     'read_collective',
     'delete_collective',
@@ -18,6 +19,7 @@ $editorCapabilities = [
     'publish_collectives',
     'read_private_collectives',
     'edit_published_collectives',
+    // 
     'edit_article',
     'read_article',
     'delete_article',
@@ -25,6 +27,7 @@ $editorCapabilities = [
     'publish_articles',
     'read_private_articles',
     'edit_published_articles',
+    //
     'edit_press_item',
     'read_press_item',
     'delete_press_item',

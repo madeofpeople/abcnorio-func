@@ -50,7 +50,6 @@ final class MinimalContentSeeder
         self::setTerms($eventId, 'event_tag', [$eventTagId]);
         self::seedEventMeta($eventId);
 
-        self::deleteLegacySeedPost('news_item', 'seed-article');
         $articleId = self::ensurePost('article', 'Seed Article', 'seed-article', 'Seed article entry.');
         self::setTerms($articleId, 'collective_association', [$collectiveAssociationId]);
         update_post_meta($articleId, 'item_date', gmdate('Y-m-d'));
@@ -179,17 +178,6 @@ final class MinimalContentSeeder
         ]);
 
         return is_wp_error($postId) ? 0 : (int) $postId;
-    }
-
-    private static function deleteLegacySeedPost(string $postType, string $slug): void
-    {
-        $existing = get_page_by_path($slug, OBJECT, $postType);
-
-        if (! $existing instanceof \WP_Post) {
-            return;
-        }
-
-        wp_delete_post((int) $existing->ID, true);
     }
 
     private static function ensureTerm(string $taxonomy, string $name, string $slug): int

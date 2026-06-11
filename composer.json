@@ -2,7 +2,7 @@
     "name": "madeofpeople/abcnorio-func",
     "description": "Composer-first functionality plugin for the abcnorio.org",
     "type": "wordpress-plugin",
-    "version": "0.8.1",
+    "version": "0.8.2",
     "license": "GPL-2.0-or-later",
     "keywords": ["wordpress", "bedrock", "headless", "abcnorio"],
     "authors": [

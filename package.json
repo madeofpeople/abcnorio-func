@@ -24,7 +24,7 @@
     "minimatch": "^9.0.7"
   },
   "dependencies": {
-    "abcnorio-webcomponents": "github:madeofpeople/abcnorio-webcomponents#v0.2.1",
+    "abcnorio-webcomponents": "file:../abcnorio-webcomponents",
     "select2": "github:woocommerce/selectWoo"
   },
   "allowScripts": {

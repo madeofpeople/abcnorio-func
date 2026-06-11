@@ -6,7 +6,7 @@ final class CapabilityManager
 {
     private const OPTION_KEY = 'custom_func_capability_schema_version';
     // Bump when role capability assignment behavior changes.
-    private const SCHEMA_VERSION = '7';
+    private const SCHEMA_VERSION = '8';
 
     public static function maybeMigrateCapabilities(): void
     {

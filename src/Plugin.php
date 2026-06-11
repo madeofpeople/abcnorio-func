@@ -20,6 +20,7 @@ use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
 use abcnorio\CustomFunc\Blocks\Patterns;
 use abcnorio\CustomFunc\Blocks\EventListingQuery;
+use abcnorio\CustomFunc\Blocks\ContentListingQuery;
 use abcnorio\CustomFunc\Dashboard\Dashboard;
 use abcnorio\CustomFunc\Components\ComponentIngestor;
 
@@ -40,6 +41,7 @@ final class Plugin
         Dashboard::registerHooks();
         Patterns::registerHooks();
         EventListingQuery::registerHooks();
+        ContentListingQuery::registerHooks();
         Deployment::registerHooks();
         EventQueryFilters::registerHooks();
         FeaturedImageField::registerHooks();

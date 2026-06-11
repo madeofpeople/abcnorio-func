@@ -67,6 +67,7 @@ final class AllowedBlocks
             'core/embed',
             'core/html',
             'abcnorio/event-listing',
+            'abcnorio/content-listing',
             
         ],
     ];

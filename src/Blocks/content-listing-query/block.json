@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "abcnorio/content-listing",
+  "title": "Content Listing Block",
+  "category": "widgets",
+  "icon": "list-view",
+  "description": "Lists event and article content matching configured criteria.",
+  "keywords": ["content", "listing", "abcnorio"],
+  "attributes": {
+    "listingPostTypes": {
+      "type": "array",
+      "default": ["event", "article"],
+      "items": {
+        "type": "string"
+      }
+    },
+    "listingTagFilter": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "listingTimeFilter": {
+      "type": "string",
+      "default": "all"
+    },
+    "listingCount": {
+      "type": "number",
+      "default": 5
+    },
+    "order": {
+      "type": "string",
+      "default": "desc"
+    }
+  },
+  "supports": {
+    "align": false,
+    "html": false
+  }
+}

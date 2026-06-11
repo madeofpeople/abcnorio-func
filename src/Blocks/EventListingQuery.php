@@ -164,7 +164,7 @@ final class EventListingQuery
 
     private static function renderListingFromDist(string $countLabel, string $itemsHtml): string
     {
-        $dom = self::loadHtmlFragment(ComponentIngestor::readDistHtml('event-listing/empty.html'));
+        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('event-listing/empty.html'));
         $xpath = new \DOMXPath($dom);
 
         $listing = $dom->getElementsByTagName('event-listing')->item(0);
@@ -177,9 +177,17 @@ final class EventListingQuery
             trim($listing->getAttribute('class') . ' wp-block-abcnorio-event-listing')
         );
 
-        $countNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " events__count ")]')->item(0);
+        $countNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " events__count ") or contains(concat(" ", normalize-space(@class), " "), " event-listing__count ")]')->item(0);
         if (! $countNode instanceof \DOMElement) {
-            throw new \RuntimeException('Components System Error: event-listing count node missing.');
+            $countNode = $dom->createElement('p');
+            $countNode->setAttribute('class', 'event-listing__count events__count');
+
+            $teaserListNode = $dom->getElementById('teaser-list');
+            if ($teaserListNode instanceof \DOMElement && $teaserListNode->parentNode === $listing) {
+                $listing->insertBefore($countNode, $teaserListNode);
+            } else {
+                $listing->appendChild($countNode);
+            }
         }
         $countNode->nodeValue = $countLabel;
 
@@ -188,14 +196,14 @@ final class EventListingQuery
             throw new \RuntimeException('Components System Error: teaser-list node missing.');
         }
 
-        self::appendHtmlFragment($dom, $teaserList, $itemsHtml);
+        HtmlFragmentSupport::appendHtmlFragment($dom, $teaserList, $itemsHtml, 'event listing');
 
         return trim((string) $dom->saveHTML($listing));
     }
 
     private static function renderEventCardFromDist(array $data): string
     {
-        $dom = self::loadHtmlFragment(ComponentIngestor::readDistHtml('event-teaser.html'));
+        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('event-teaser.html'));
         $xpath = new \DOMXPath($dom);
 
         $root = $dom->getElementsByTagName('event-teaser')->item(0);
@@ -211,9 +219,9 @@ final class EventListingQuery
         $title->nodeValue = wp_strip_all_tags((string) $data['title']);
 
         if (! empty($data['isPastEvent'])) {
-            self::addClass($article, 'past');
+            HtmlFragmentSupport::addClass($article, 'past');
         } else {
-            self::removeClass($article, 'past');
+            HtmlFragmentSupport::removeClass($article, 'past');
         }
 
         $time = $dom->getElementsByTagName('time')->item(0);
@@ -235,7 +243,15 @@ final class EventListingQuery
             }
         }
 
-        self::syncCardImage($dom, $xpath, $article, $data['image']);
+        HtmlFragmentSupport::syncCardImage(
+            $dom,
+            $xpath,
+            $article,
+            $data['image'],
+            'content',
+            null,
+            'event-teaser'
+        );
 
         return trim((string) $dom->saveHTML($root));
     }
@@ -260,105 +276,6 @@ final class EventListingQuery
             'srcset' => (string) wp_get_attachment_image_srcset($thumbnailId, 'abcnorio-card'),
             'sizes'  => (string) wp_get_attachment_image_sizes($thumbnailId, 'abcnorio-card'),
         ];
-    }
-
-    private static function syncCardImage(\DOMDocument $dom, \DOMXPath $xpath, \DOMElement $article, ?array $image): void
-    {
-        $existing = $xpath->query('.//img', $article)->item(0);
-
-        if ($image === null) {
-            if ($existing instanceof \DOMElement) {
-                $existing->parentNode?->removeChild($existing);
-            }
-            return;
-        }
-
-        $link = $xpath->query('.//a', $article)->item(0);
-        $content = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " content ")]', $article)->item(0);
-
-        if (! $link instanceof \DOMElement || ! $content instanceof \DOMElement) {
-            throw new \RuntimeException('Components System Error: event-teaser fixture missing link/content nodes.');
-        }
-
-        $img = $existing instanceof \DOMElement ? $existing : $dom->createElement('img');
-        $img->setAttribute('src', esc_url((string) $image['src']));
-        $img->setAttribute('alt', (string) $image['alt']);
-        $img->setAttribute('width', (string) $image['width']);
-        $img->setAttribute('height', (string) $image['height']);
-        $img->setAttribute('decoding', 'async');
-        $img->setAttribute('loading', 'lazy');
-
-        if (! empty($image['srcset'])) {
-            $img->setAttribute('srcset', (string) $image['srcset']);
-        }
-        if (! empty($image['sizes'])) {
-            $img->setAttribute('sizes', (string) $image['sizes']);
-        }
-
-        if (! $existing instanceof \DOMElement) {
-            $link->insertBefore($img, $content);
-        }
-    }
-
-    private static function loadHtmlFragment(string $html): \DOMDocument
-    {
-        $dom = new \DOMDocument('1.0', 'UTF-8');
-        $previous = libxml_use_internal_errors(true);
-
-        $dom->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-
-        libxml_clear_errors();
-        libxml_use_internal_errors($previous);
-
-        return $dom;
-    }
-
-    private static function appendHtmlFragment(\DOMDocument $dom, \DOMElement $parent, string $html): void
-    {
-        if ($html === '') {
-            return;
-        }
-
-        $fragmentDom = new \DOMDocument('1.0', 'UTF-8');
-        $previous = libxml_use_internal_errors(true);
-
-        $loaded = $fragmentDom->loadHTML(
-            '<wrapper>' . $html . '</wrapper>',
-            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
-        );
-
-        libxml_clear_errors();
-        libxml_use_internal_errors($previous);
-
-        if (! $loaded) {
-            throw new \RuntimeException('Components System Error: Failed appending rendered event listing items.');
-        }
-
-        $wrapper = $fragmentDom->getElementsByTagName('wrapper')->item(0);
-        if (! $wrapper instanceof \DOMElement) {
-            throw new \RuntimeException('Components System Error: Missing wrapper node while appending rendered items.');
-        }
-
-        while ($wrapper->firstChild) {
-            $parent->appendChild($dom->importNode($wrapper->firstChild, true));
-            $wrapper->removeChild($wrapper->firstChild);
-        }
-    }
-
-    private static function addClass(\DOMElement $element, string $className): void
-    {
-        $classes = preg_split('/\s+/', trim($element->getAttribute('class'))) ?: [];
-        if (! in_array($className, $classes, true)) {
-            $classes[] = $className;
-        }
-        $element->setAttribute('class', trim(implode(' ', array_filter($classes))));
-    }
-
-    private static function removeClass(\DOMElement $element, string $className): void
-    {
-        $classes = preg_split('/\s+/', trim($element->getAttribute('class'))) ?: [];
-        $classes = array_values(array_filter($classes, static fn (string $class): bool => $class !== $className));
-        $element->setAttribute('class', trim(implode(' ', $classes)));
     }
 
     private static function enqueueComponentAssets(): void

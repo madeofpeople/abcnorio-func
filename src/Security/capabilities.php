@@ -1,72 +1,79 @@
 <?php
-// Additive declaration: define editor baseline once, then admin-only deltas.
+// Additive declaration: derive editor/admin post caps from CPT definitions,
+// then layer explicit policy extras where needed.
 
-$editorCapabilities = [
-    // Editors can assign collective terms via taxonomy assign_terms = edit_posts,
-    // but they cannot manage/create/delete terms.
-    'edit_event',
-    'read_event',
-    'delete_event',
-    'edit_events',
-    'publish_events',
-    'read_private_events',
-    'edit_published_events',
-    // 
-    'edit_collective',
-    'read_collective',
-    'delete_collective',
-    'edit_collectives',
-    'publish_collectives',
-    'read_private_collectives',
-    'edit_published_collectives',
-    // 
-    'edit_article',
-    'read_article',
-    'delete_article',
-    'edit_articles',
-    'publish_articles',
-    'read_private_articles',
-    'edit_published_articles',
-    //
-    'edit_press_item',
-    'read_press_item',
-    'delete_press_item',
-    'edit_press_items',
-    'publish_press_items',
-    'read_private_press_items',
-    'edit_published_press_items',
-];
+$postTypeDefinitions = require __DIR__ . '/../ContentModel/post-types.php';
+$taxonomyDefinitions = require __DIR__ . '/../ContentModel/taxonomies.php';
 
-$administratorExtraCapabilities = [
-    'manage_event_type_associations',
-    'manage_collective_associations',
-    'edit_others_events',
-    'delete_events',
-    'delete_private_events',
-    'delete_published_events',
-    'delete_others_events',
-    'edit_private_events',
-    'edit_others_collectives',
-    'delete_collectives',
-    'delete_private_collectives',
-    'delete_published_collectives',
-    'delete_others_collectives',
-    'edit_private_collectives',
-    'edit_others_articles',
-    'delete_articles',
-    'delete_private_articles',
-    'delete_published_articles',
-    'delete_others_articles',
-    'edit_private_articles',
-    'edit_others_press_items',
-    'delete_press_items',
-    'delete_private_press_items',
-    'delete_published_press_items',
-    'delete_others_press_items',
-    'edit_private_press_items',
-];
+$editorCapabilities = [];
+$administratorExtraCapabilities = [];
+
+/**
+ * @return array{editor: array<int, string>, admin: array<int, string>}
+ */
+$buildPostTypeCapabilities = static function (string $singular, string $plural): array {
+    return [
+        'editor' => [
+            "edit_{$singular}",
+            "read_{$singular}",
+            "delete_{$singular}",
+            "edit_{$plural}",
+            "publish_{$plural}",
+            "read_private_{$plural}",
+            "edit_published_{$plural}",
+        ],
+        'admin' => [
+            "edit_others_{$plural}",
+            "delete_{$plural}",
+            "delete_private_{$plural}",
+            "delete_published_{$plural}",
+            "delete_others_{$plural}",
+            "edit_private_{$plural}",
+        ],
+    ];
+};
+
+foreach ($postTypeDefinitions as $definition) {
+    $capabilityType = $definition['capability_type'] ?? null;
+
+    if (! is_array($capabilityType) || count($capabilityType) !== 2) {
+        continue;
+    }
+
+    $singular = (string) $capabilityType[0];
+    $plural = (string) $capabilityType[1];
+
+    if ($singular === '' || $plural === '') {
+        continue;
+    }
+
+    // CPT capability_type is the canonical source for generated post caps.
+    $generated = $buildPostTypeCapabilities($singular, $plural);
+    $editorCapabilities = array_merge($editorCapabilities, $generated['editor']);
+    $administratorExtraCapabilities = array_merge($administratorExtraCapabilities, $generated['admin']);
+}
+
+foreach ($taxonomyDefinitions as $definition) {
+    $taxonomyCapabilities = $definition['capabilities'] ?? null;
+
+    if (! is_array($taxonomyCapabilities)) {
+        continue;
+    }
+
+    foreach (['manage_terms', 'edit_terms', 'delete_terms'] as $capabilityKey) {
+        $capabilityName = (string) ($taxonomyCapabilities[$capabilityKey] ?? '');
+
+        // Taxonomy term management stays admin-only. assign_terms is intentionally
+        // excluded here so editors can assign existing terms without managing vocab.
+        if ($capabilityName === '' || $capabilityName === 'manage_options') {
+            continue;
+        }
+
+        $administratorExtraCapabilities[] = $capabilityName;
+    }
+}
 
 return [
     'administrator' => array_values(array_unique(array_merge($editorCapabilities, $administratorExtraCapabilities))),
-    'editor' => $editorCapabilities,
+    'editor' => array_values(array_unique($editorCapabilities)),
 ];

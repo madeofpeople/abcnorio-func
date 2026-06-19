@@ -6,12 +6,13 @@ final class CapabilityManager
 {
     private const OPTION_KEY = 'custom_func_capability_schema_version';
     // Bump when role capability assignment behavior changes.
-    private const SCHEMA_VERSION = '8';
+    private const SCHEMA_VERSION = '10';
 
     public static function maybeMigrateCapabilities(): void
     {
         $storedVersion = (string) get_option(self::OPTION_KEY, '0');
 
+        // Guarded sync: only writes role caps when schema changes.
         if ($storedVersion === self::SCHEMA_VERSION) {
             return;
         }
@@ -28,6 +29,7 @@ final class CapabilityManager
 
     private static function syncRoleCapabilities(): void
     {
+        // This file composes editor/admin capability sets from the content model.
         $roleCapabilities = require __DIR__ . '/capabilities.php';
 
         foreach ($roleCapabilities as $roleName => $capabilities) {

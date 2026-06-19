@@ -114,9 +114,9 @@ return [
         'hierarchical' => false,
         'rewrite_slug' => 'sidebar-scopes',
         'capabilities' => [
-            'manage_terms' => 'manage_options',
-            'edit_terms' => 'manage_options',
-            'delete_terms' => 'manage_options',
+            'manage_terms' => 'manage_sidebar_scopes',
+            'edit_terms' => 'manage_sidebar_scopes',
+            'delete_terms' => 'manage_sidebar_scopes',
             'assign_terms' => 'edit_posts',
         ],
     ],

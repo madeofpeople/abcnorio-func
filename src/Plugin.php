@@ -7,6 +7,7 @@ use abcnorio\CustomFunc\ContentModel\TaxonomyRegistrar;
 use abcnorio\CustomFunc\ContentModel\CollectivePostSeeder;
 use abcnorio\CustomFunc\ContentModel\MinimalContentSeeder;
 use abcnorio\CustomFunc\ContentModel\SidebarPostSeeder;
+use abcnorio\CustomFunc\ContentModel\SidebarScopeSaveGuard;
 use abcnorio\CustomFunc\ContentModel\TaxonomyTermSeeder;
 use abcnorio\CustomFunc\AdminExperience\AdminExperience;
 use abcnorio\CustomFunc\Deployment\Deployment;
@@ -53,6 +54,7 @@ final class Plugin
         ICalEndpoint::registerHooks();
         LoginAlias::registerHooks();
         ACFFieldGroups::registerHooks();
+        SidebarScopeSaveGuard::registerHooks();
         ImageStyleRegistrar::registerHooks();
         BlockImageAttributeEnricher::registerHooks();
         MenuRegistrar::registerHooks();

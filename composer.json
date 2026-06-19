@@ -2,9 +2,14 @@
     "name": "madeofpeople/abcnorio-func",
     "description": "Composer-first functionality plugin for the abcnorio.org",
     "type": "wordpress-plugin",
-    "version": "0.8.2",
+    "version": "0.8.3",
     "license": "GPL-2.0-or-later",
-    "keywords": ["wordpress", "bedrock", "headless", "abcnorio"],
+    "keywords": [
+        "wordpress",
+        "bedrock",
+        "headless",
+        "abcnorio"
+    ],
     "authors": [
         {
             "name": "Thiago de Mello Bueno",

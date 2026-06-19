@@ -72,6 +72,7 @@ final class Plugin
             $manifest = ComponentIngestor::load();
             $skipBlocks = [
                 'event-listing',
+                'content-listing',
             ];
             
             // Automate asset handling based on compiled artifacts

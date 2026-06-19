@@ -10,7 +10,13 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 - Runtime CSS is enqueued as a static plugin URL from that same plugin-local path.
 - Contract is fail-loud: missing dist/manifest/css is a hard error.
 
-Build flow:
+### Component dep enqueue
+
+- `manifest.components[name].deps` is a flat array of relative dist paths for transitive CSS/JS deps declared in fixture metadata.
+- `ComponentIngestor::enqueue_component_deps(string $component_name)` infers asset type from file extension and enqueues under namespaced handles: `abcnorio-dep-{type}-{component}-{slug}-{hash}`.
+- Handle is deterministic per path; WordPress deduplicates re-enqueues automatically.
+- `ComponentIngestor::render()` calls `enqueue_component_deps` automatically.
+- Direct-query blocks (`EventListingQuery`, `ContentListingQuery`) call `enqueue_component_deps` explicitly for each component they render, including child teasers.
 
 1. Install dependencies in `abcnorio-func`.
 2. Run `npm run build` in `abcnorio-func`.

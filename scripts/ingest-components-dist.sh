@@ -5,8 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC_DIR="${ROOT_DIR}/node_modules/abcnorio-webcomponents/dist"
 DST_DIR="${ROOT_DIR}/resources/vendor/components/dist"
 REQUIRED_FILES=(
-  "fixtures-manifest.json"
-  "styles/components.css"
+  "manifest.json"
 )
 
 if [[ ! -d "${SRC_DIR}" ]]; then

@@ -16,7 +16,8 @@ return [
         'taxonomies' => [
             'event_type',
             'event_tag',
-            'collective_association'
+            'collective_association',
+            'sidebar_scope',
         ],
         'capability_type' => [
             'event',
@@ -54,7 +55,7 @@ return [
         ],
         'has_archive' => true,
         'menu_icon' => 'dashicons-groups',
-        'taxonomies' => ['collective_association'],
+        'taxonomies' => ['collective_association', 'sidebar_scope'],
         'capability_type' => [
             'collective',
             'collectives'
@@ -76,7 +77,8 @@ return [
         'has_archive' => true,
         'menu_icon' => 'dashicons-calendar-alt',
         'taxonomies' => [
-            'collective_association'
+            'collective_association',
+            'sidebar_scope',
         ],
         'capability_type' => [
             'article',
@@ -103,5 +105,28 @@ return [
         ],
         'map_meta_cap' => true,
         'taxonomies'   => ['press_flag'],
+    ],
+    'sidebar' => [
+        'name' => 'Sidebars',
+        'singular_name' => 'Sidebar',
+        'rest_base' => 'sidebars',
+        'rewrite_slug' => 'sidebars',
+        'supports' => [
+            'title',
+            'editor',
+            'excerpt',
+            'thumbnail',
+            'custom-fields'
+        ],
+        'has_archive' => true,
+        'menu_icon' => 'dashicons-align-pull-right',
+        'taxonomies' => [
+            'sidebar_scope',
+        ],
+        'capability_type' => [
+            'sidebar',
+            'sidebars'
+        ],
+        'map_meta_cap' => true,
     ],
 ];

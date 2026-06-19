@@ -5,7 +5,7 @@ namespace abcnorio\CustomFunc\ContentModel;
 final class TaxonomyTermSeeder
 {
     private const OPTION_KEY = 'custom_func_taxonomy_terms_schema_version';
-    private const SCHEMA_VERSION = '4';
+    private const SCHEMA_VERSION = '5';
 
     public static function maybeSeedDefaults(): void
     {
@@ -43,6 +43,13 @@ final class TaxonomyTermSeeder
         ];
 
         self::seedTerms('collective_association', $collectives);
+
+        self::seedTermsWithSlugs('sidebar_scope', [
+            ['name' => 'Event', 'slug' => 'event'],
+            ['name' => 'Collective', 'slug' => 'collective'],
+            ['name' => 'Article', 'slug' => 'article'],
+            ['name' => 'Page', 'slug' => 'page'],
+        ]);
     }
 
     private static function seedTerms(string $taxonomy, array $terms): void
@@ -59,6 +66,32 @@ final class TaxonomyTermSeeder
             }
 
             wp_insert_term($termName, $taxonomy);
+        }
+    }
+
+    /**
+     * @param array<int, array{name: string, slug: string}> $terms
+     */
+    private static function seedTermsWithSlugs(string $taxonomy, array $terms): void
+    {
+        if (! taxonomy_exists($taxonomy)) {
+            return;
+        }
+
+        foreach ($terms as $term) {
+            $slug = (string) ($term['slug'] ?? '');
+            $name = (string) ($term['name'] ?? '');
+
+            if ($slug === '' || $name === '') {
+                continue;
+            }
+
+            $existingTerm = get_term_by('slug', $slug, $taxonomy);
+            if ($existingTerm instanceof \WP_Term) {
+                continue;
+            }
+
+            wp_insert_term($name, $taxonomy, ['slug' => $slug]);
         }
     }
 }

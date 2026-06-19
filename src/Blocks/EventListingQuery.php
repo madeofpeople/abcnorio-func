@@ -281,5 +281,8 @@ final class EventListingQuery
     private static function enqueueComponentAssets(): void
     {
         ComponentIngestor::enqueueRuntimeStyles();
+
+        ComponentIngestor::enqueue_component_deps('event-listing');
+        ComponentIngestor::enqueue_component_deps('event-teaser');
     }
 }

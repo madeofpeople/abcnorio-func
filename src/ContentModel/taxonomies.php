@@ -102,4 +102,22 @@ return [
             ],
         ],
     ],
+    'sidebar_scope' => [
+        'name' => 'Sidebar Scopes',
+        'singular_name' => 'Sidebar Scope',
+        'object_types' => ['event', 'collective', 'article', 'page', 'sidebar'],
+        'public' => false,
+        'show_ui' => true,
+        'show_in_rest' => true,
+        'show_admin_column' => true,
+        'rest_base' => 'sidebar-scopes',
+        'hierarchical' => false,
+        'rewrite_slug' => 'sidebar-scopes',
+        'capabilities' => [
+            'manage_terms' => 'manage_options',
+            'edit_terms' => 'manage_options',
+            'delete_terms' => 'manage_options',
+            'assign_terms' => 'edit_posts',
+        ],
+    ],
 ];

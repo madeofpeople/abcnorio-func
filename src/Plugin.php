@@ -6,6 +6,7 @@ use abcnorio\CustomFunc\ContentModel\PostTypeRegistrar;
 use abcnorio\CustomFunc\ContentModel\TaxonomyRegistrar;
 use abcnorio\CustomFunc\ContentModel\CollectivePostSeeder;
 use abcnorio\CustomFunc\ContentModel\MinimalContentSeeder;
+use abcnorio\CustomFunc\ContentModel\SidebarPostSeeder;
 use abcnorio\CustomFunc\ContentModel\TaxonomyTermSeeder;
 use abcnorio\CustomFunc\AdminExperience\AdminExperience;
 use abcnorio\CustomFunc\Deployment\Deployment;
@@ -16,6 +17,7 @@ use abcnorio\CustomFunc\RestApi\EventQueryFilters;
 use abcnorio\CustomFunc\RestApi\FeaturedImageField;
 use abcnorio\CustomFunc\RestApi\ContentListingEndpoint;
 use abcnorio\CustomFunc\RestApi\ICalEndpoint;
+use abcnorio\CustomFunc\RestApi\SidebarBlocksField;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
 use abcnorio\CustomFunc\Blocks\Patterns;
@@ -31,6 +33,7 @@ final class Plugin
         self::registerContentModels();
         CapabilityManager::forceMigrateCapabilities();
         TaxonomyTermSeeder::forceSeedDefaults();
+        SidebarPostSeeder::forceSeedDefaults();
         CollectivePostSeeder::forceSeedDefaults();
     }
 
@@ -45,6 +48,7 @@ final class Plugin
         Deployment::registerHooks();
         EventQueryFilters::registerHooks();
         FeaturedImageField::registerHooks();
+        SidebarBlocksField::registerHooks();
         ContentListingEndpoint::registerHooks();
         ICalEndpoint::registerHooks();
         LoginAlias::registerHooks();
@@ -60,7 +64,12 @@ final class Plugin
         add_action('init', [self::class, 'disableComments'], 15);
         add_action('init', [TaxonomyTermSeeder::class, 'maybeSeedDefaults'], 20);
         add_action('init', [CollectivePostSeeder::class, 'maybeSeedDefaults'], 30);
+        add_action('init', [SidebarPostSeeder::class, 'maybeSeedDefaults'], 35);
         add_action('save_post_collective', [CollectivePostSeeder::class, 'maybeAssignTermOnSave'], 10, 1);
+        add_action('save_post_event', [SidebarPostSeeder::class, 'maybeAssignDefaultScopeOnSave'], 10, 1);
+        add_action('save_post_collective', [SidebarPostSeeder::class, 'maybeAssignDefaultScopeOnSave'], 10, 1);
+        add_action('save_post_article', [SidebarPostSeeder::class, 'maybeAssignDefaultScopeOnSave'], 10, 1);
+        add_action('save_post_page', [SidebarPostSeeder::class, 'maybeAssignDefaultScopeOnSave'], 10, 1);
         add_action('init', [self::class, 'ingestAstroComponentLibrary'], 40);
         add_action('init', [self::class, 'unregisterSeedPostType'], 999);
         remove_action( 'enqueue_block_editor_assets', [self::class, 'wp_enqueue_editor_block_directory_assets'], 999);
@@ -70,13 +79,19 @@ final class Plugin
     {
         try {
             $manifest = ComponentIngestor::load();
+            $components = $manifest['components'] ?? [];
+
+            if (!is_array($components)) {
+                throw new \RuntimeException('Components System Error: manifest.components must be an object.');
+            }
+
             $skipBlocks = [
                 'event-listing',
                 'content-listing',
             ];
             
             // Automate asset handling based on compiled artifacts
-            foreach (array_keys($manifest) as $component_name) {
+            foreach (array_keys($components) as $component_name) {
                 if (in_array($component_name, $skipBlocks, true)) {
                     continue;
                 }

@@ -264,5 +264,9 @@ final class ContentListingQuery
     private static function enqueueComponentAssets(): void
     {
         ComponentIngestor::enqueueRuntimeStyles();
+
+        ComponentIngestor::enqueue_component_deps('content-listing');
+        ComponentIngestor::enqueue_component_deps('event-teaser');
+        ComponentIngestor::enqueue_component_deps('article-teaser');
     }
 }

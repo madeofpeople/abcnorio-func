@@ -107,9 +107,8 @@ final class Plugin
                     }
                 ]);
             }
-        } catch (\Exception $e) {
-            // Fail loudly if the file infrastructure or manifest contract breaks
-            wp_die($e->getMessage(), 'Components Engine Failure', ['response' => 500]);
+        } catch (\Throwable $e) {
+            self::handleComponentSystemFailure($e, 'component ingestion');
         }
     }
     
@@ -192,7 +191,26 @@ final class Plugin
 
     public static function enqueueComponentRuntimeStyles(): void
     {
-        ComponentIngestor::enqueueRuntimeStyles();
+        try {
+            ComponentIngestor::enqueueRuntimeStyles();
+        } catch (\Throwable $e) {
+            self::handleComponentSystemFailure($e, 'runtime styles enqueue');
+        }
+    }
+
+    private static function shouldFailLoudForComponents(): bool
+    {
+        return is_admin();
+    }
+
+    private static function handleComponentSystemFailure(\Throwable $error, string $context): void
+    {
+        if (self::shouldFailLoudForComponents()) {
+            wp_die($error->getMessage(), 'Components Engine Failure', ['response' => 500]);
+        }
+
+        $message = sprintf('[abcnorio-func] Component system skipped in %s: %s', $context, $error->getMessage());
+        error_log($message);
     }
 
 }

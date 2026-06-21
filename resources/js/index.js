@@ -3,7 +3,6 @@ import { useEffect } from '@wordpress/element';
 import { subscribe, select, dispatch } from '@wordpress/data';
 import './contentListingBlock';
 import './eventListingBlock';
-import './eventTeaserPreview';
 
 const LINK_SELECTORS = [
     '.editor-post-preview',

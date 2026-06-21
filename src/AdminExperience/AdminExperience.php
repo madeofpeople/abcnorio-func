@@ -14,6 +14,7 @@ final class AdminExperience
         add_action('admin_menu', [self::class,'customizeACFMenu']);
         add_action('rest_api_init', [self::class, 'registerRestLinkRewrites']);
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminStyles']);
+        add_action('enqueue_block_assets', [self::class, 'enqueueAdminStyles']);
         add_action('enqueue_block_editor_assets', [self::class, 'enqueueAdminStyles']);
         add_action('admin_menu', [self::class, 'remove_default_post_type']);
         add_action('admin_bar_menu', [self::class, 'remove_default_post_type_menu_bar'], 999);
@@ -105,6 +106,10 @@ final class AdminExperience
 
     public static function enqueueAdminStyles(): void
     {
+        if (! is_admin()) {
+            return;
+        }
+
         $relativePath = 'resources/css/admin-styles.css';
         $absolutePath = plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . $relativePath;
 
@@ -112,9 +117,14 @@ final class AdminExperience
             return;
         }
 
+        $styleUrl = plugin_dir_url(ABCNORIO_CUSTOM_FUNC_FILE) . $relativePath;
+        if (str_starts_with(home_url(), 'https://')) {
+            $styleUrl = set_url_scheme($styleUrl, 'https');
+        }
+
         wp_enqueue_style(
             'abcnorio-custom-func-admin',
-            plugin_dir_url(ABCNORIO_CUSTOM_FUNC_FILE) . $relativePath,
+            $styleUrl,
             [],
             (string) filemtime($absolutePath)
         );

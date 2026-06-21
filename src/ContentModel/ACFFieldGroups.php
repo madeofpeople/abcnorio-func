@@ -65,31 +65,6 @@ final class ACFFieldGroups
                     'first_day'       => 1,
                 ],
                 [
-                    'key'          => 'field_event_details',
-                    'name'         => 'event_details',
-                    'label'        => __('Event details', 'abcnorio-func'),
-                    'type'         => 'repeater',
-                    'layout'       => 'row',
-                    'button_label' => __('Add detail', 'abcnorio-func'),
-                    'min'          => 0,
-                    'show_in_rest' => 1,
-                    'sub_fields'   => [
-                        [
-                            'key'   => 'field_event_detail_label',
-                            'name'  => 'detail_label',
-                            'label' => __('Label', 'abcnorio-func'),
-                            'type'  => 'text',
-                        ],
-                        [
-                            'key'   => 'field_event_detail_text',
-                            'name'  => 'detail_text',
-                            'label' => __('Details', 'abcnorio-func'),
-                            'type'  => 'textarea',
-                            'rows'  => 3,
-                        ],
-                    ],
-                ],
-                [
                     'key'           => 'field_event_location',
                     'name'          => 'event_venue_name',
                     'label'         => __('Venue / Location', 'abcnorio-func'),

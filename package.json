@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "ingest:components": "bash scripts/ingest-components-dist.sh",
-    "build": "npm run ingest:components && wp-scripts build resources/js/index.js --output-path=build",
+    "build:admin-css": "sass --no-source-map --style=expanded --load-path ../abcnorio-astro/design-tokens/tokens resources/css/admin-tokens.scss resources/css/.admin-tokens.tmp.css && sed -e 's|@abcnorio-design-tokens/fonts/|../fonts/|g' -e 's|rgba(#000, 0.9)|rgba(0,0,0, 0.9)|g' -e 's|--color-grey-dark: \\$c_text;|--color-grey-dark: var(--color-text);|g' resources/css/.admin-tokens.tmp.css > resources/css/admin-styles.css && printf '\n' >> resources/css/admin-styles.css && cat resources/css/admin-overrides.css >> resources/css/admin-styles.css && rm -f resources/css/.admin-tokens.tmp.css",
+    "build": "npm run ingest:components && npm run build:admin-css && wp-scripts build resources/js/index.js --output-path=build",
     "start": "wp-scripts start resources/js/index.js --output-path=build"
   },
   "devDependencies": {
@@ -15,6 +16,7 @@
     "jsdoc": "^4.0.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "sass": "^1.89.2",
     "standard-version": "^9.5.0"
   },
   "overrides": {

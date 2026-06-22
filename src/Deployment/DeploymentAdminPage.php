@@ -132,9 +132,15 @@ final class DeploymentAdminPage
         $targets = $view['targets'];
         $statusOk = $view['statusOk'];
         $statusMessage = $view['statusMessage'];
+        $showDevTab = !empty($targets['dev']['previewUrl']);
+        $lowerTabs = $showDevTab ? ['dev', 'staging'] : ['staging'];
+
+        if (!$showDevTab && $activeTab === 'dev') {
+            $activeTab = 'staging';
+        }
+
         $backupDownloadNonce = wp_create_nonce('abcnorio_download_backup');
         $backupRestoreNonce = wp_create_nonce('abcnorio_restore_backup');
-        $backupDeleteNonce = wp_create_nonce('abcnorio_delete_backup');
         ?>
         <div class="wrap">
             <h1><?php esc_html_e('Deployment', 'abcnorio-func'); ?></h1>
@@ -149,9 +155,11 @@ final class DeploymentAdminPage
             <?php endif; ?>
 
             <nav class="nav-tab-wrapper" id="deployment-tabs">
+                <?php if ($showDevTab) : ?>
                 <a href="#tab-dev" class="nav-tab<?php echo $activeTab === 'dev' ? ' nav-tab-active' : ''; ?>" data-tab="dev">
                     <?php esc_html_e('Dev', 'abcnorio-func'); ?>
                 </a>
+                <?php endif; ?>
                 <a href="#tab-staging" class="nav-tab<?php echo $activeTab === 'staging' ? ' nav-tab-active' : ''; ?>" data-tab="staging">
                     <?php esc_html_e('Staging', 'abcnorio-func'); ?>
                 </a>
@@ -160,7 +168,7 @@ final class DeploymentAdminPage
                 </a>
             </nav>
 
-            <?php foreach (['dev', 'staging'] as $env) : ?>
+            <?php foreach ($lowerTabs as $env) : ?>
             <div
                 id="tab-<?php echo esc_attr($env); ?>"
                 class="deployment-tab<?php echo $activeTab !== $env ? ' hidden' : ''; ?>"
@@ -329,13 +337,6 @@ final class DeploymentAdminPage
                                         >
                                             <?php esc_html_e('Restore', 'abcnorio-func'); ?>
                                         </a>
-                                        <form method="post" action="<?php echo esc_url(admin_url('admin-ajax.php')); ?>" style="display:inline;" onsubmit="return confirm('<?php echo esc_js(__('Delete this backup? This cannot be undone.', 'abcnorio-func')); ?>');">
-                                            <input type="hidden" name="action" value="abcnorio_delete_backup">
-                                            <input type="hidden" name="nonce" value="<?php echo esc_attr($backupDeleteNonce); ?>">
-                                            <input type="hidden" name="env" value="production">
-                                            <input type="hidden" name="file" value="<?php echo esc_attr($backup['name']); ?>">
-                                            <button type="submit" class="button button-small" style="color:#b32d2e;"><?php esc_html_e('Delete', 'abcnorio-func'); ?></button>
-                                        </form>
                                         </span>
                                     </li>
                                 <?php endforeach; ?>

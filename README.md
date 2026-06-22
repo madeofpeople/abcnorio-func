@@ -21,6 +21,13 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 1. Install dependencies in `abcnorio-func`.
 2. Run `npm run build` in `abcnorio-func`.
 
+## Admin CSS Contract
+
+- Runtime admin stylesheet remains `resources/css/admin-styles.css`.
+- Source token bundle is `resources/css/admin-tokens.scss` and compiles from `../abcnorio-astro/design-tokens/tokens`.
+- WP-specific rules live in `resources/css/admin-overrides.css`.
+- `npm run build:admin-css` regenerates `resources/css/admin-styles.css` by compiling tokens and appending overrides.
+
 ## Content Listing Contract
 
 - Endpoint: `GET /wp-json/abcnorio/v1/content-listing`.

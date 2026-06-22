@@ -127,11 +127,10 @@ final class ContentListingQuery
         $xpath = new \DOMXPath($dom);
 
         $root = $dom->getElementsByTagName('event-teaser')->item(0);
-        $article = $dom->getElementsByTagName('article')->item(0);
         $link = $dom->getElementsByTagName('a')->item(0);
         $title = $dom->getElementsByTagName('h3')->item(0);
 
-        if (! $root instanceof \DOMElement || ! $article instanceof \DOMElement || ! $link instanceof \DOMElement || ! $title instanceof \DOMElement) {
+        if (! $root instanceof \DOMElement || ! $link instanceof \DOMElement || ! $title instanceof \DOMElement) {
             throw new \RuntimeException('Components System Error: event-teaser fixture structure missing required nodes.');
         }
 
@@ -170,7 +169,7 @@ final class ContentListingQuery
         HtmlFragmentSupport::syncCardImage(
             $dom,
             $xpath,
-            $article,
+            $root,
             isset($item['featured_image']) && is_array($item['featured_image']) ? $item['featured_image'] : null,
             'content',
             null,
@@ -186,11 +185,10 @@ final class ContentListingQuery
         $xpath = new \DOMXPath($dom);
 
         $root = $dom->getElementsByTagName('article-teaser')->item(0);
-        $article = $dom->getElementsByTagName('article')->item(0);
         $link = $dom->getElementsByTagName('a')->item(0);
         $title = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " article-teaser__title ")]')->item(0);
 
-        if (! $root instanceof \DOMElement || ! $article instanceof \DOMElement || ! $link instanceof \DOMElement || ! $title instanceof \DOMElement) {
+        if (! $root instanceof \DOMElement || ! $link instanceof \DOMElement || ! $title instanceof \DOMElement) {
             throw new \RuntimeException('Components System Error: article-teaser fixture structure missing required nodes.');
         }
 
@@ -217,7 +215,7 @@ final class ContentListingQuery
         HtmlFragmentSupport::syncCardImage(
             $dom,
             $xpath,
-            $article,
+            $root,
             isset($item['featured_image']) && is_array($item['featured_image']) ? $item['featured_image'] : null,
             'article-teaser__content',
             'article-teaser__image',

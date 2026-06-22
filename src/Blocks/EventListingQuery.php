@@ -207,11 +207,10 @@ final class EventListingQuery
         $xpath = new \DOMXPath($dom);
 
         $root = $dom->getElementsByTagName('event-teaser')->item(0);
-        $article = $dom->getElementsByTagName('article')->item(0);
         $link = $dom->getElementsByTagName('a')->item(0);
         $title = $dom->getElementsByTagName('h3')->item(0);
 
-        if (! $root instanceof \DOMElement || ! $article instanceof \DOMElement || ! $link instanceof \DOMElement || ! $title instanceof \DOMElement) {
+        if (! $root instanceof \DOMElement || ! $link instanceof \DOMElement || ! $title instanceof \DOMElement) {
             throw new \RuntimeException('Components System Error: event-teaser fixture structure missing required nodes.');
         }
 
@@ -219,9 +218,9 @@ final class EventListingQuery
         $title->nodeValue = wp_strip_all_tags((string) $data['title']);
 
         if (! empty($data['isPastEvent'])) {
-            HtmlFragmentSupport::addClass($article, 'past');
+            HtmlFragmentSupport::addClass($root, 'past');
         } else {
-            HtmlFragmentSupport::removeClass($article, 'past');
+            HtmlFragmentSupport::removeClass($root, 'past');
         }
 
         $time = $dom->getElementsByTagName('time')->item(0);
@@ -246,7 +245,7 @@ final class EventListingQuery
         HtmlFragmentSupport::syncCardImage(
             $dom,
             $xpath,
-            $article,
+            $root,
             $data['image'],
             'content',
             null,

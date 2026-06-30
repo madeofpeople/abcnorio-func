@@ -23,7 +23,6 @@ final class ContentListingEndpoint
             'args'                => [
                 'post_types' => ['required' => false],
                 'tags'       => ['required' => false],
-                'time_filter'=> ['required' => false, 'default' => 'all'],
                 'count'      => ['required' => false, 'default' => self::DEFAULT_COUNT],
                 'order'      => ['required' => false, 'default' => 'desc'],
             ],
@@ -34,14 +33,28 @@ final class ContentListingEndpoint
     {
         $postTypes = self::resolvePostTypes($request->get_param('post_types'));
         $tags = self::parseList($request->get_param('tags'));
-        $timeFilter = self::resolveTimeFilter((string) $request->get_param('time_filter'));
         $count = self::resolveCount((int) $request->get_param('count'));
         $order = self::resolveOrder((string) $request->get_param('order'));
 
         $items = [];
 
         foreach ($postTypes as $postType) {
-            $query = new \WP_Query(self::buildQueryArgs($postType, $tags, $timeFilter, $count, $order));
+            $queryArgs = [
+                'post_type'           => $postType,
+                'post_status'         => 'publish',
+                'posts_per_page'      => $count,
+                'orderby'             => 'date',
+                'order'               => strtoupper($order),
+                'ignore_sticky_posts' => true,
+                'no_found_rows'       => true,
+            ];
+
+            $taxQuery = self::buildTagTaxQuery($postType, $tags);
+            if ($taxQuery !== []) {
+                $queryArgs['tax_query'] = $taxQuery;
+            }
+
+            $query = new \WP_Query($queryArgs);
 
             if (! $query->have_posts()) {
                 continue;
@@ -100,15 +113,6 @@ final class ContentListingEndpoint
         return array_values(array_filter(array_map(static fn (string $entry): string => sanitize_key($entry), explode(',', $raw))));
     }
 
-    private static function resolveTimeFilter(string $rawTimeFilter): string
-    {
-        $timeFilter = sanitize_key($rawTimeFilter);
-
-        return in_array($timeFilter, ['all', 'upcoming', 'past'], true)
-            ? $timeFilter
-            : 'all';
-    }
-
     private static function resolveCount(int $rawCount): int
     {
         if ($rawCount < 1) {
@@ -121,61 +125,6 @@ final class ContentListingEndpoint
     private static function resolveOrder(string $rawOrder): string
     {
         return strtolower(sanitize_key($rawOrder)) === 'asc' ? 'asc' : 'desc';
-    }
-
-    private static function buildQueryArgs(string $postType, array $tags, string $timeFilter, int $count, string $order): array
-    {
-        $args = [
-            'post_type'      => $postType,
-            'post_status'    => 'publish',
-            'posts_per_page' => $count,
-            'order'          => strtoupper($order),
-        ];
-
-        if ($postType === 'event') {
-            $args['meta_key'] = 'event_start_date';
-            $args['orderby'] = 'meta_value';
-            $args['meta_type'] = 'DATETIME';
-
-            $eventMetaQuery = self::buildEventMetaQuery($timeFilter);
-            if (! empty($eventMetaQuery)) {
-                $args['meta_query'] = $eventMetaQuery;
-            }
-        } else {
-            $args['orderby'] = 'date';
-        }
-
-        $tagTaxQuery = self::buildTagTaxQuery($postType, $tags);
-        if (! empty($tagTaxQuery)) {
-            $args['tax_query'] = $tagTaxQuery;
-        }
-
-        return $args;
-    }
-
-    private static function buildEventMetaQuery(string $timeFilter): array
-    {
-        $now = wp_date('Y-m-d H:i:s');
-
-        if ($timeFilter === 'upcoming') {
-            return [[
-                'key'     => 'event_effective_end',
-                'value'   => $now,
-                'compare' => '>=',
-                'type'    => 'DATETIME',
-            ]];
-        }
-
-        if ($timeFilter === 'past') {
-            return [[
-                'key'     => 'event_effective_end',
-                'value'   => $now,
-                'compare' => '<',
-                'type'    => 'DATETIME',
-            ]];
-        }
-
-        return [];
     }
 
     private static function buildTagTaxQuery(string $postType, array $tags): array

@@ -33,5 +33,4 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 - Endpoint: `GET /wp-json/abcnorio/v1/content-listing`.
 - Allowed `post_types[]` are strict and backend-limited to `event` and `article`.
 - `count` is backend-capped at `50`.
-- `time_filter` supports `all`, `upcoming`, `past` (event filtering uses `event_effective_end`).
 - `tags[]` maps to `event_tag` for events and `post_tag` for articles (when taxonomy exists).

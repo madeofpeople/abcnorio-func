@@ -103,6 +103,8 @@ final class HtmlFragmentSupport
         $img->setAttribute('width', (string) ((int) ($image['width'] ?? 0)));
         $img->setAttribute('height', (string) ((int) ($image['height'] ?? 0)));
         $img->setAttribute('decoding', 'async');
+        // WordPress warns when lazy-loading is combined with high fetch priority.
+        $img->removeAttribute('fetchpriority');
         $img->setAttribute('loading', 'lazy');
 
         if (! empty($image['srcset'])) {

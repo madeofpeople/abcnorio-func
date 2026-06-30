@@ -27,6 +27,10 @@
     "itemCount": {
       "type": "number",
       "default": 6
+    },
+    "showCount": {
+      "type": "boolean",
+      "default": false
     }
   },
   "supports": {

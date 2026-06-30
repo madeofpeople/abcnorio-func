@@ -68,6 +68,7 @@ final class AllowedBlocks
             'core/html',
             'abcnorio/event-listing',
             'abcnorio/content-listing',
+            'abcnorio/collective-listing',
             
         ],
     ];

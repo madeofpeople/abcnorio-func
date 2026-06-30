@@ -11,6 +11,12 @@ final class ImageStyleRegistrar
             'crop' => false,
             'label' => 'ABC No Rio Card (353 wide)',
         ],
+        'abcnorio-collective-thumb' => [
+            'width' => 353,
+            'height' => 199,
+            'crop' => true,
+            'label' => 'ABC No Rio Card (353 wide)',
+        ],
         'abcnorio-large' => [
             'width' => 738,
             'height' => 9999,

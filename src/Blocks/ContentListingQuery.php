@@ -34,8 +34,9 @@ final class ContentListingQuery
 
         self::enqueueComponentAssets();
 
+        $showCount = ! empty($attributes['showCount']);
+
         $postTypes = self::normalizePostTypes($attributes['listingPostTypes'] ?? []);
-        $timeFilter = sanitize_key((string) ($attributes['listingTimeFilter'] ?? 'all'));
         $count = max(1, min(50, (int) ($attributes['listingCount'] ?? 5)));
         $order = strtolower(sanitize_key((string) ($attributes['order'] ?? 'desc'))) === 'asc' ? 'asc' : 'desc';
         $tags = self::normalizeTags($attributes['listingTagFilter'] ?? []);
@@ -43,7 +44,6 @@ final class ContentListingQuery
         $request = new \WP_REST_Request('GET', '/abcnorio/v1/content-listing');
         $request->set_param('post_types', $postTypes);
         $request->set_param('tags', $tags);
-        $request->set_param('time_filter', $timeFilter);
         $request->set_param('count', $count);
         $request->set_param('order', $order);
 
@@ -75,10 +75,10 @@ final class ContentListingQuery
             }
         }
 
-        return self::renderListingFromDist(count($items), $itemsHtml);
+        return self::renderListingFromDist(count($items), $itemsHtml, $showCount);
     }
 
-    private static function renderListingFromDist(int $totalItems, string $itemsHtml): string
+    private static function renderListingFromDist(int $totalItems, string $itemsHtml, bool $showCount): string
     {
         $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('content-listing.html'));
         $xpath = new \DOMXPath($dom);
@@ -91,19 +91,23 @@ final class ContentListingQuery
         HtmlFragmentSupport::addClass($listing, 'wp-block-abcnorio-content-listing');
 
         $countNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__count ")]')->item(0);
-        if (! $countNode instanceof \DOMElement) {
-            $countNode = $dom->createElement('p');
-            $countNode->setAttribute('class', 'content-listing__count');
-            $listing->insertBefore($countNode, $listing->firstChild);
+        if ($showCount) {
+            if (! $countNode instanceof \DOMElement) {
+                $countNode = $dom->createElement('p');
+                $countNode->setAttribute('class', 'content-listing__count');
+                $listing->insertBefore($countNode, $listing->firstChild);
+            }
+
+            $countNode->nodeValue = sprintf(
+                'Displaying %d %s.',
+                $totalItems,
+                $totalItems === 1 ? 'item' : 'items'
+            );
+        } elseif ($countNode instanceof \DOMElement) {
+            $countNode->parentNode?->removeChild($countNode);
         }
 
-        $countNode->nodeValue = sprintf(
-            'Displaying %d %s.',
-            $totalItems,
-            $totalItems === 1 ? 'item' : 'items'
-        );
-
-        $itemsNode = $dom->getElementById('content-listing-list');
+        $itemsNode = $dom->getElementById('teaser-list');
         if (! $itemsNode instanceof \DOMElement) {
             $itemsNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__items ")]')->item(0);
         }
@@ -151,15 +155,17 @@ final class ContentListingQuery
                     $timeLabel = wp_date('g:i A', $timestamp);
 
                     $time->setAttribute('datetime', $dateTime);
-                    $span = $time->getElementsByTagName('span')->item(0);
-                    if ($span instanceof \DOMElement) {
-                        while ($span->firstChild) {
-                            $span->removeChild($span->firstChild);
-                        }
-                        $span->appendChild($dom->createTextNode($dateLabel));
-                        $span->appendChild($dom->createElement('br'));
-                        $span->appendChild($dom->createTextNode('@ ' . $timeLabel));
+                    while ($time->firstChild) {
+                        $time->removeChild($time->firstChild);
                     }
+
+                    $dateSpan = $dom->createElement('span');
+                    $dateSpan->appendChild($dom->createTextNode(' ' . $dateLabel . ' '));
+                    $time->appendChild($dateSpan);
+
+                    $timeSpan = $dom->createElement('span');
+                    $timeSpan->appendChild($dom->createTextNode(' @ ' . $timeLabel));
+                    $time->appendChild($timeSpan);
                 }
             } else {
                 $time->parentNode?->removeChild($time);
@@ -171,8 +177,8 @@ final class ContentListingQuery
             $xpath,
             $root,
             isset($item['featured_image']) && is_array($item['featured_image']) ? $item['featured_image'] : null,
-            'content',
-            null,
+            'event-teaser__content',
+            'event-teaser__image',
             'event-teaser'
         );
 

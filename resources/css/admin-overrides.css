@@ -264,6 +264,11 @@ main button.alt {
 	color: var(--color-page-bg)
 }
 
+/* Disable pointer link activation inside block editor canvas preview. */
+.block-editor-iframe__body a {
+	pointer-events: none;
+}
+
 .search__field .wp-block-buttons>div>div:focus,
 .search__field .wp-block-buttons>div>div:hover,
 .search__field a.button:focus,

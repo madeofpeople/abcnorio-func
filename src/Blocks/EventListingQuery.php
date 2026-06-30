@@ -31,6 +31,8 @@ final class EventListingQuery
 
         self::enqueueComponentAssets();
 
+        $showCount = ! empty($attributes['showCount']);
+
         $dateFilter = sanitize_key((string) ($attributes['dateFilter'] ?? 'upcoming'));
         $order = strtoupper(sanitize_key((string) ($attributes['order'] ?? 'desc')));
         $itemCount = (int) ($attributes['itemCount'] ?? 6);
@@ -118,12 +120,16 @@ final class EventListingQuery
 
         wp_reset_postdata();
 
-        $count = (int) $query->found_posts;
-        $countLabel = sprintf(
-            'The current filters are displaying %d %s.',
-            $count,
-            $count === 1 ? 'event' : 'events'
-        );
+        $countLabel = null;
+
+        if ($showCount) {
+            $count = (int) $query->found_posts;
+            $countLabel = sprintf(
+                'The current filters are displaying %d %s.',
+                $count,
+                $count === 1 ? 'event' : 'events'
+            );
+        }
 
         return self::renderListingFromDist($countLabel, $itemsHtml);
     }
@@ -158,11 +164,11 @@ final class EventListingQuery
             'timeLabel'   => $timeLabel,
             'dateTime'    => $dateTime,
             'isPastEvent' => $isPast,
-            'image'       => self::getCardImageData($postId),
+            'featured_image' => self::getCardImageData($postId),
         ]);
     }
 
-    private static function renderListingFromDist(string $countLabel, string $itemsHtml): string
+    private static function renderListingFromDist(?string $countLabel, string $itemsHtml): string
     {
         $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('event-listing/empty.html'));
         $xpath = new \DOMXPath($dom);
@@ -178,18 +184,22 @@ final class EventListingQuery
         );
 
         $countNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " events__count ") or contains(concat(" ", normalize-space(@class), " "), " event-listing__count ")]')->item(0);
-        if (! $countNode instanceof \DOMElement) {
-            $countNode = $dom->createElement('p');
-            $countNode->setAttribute('class', 'event-listing__count events__count');
+        if ($countLabel !== null) {
+            if (! $countNode instanceof \DOMElement) {
+                $countNode = $dom->createElement('p');
+                $countNode->setAttribute('class', 'event-listing__count events__count');
 
-            $teaserListNode = $dom->getElementById('teaser-list');
-            if ($teaserListNode instanceof \DOMElement && $teaserListNode->parentNode === $listing) {
-                $listing->insertBefore($countNode, $teaserListNode);
-            } else {
-                $listing->appendChild($countNode);
+                $teaserListNode = $dom->getElementById('teaser-list');
+                if ($teaserListNode instanceof \DOMElement && $teaserListNode->parentNode === $listing) {
+                    $listing->insertBefore($countNode, $teaserListNode);
+                } else {
+                    $listing->appendChild($countNode);
+                }
             }
+            $countNode->nodeValue = $countLabel;
+        } elseif ($countNode instanceof \DOMElement) {
+            $countNode->parentNode?->removeChild($countNode);
         }
-        $countNode->nodeValue = $countLabel;
 
         $teaserList = $dom->getElementById('teaser-list');
         if (! $teaserList instanceof \DOMElement) {
@@ -227,16 +237,17 @@ final class EventListingQuery
         if ($time instanceof \DOMElement) {
             if ($data['dateLabel'] !== '' || $data['timeLabel'] !== '') {
                 $time->setAttribute('datetime', (string) $data['dateTime']);
-                $span = $time->getElementsByTagName('span')->item(0);
-                if ($span instanceof \DOMElement) {
-                    while ($span->firstChild) {
-                        $span->removeChild($span->firstChild);
-                    }
-
-                    $span->appendChild($dom->createTextNode((string) $data['dateLabel']));
-                    $span->appendChild($dom->createElement('br'));
-                    $span->appendChild($dom->createTextNode('@ ' . (string) $data['timeLabel']));
+                while ($time->firstChild) {
+                    $time->removeChild($time->firstChild);
                 }
+
+                $dateSpan = $dom->createElement('span');
+                $dateSpan->appendChild($dom->createTextNode(' ' . (string) $data['dateLabel'] . ' '));
+                $time->appendChild($dateSpan);
+
+                $timeSpan = $dom->createElement('span');
+                $timeSpan->appendChild($dom->createTextNode(' @ ' . (string) $data['timeLabel']));
+                $time->appendChild($timeSpan);
             } else {
                 $time->parentNode?->removeChild($time);
             }
@@ -246,9 +257,9 @@ final class EventListingQuery
             $dom,
             $xpath,
             $root,
-            $data['image'],
-            'content',
-            null,
+            isset($data['featured_image']) && is_array($data['featured_image']) ? $data['featured_image'] : null,
+            'event-teaser__content',
+            'event-teaser__image',
             'event-teaser'
         );
 

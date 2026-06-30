@@ -48,8 +48,16 @@ class ComponentIngestor {
     public static function runtimeCssUrl(): string {
         $shared_css = self::load()['shared']['css'] ?? [];
 
-        if (!is_array($shared_css) || empty($shared_css) || !is_string($shared_css[0])) {
+        if (!is_array($shared_css)) {
             throw new \RuntimeException("Components System Error: shared.css missing in manifest.");
+        }
+
+        if (empty($shared_css)) {
+            $shared_css = ['styles/component-fixtures.css'];
+        }
+
+        if (!is_string($shared_css[0]) || $shared_css[0] === '') {
+            throw new \RuntimeException("Components System Error: shared.css entry is invalid.");
         }
 
         $runtime_css_path = self::distDir() . '/' . ltrim($shared_css[0], '/');
@@ -65,6 +73,10 @@ class ComponentIngestor {
 
         if (!is_array($shared_css)) {
             throw new \RuntimeException("Components System Error: shared.css must be an array.");
+        }
+
+        if (empty($shared_css)) {
+            $shared_css = ['styles/component-fixtures.css'];
         }
 
         foreach ($shared_css as $index => $relative_path) {

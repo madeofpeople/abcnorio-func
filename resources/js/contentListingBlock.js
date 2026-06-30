@@ -3,12 +3,6 @@ import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { CheckboxControl, PanelBody, RangeControl, SelectControl, TextControl } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 
-const TIME_FILTER_OPTIONS = [
-    { label: 'All time', value: 'all' },
-    { label: 'Upcoming', value: 'upcoming' },
-    { label: 'Past', value: 'past' },
-];
-
 const ORDER_OPTIONS = [
     { label: 'Descending', value: 'desc' },
     { label: 'Ascending', value: 'asc' },
@@ -63,12 +57,6 @@ registerBlockType('abcnorio/content-listing', {
                                         .filter(Boolean),
                                 })
                             }
-                        />
-                        <SelectControl
-                            label="Time Filter"
-                            value={attributes.listingTimeFilter || 'all'}
-                            options={TIME_FILTER_OPTIONS}
-                            onChange={(value) => setAttributes({ listingTimeFilter: value })}
                         />
                         <SelectControl
                             label="Sort Order"

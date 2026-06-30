@@ -3,6 +3,7 @@ import { useEffect } from '@wordpress/element';
 import { subscribe, select, dispatch } from '@wordpress/data';
 import './contentListingBlock';
 import './eventListingBlock';
+import './collectiveListingBlock';
 
 const LINK_SELECTORS = [
     '.editor-post-preview',
@@ -14,6 +15,7 @@ const LINK_SELECTORS = [
 
 const SIDEBAR_SCOPE_TAXONOMY_KEYS = [ 'sidebar_scope', 'sidebar-scopes' ];
 const SIDEBAR_SCOPE_POST_TYPES = [ 'event', 'collective', 'article', 'page', 'sidebar' ];
+const EDITOR_CANVAS_BODY_CLASS = 'block-editor-iframe__body';
 
 function enforceNewTabLinks() {
     document.querySelectorAll( LINK_SELECTORS ).forEach( ( link ) => {
@@ -39,6 +41,107 @@ function OpenLinksInNewTab() {
     return null;
 }
 registerPlugin( 'abcnorio-open-links-new-tab', { render: OpenLinksInNewTab } );
+
+function PreventBlockPreviewNavigation() {
+    useEffect( () => {
+        const watchedDocuments = new WeakSet();
+        const detachHandlers = [];
+        const watchedIframes = new WeakSet();
+
+        const findAnchor = ( event ) => {
+            if ( event.target instanceof HTMLAnchorElement ) {
+                return event.target;
+            }
+
+            if ( event.target instanceof Element ) {
+                return event.target.closest( 'a' );
+            }
+
+            if ( event.target instanceof Node && event.target.parentElement ) {
+                return event.target.parentElement.closest( 'a' );
+            }
+
+            return null;
+        };
+
+        const isInEditorCanvasDocument = ( targetDocument ) => {
+            return Boolean( targetDocument?.body?.classList?.contains( EDITOR_CANVAS_BODY_CLASS ) );
+        };
+
+        const onKeyDown = ( event ) => {
+            if ( event.key !== 'Enter' && event.key !== ' ' ) {
+                return;
+            }
+
+            if ( ! isInEditorCanvasDocument( event.currentTarget ) ) {
+                return;
+            }
+
+            const link = findAnchor( event );
+            if ( ! ( link instanceof HTMLAnchorElement ) ) {
+                return;
+            }
+
+            event.preventDefault();
+        };
+
+        const attachToDocument = ( targetDocument ) => {
+            if ( ! targetDocument || watchedDocuments.has( targetDocument ) ) {
+                return;
+            }
+
+            watchedDocuments.add( targetDocument );
+            targetDocument.addEventListener( 'keydown', onKeyDown, true );
+            detachHandlers.push( () => targetDocument.removeEventListener( 'keydown', onKeyDown, true ) );
+        };
+
+        const attachToIframe = ( iframe ) => {
+            if ( ! ( iframe instanceof HTMLIFrameElement ) ) {
+                return;
+            }
+
+            const attachIframeDocument = () => {
+                try {
+                    attachToDocument( iframe.contentDocument );
+                } catch ( error ) {
+                    // Ignore cross-origin frames in admin context.
+                }
+            };
+
+            if ( ! watchedIframes.has( iframe ) ) {
+                watchedIframes.add( iframe );
+                iframe.addEventListener( 'load', attachIframeDocument );
+                detachHandlers.push( () => iframe.removeEventListener( 'load', attachIframeDocument ) );
+            }
+
+            attachIframeDocument();
+        };
+
+        const scanIframes = () => {
+            document.querySelectorAll( 'iframe' ).forEach( ( iframe ) => {
+                attachToIframe( iframe );
+            } );
+        };
+
+        attachToDocument( document );
+        scanIframes();
+
+        const observer = new MutationObserver( () => {
+            scanIframes();
+        } );
+
+        observer.observe( document.body, { childList: true, subtree: true } );
+
+        return () => {
+            observer.disconnect();
+            detachHandlers.forEach( ( detach ) => detach() );
+        };
+    }, [] );
+
+    return null;
+}
+
+registerPlugin( 'abcnorio-prevent-preview-navigation', { render: PreventBlockPreviewNavigation } );
 
 function SidebarScopeSingleSelectGuard() {
     useEffect( () => {

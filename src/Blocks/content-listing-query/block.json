@@ -5,7 +5,7 @@
   "title": "Content Listing Block",
   "category": "widgets",
   "icon": "list-view",
-  "description": "Lists event and article content matching configured criteria.",
+  "description": "Lists N events and articles matching configured criteria.",
   "keywords": ["content", "listing", "abcnorio"],
   "attributes": {
     "listingPostTypes": {
@@ -22,17 +22,17 @@
         "type": "string"
       }
     },
-    "listingTimeFilter": {
-      "type": "string",
-      "default": "all"
-    },
     "listingCount": {
       "type": "number",
-      "default": 5
+      "default": 6
     },
     "order": {
       "type": "string",
       "default": "desc"
+    },
+    "showCount": {
+      "type": "boolean",
+      "default": false
     }
   },
   "supports": {

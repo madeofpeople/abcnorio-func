@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "abcnorio/collective-listing",
+  "title": "Collective Listing Block",
+  "category": "widgets",
+  "icon": "calendar-alt",
+  "description": "Lists collective.",
+  "keywords": ["collectives", "listing", "abcnorio"],
+  "attributes": {
+    "dateFilter": {
+      "type": "string",
+      "default": "upcoming"
+    },
+    "order": {
+      "type": "string",
+      "default": "desc"
+    },
+    "sortOrderSlugs": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "supports": {
+    "align": false,
+    "html": false
+  }
+}

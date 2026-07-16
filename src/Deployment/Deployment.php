@@ -40,8 +40,15 @@ final class Deployment
         add_action('wp_ajax_abcnorio_poll_pull_from_staging_status', [DeploymentActions::class, 'pollPullFromStagingStatus']);
         add_action('wp_ajax_abcnorio_copy_media_to_staging', [DeploymentActions::class, 'copyMediaToStaging']);
         add_action('wp_ajax_abcnorio_poll_copy_media_to_staging_status', [DeploymentActions::class, 'pollCopyMediaToStagingStatus']);
+        add_action('wp_ajax_abcnorio_backup_media_dev', [DeploymentActions::class, 'backupMediaDev']);
+        add_action('wp_ajax_abcnorio_poll_backup_media_dev_status', [DeploymentActions::class, 'pollBackupMediaDevStatus']);
+        add_action('wp_ajax_abcnorio_backup_media_staging', [DeploymentActions::class, 'backupMediaStaging']);
+        add_action('wp_ajax_abcnorio_poll_backup_media_staging_status', [DeploymentActions::class, 'pollBackupMediaStagingStatus']);
         add_action('wp_ajax_abcnorio_pull_from_dev', [DeploymentActions::class, 'pullFromDev']);
         add_action('wp_ajax_abcnorio_poll_pull_from_dev_status', [DeploymentActions::class, 'pollPullFromDevStatus']);
+        add_action('wp_ajax_abcnorio_list_media_backups', [DeploymentActions::class, 'listMediaBackups']);
+        add_action('wp_ajax_abcnorio_delete_media_backup', [DeploymentActions::class, 'deleteMediaBackup']);
+        add_action('wp_ajax_abcnorio_download_media_backup', [DeploymentActions::class, 'downloadMediaBackup']);
         add_action('wp_ajax_abcnorio_download_backup', [DeploymentActions::class, 'downloadBackup']);
         add_action('wp_ajax_abcnorio_restore_backup', [DeploymentActions::class, 'restoreBackup']);
     }

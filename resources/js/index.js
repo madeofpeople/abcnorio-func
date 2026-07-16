@@ -4,6 +4,8 @@ import { subscribe, select, dispatch } from '@wordpress/data';
 import './contentListingBlock';
 import './eventListingBlock';
 import './collectiveListingBlock';
+import './announcementToutBlock';
+import './sidebarToutBlock';
 
 const LINK_SELECTORS = [
     '.editor-post-preview',

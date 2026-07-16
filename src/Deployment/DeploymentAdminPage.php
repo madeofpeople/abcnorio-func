@@ -114,6 +114,13 @@ final class DeploymentAdminPage
             'pollPullFromStagingNonce'             => wp_create_nonce('abcnorio_poll_pull_from_staging_status'),
             'copyMediaToStagingNonce'              => wp_create_nonce('abcnorio_copy_media_to_staging'),
             'pollCopyMediaToStagingNonce'          => wp_create_nonce('abcnorio_poll_copy_media_to_staging_status'),
+            'backupMediaDevNonce'                  => wp_create_nonce('abcnorio_backup_media_dev'),
+            'pollBackupMediaDevNonce'              => wp_create_nonce('abcnorio_poll_backup_media_dev_status'),
+            'backupMediaStagingNonce'              => wp_create_nonce('abcnorio_backup_media_staging'),
+            'pollBackupMediaStagingNonce'          => wp_create_nonce('abcnorio_poll_backup_media_staging_status'),
+            'listMediaBackupsNonce'                => wp_create_nonce('abcnorio_list_media_backups'),
+            'deleteMediaBackupNonce'               => wp_create_nonce('abcnorio_delete_media_backup'),
+            'downloadMediaBackupNonce'             => wp_create_nonce('abcnorio_download_media_backup'),
             'pullFromDevNonce'                     => wp_create_nonce('abcnorio_pull_from_dev'),
             'pollPullFromDevNonce'                 => wp_create_nonce('abcnorio_poll_pull_from_dev_status'),
             'targets'                  => $view['targets'],
@@ -139,7 +146,6 @@ final class DeploymentAdminPage
             $activeTab = 'staging';
         }
 
-        $backupDownloadNonce = wp_create_nonce('abcnorio_download_backup');
         $backupRestoreNonce = wp_create_nonce('abcnorio_restore_backup');
         ?>
         <div class="wrap">
@@ -191,12 +197,12 @@ final class DeploymentAdminPage
                     <span class="js-push-status" style="color: #666; display: block; margin-bottom: 0.5rem;"></span>
                     <button
                         class="button button-primary js-push-to-staging"
-                        data-label="<?php esc_attr_e('Push Code to Staging', 'abcnorio-func'); ?>"
+                        data-label="<?php esc_attr_e('Push Staging Branch to Staging', 'abcnorio-func'); ?>"
                     >
-                        <?php esc_html_e('Push Code to Staging', 'abcnorio-func'); ?>
+                        <?php esc_html_e('Push Staging Branch to Staging', 'abcnorio-func'); ?>
                     </button>
                     <p style="margin: 0.75rem 0 0; color: #666; font-size: 0.875em;">
-                        <em><?php esc_html_e('Copies dev source to staging. Staging frontend picks up changes via HMR. Restart astro-staging if package.json changed.', 'abcnorio-func'); ?></em>
+                        <em><?php esc_html_e('Deploys the current site-dev staging branch head commit to staging and reports the deployed SHA.', 'abcnorio-func'); ?></em>
                     </p>
                 </div>
                 <div style="margin-top: 1.5rem;">
@@ -223,6 +229,25 @@ final class DeploymentAdminPage
                         <em><?php esc_html_e('Syncs dev WordPress uploads to staging. Existing staging media is overwritten.', 'abcnorio-func'); ?></em>
                     </p>
                 </div>
+                <div style="margin-top: 1.5rem;">
+                    <span class="js-backup-media-dev-status" style="color: #666; display: block; margin-bottom: 0.5rem;"></span>
+                    <button
+                        class="button button-primary js-backup-media-dev"
+                        data-label="<?php esc_attr_e('Backup Dev Media', 'abcnorio-func'); ?>"
+                    >
+                        <?php esc_html_e('Backup Dev Media', 'abcnorio-func'); ?>
+                    </button>
+                    <p style="margin: 0.75rem 0 0; color: #666; font-size: 0.875em;">
+                        <em><?php esc_html_e('Creates a timestamped zip archive of dev uploads in build-archives.', 'abcnorio-func'); ?></em>
+                    </p>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <strong><?php esc_html_e('Recent Dev Media Backups', 'abcnorio-func'); ?></strong>
+                    <p class="js-media-backup-empty" data-env="dev" style="margin: 0.5rem 0 0; color: #666;">
+                        <?php esc_html_e('No media backups found yet.', 'abcnorio-func'); ?>
+                    </p>
+                    <ul class="js-media-backup-list" data-env="dev" style="margin-top: 0.5rem;"></ul>
+                </div>
                 <?php endif; ?>
                 <?php if ($env === 'staging') : ?>
                 <div style="margin-top: 1.5rem;">
@@ -248,6 +273,25 @@ final class DeploymentAdminPage
                     <p style="margin: 0.75rem 0 0; color: #666; font-size: 0.875em;">
                         <em><?php esc_html_e('Syncs staging WordPress uploads to dev. Existing dev media is overwritten.', 'abcnorio-func'); ?></em>
                     </p>
+                </div>
+                <div style="margin-top: 1.5rem;">
+                    <span class="js-backup-media-staging-status" style="color: #666; display: block; margin-bottom: 0.5rem;"></span>
+                    <button
+                        class="button button-primary js-backup-media-staging"
+                        data-label="<?php esc_attr_e('Backup Staging Media', 'abcnorio-func'); ?>"
+                    >
+                        <?php esc_html_e('Backup Staging Media', 'abcnorio-func'); ?>
+                    </button>
+                    <p style="margin: 0.75rem 0 0; color: #666; font-size: 0.875em;">
+                        <em><?php esc_html_e('Creates a timestamped zip archive of staging uploads in build-archives.', 'abcnorio-func'); ?></em>
+                    </p>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <strong><?php esc_html_e('Recent Staging Media Backups', 'abcnorio-func'); ?></strong>
+                    <p class="js-media-backup-empty" data-env="staging" style="margin: 0.5rem 0 0; color: #666;">
+                        <?php esc_html_e('No media backups found yet.', 'abcnorio-func'); ?>
+                    </p>
+                    <ul class="js-media-backup-list" data-env="staging" style="margin-top: 0.5rem;"></ul>
                 </div>
                 <?php endif; ?>
             </div>
@@ -313,12 +357,7 @@ final class DeploymentAdminPage
                                         <span class="backup-item-name"><?php echo esc_html($backup['name']); ?></span>
                                         <span style="margin-left: 0.5rem; display: inline-flex; gap: 0.5rem;">
                                         <a
-                                            href="<?php echo esc_url(add_query_arg([
-                                                'action' => 'abcnorio_download_backup',
-                                                'env' => 'production',
-                                                'nonce' => $backupDownloadNonce,
-                                                'file' => rawurlencode($backup['name']),
-                                            ], admin_url('admin-ajax.php'))); ?>"
+                                            href="<?php echo esc_url('/app/backups/static-backup/' . rawurlencode($backup['name'])); ?>"
                                             class="button button-secondary button-small"
                                         >
                                             <?php esc_html_e('Download', 'abcnorio-func'); ?>

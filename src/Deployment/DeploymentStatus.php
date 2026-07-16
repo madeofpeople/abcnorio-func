@@ -4,6 +4,17 @@ namespace abcnorio\CustomFunc\Deployment;
 
 final class DeploymentStatus
 {
+    public static function baseArchiveDir(): string
+    {
+        $configured = trim((string) (getenv('ASTRO_BUILD_ARCHIVE_DIR') ?: ''));
+        if ($configured !== '') {
+            return rtrim($configured, '/');
+        }
+
+        $workspaceRoot = dirname(ABCNORIO_CUSTOM_FUNC_FILE, 4);
+        return rtrim($workspaceRoot, '/') . '/astro/site/build-archives';
+    }
+
     /**
      * @return array<int, array{name: string, mtime: int}>
      */
@@ -45,19 +56,36 @@ final class DeploymentStatus
 
     public static function backupArchiveDir(): string
     {
-        $configured = trim((string) (getenv('ASTRO_BUILD_ARCHIVE_DIR') ?: ''));
+        $configured = trim((string) (getenv('ASTRO_BUILD_STATIC_ARCHIVE_DIR') ?: ''));
         if ($configured !== '') {
             return rtrim($configured, '/');
         }
 
-        $workspaceRoot = dirname(ABCNORIO_CUSTOM_FUNC_FILE, 4);
-        return rtrim($workspaceRoot, '/') . '/astro/site/build-archives';
+        if (is_dir('/app/backups/static-backup')) {
+            return '/app/backups/static-backup';
+        }
+
+        return self::baseArchiveDir() . '/static-backup';
+    }
+
+    public static function mediaArchiveDir(): string
+    {
+        $configured = trim((string) (getenv('ASTRO_BUILD_MEDIA_ARCHIVE_DIR') ?: ''));
+        if ($configured !== '') {
+            return rtrim($configured, '/');
+        }
+
+        if (is_dir('/app/backups/media')) {
+            return '/app/backups/media';
+        }
+
+        return self::baseArchiveDir() . '/media';
     }
 
     public static function deploymentStatusPath(): string
     {
         $configured = trim((string) (getenv('ASTRO_DEPLOYMENT_STATUS_FILE') ?: ''));
-        return $configured !== '' ? $configured : self::backupArchiveDir() . '/deployment-status.json';
+        return $configured !== '' ? $configured : self::baseArchiveDir() . '/deployment-status.json';
     }
 
     /**
@@ -109,17 +137,7 @@ final class DeploymentStatus
      */
     public static function backupNamesForEnv(string $env): array
     {
-        $status = self::read();
-        if (!$status['ok'] && $env !== 'production') {
-            return ['ok' => false, 'message' => $status['message'], 'names' => []];
-        }
-
-        $envStatus = $status['ok'] ? ($status['status']['envs'][$env] ?? null) : null;
-        $backups = (is_array($envStatus) && isset($envStatus['backups']) && is_array($envStatus['backups']))
-            ? $envStatus['backups']
-            : [];
-
-        if ($backups === [] && $env === 'production') {
+        if ($env === 'production') {
             $fallback = self::listProductionBackupsFromArchiveDir();
             return [
                 'ok' => true,
@@ -127,6 +145,16 @@ final class DeploymentStatus
                 'names' => array_map(static fn(array $entry): string => $entry['name'], $fallback),
             ];
         }
+
+        $status = self::read();
+        if (!$status['ok']) {
+            return ['ok' => false, 'message' => $status['message'], 'names' => []];
+        }
+
+        $envStatus = $status['ok'] ? ($status['status']['envs'][$env] ?? null) : null;
+        $backups = (is_array($envStatus) && isset($envStatus['backups']) && is_array($envStatus['backups']))
+            ? $envStatus['backups']
+            : [];
 
         if ($backups === []) {
             return [
@@ -200,11 +228,52 @@ final class DeploymentStatus
      */
     public static function normalizeProductionBackups(string $env, $envStatus): array
     {
-        $normalized = self::normalizeBackups($envStatus);
-        if ($normalized !== [] || $env !== 'production') {
-            return $normalized;
+        if ($env === 'production') {
+            return self::listProductionBackupsFromArchiveDir();
         }
 
-        return self::listProductionBackupsFromArchiveDir();
+        return self::normalizeBackups($envStatus);
+    }
+
+    /**
+     * @return array<int, array{name: string, mtime: int}>
+     */
+    public static function listMediaBackups(string $env): array
+    {
+        if (!in_array($env, ['dev', 'staging'], true)) {
+            return [];
+        }
+
+        $archiveDir = self::mediaArchiveDir();
+        if (!is_dir($archiveDir) || !is_readable($archiveDir)) {
+            return [];
+        }
+
+        $entries = scandir($archiveDir);
+        if (!is_array($entries)) {
+            return [];
+        }
+
+        $pattern = '/^abcnorio-media-' . preg_quote($env, '/') . '-.+\\.zip$/';
+        $out = [];
+        foreach ($entries as $name) {
+            if (!is_string($name) || $name === '' || $name === '.' || $name === '..') {
+                continue;
+            }
+            if (!preg_match($pattern, $name)) {
+                continue;
+            }
+
+            $fullPath = $archiveDir . '/' . $name;
+            if (!is_file($fullPath)) {
+                continue;
+            }
+
+            $mtime = filemtime($fullPath);
+            $out[] = ['name' => $name, 'mtime' => is_int($mtime) ? $mtime : 0];
+        }
+
+        usort($out, static fn(array $a, array $b): int => $b['mtime'] <=> $a['mtime']);
+        return $out;
     }
 }

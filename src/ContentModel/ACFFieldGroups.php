@@ -98,6 +98,13 @@ final class ACFFieldGroups
                     'default_value' => '',
                     'placeholder'   => 'https://example.com/tickets',
                 ],
+                [
+                    'key'           => 'field_event_tickets_cta',
+                    'name'          => 'tickets-cta',
+                    'label'         => __('Tickets CTA', 'abcnorio-func'),
+                    'type'          => 'text',
+                    'default_value' => 'Get tickets',
+                ],
             ],
         ]);
     }
@@ -120,15 +127,15 @@ final class ACFFieldGroups
             ],
             'fields' => [
                 [
-                    'key'             => 'field_article_date',
-                    'name'            => 'item_date',
+                    'key'             => 'article_date',
+                    'name'            => 'article_date',
                     'label'           => __('Date', 'abcnorio-func'),
                     'type'            => 'date_picker',
                     'display_format'  => 'd/m/Y',
                     'return_format'   => 'Y-m-d',
                     'first_day'       => 1,
                     'required'        => 1,
-                    'validation_message' => __('Please update Article Details -> Date (item_date).', 'abcnorio-func'),
+                    'validation_message' => __('Please update Article Details -> Date (article_date).', 'abcnorio-func'),
                 ],
             ],
         ]);

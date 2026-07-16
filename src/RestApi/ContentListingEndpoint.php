@@ -25,6 +25,7 @@ final class ContentListingEndpoint
                 'tags'       => ['required' => false],
                 'count'      => ['required' => false, 'default' => self::DEFAULT_COUNT],
                 'order'      => ['required' => false, 'default' => 'desc'],
+                'orderIds'   => ['required' => false],
             ],
         ]);
     }
@@ -35,6 +36,7 @@ final class ContentListingEndpoint
         $tags = self::parseList($request->get_param('tags'));
         $count = self::resolveCount((int) $request->get_param('count'));
         $order = self::resolveOrder((string) $request->get_param('order'));
+        $orderIds = self::parseIds($request->get_param('orderIds'));
 
         $items = [];
 
@@ -76,6 +78,10 @@ final class ContentListingEndpoint
 
             return $right['_sort_ts'] <=> $left['_sort_ts'];
         });
+
+        if ($orderIds !== []) {
+            $items = self::applyManualOrder($items, $orderIds);
+        }
 
         $items = array_slice($items, 0, $count);
 
@@ -127,6 +133,66 @@ final class ContentListingEndpoint
         return strtolower(sanitize_key($rawOrder)) === 'asc' ? 'asc' : 'desc';
     }
 
+    private static function parseIds($raw): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $normalized = [];
+        $seen = [];
+
+        foreach ($raw as $value) {
+            $id = absint($value);
+            if ($id < 1 || isset($seen[$id])) {
+                continue;
+            }
+
+            $seen[$id] = true;
+            $normalized[] = $id;
+        }
+
+        return $normalized;
+    }
+
+    private static function applyManualOrder(array $items, array $orderIds): array
+    {
+        if ($orderIds === []) {
+            return $items;
+        }
+
+        $itemsById = [];
+        foreach ($items as $item) {
+            $id = absint($item['id'] ?? 0);
+            if ($id > 0) {
+                $itemsById[$id] = $item;
+            }
+        }
+
+        $ordered = [];
+        $usedIds = [];
+
+        foreach ($orderIds as $id) {
+            if (! isset($itemsById[$id])) {
+                continue;
+            }
+
+            $ordered[] = $itemsById[$id];
+            $usedIds[$id] = true;
+        }
+
+        foreach ($items as $item) {
+            $id = absint($item['id'] ?? 0);
+            if ($id > 0 && isset($usedIds[$id])) {
+                continue;
+            }
+
+            $ordered[] = $item;
+        }
+
+        return $ordered;
+    }
+
     private static function buildTagTaxQuery(string $postType, array $tags): array
     {
         if (empty($tags)) {
@@ -154,6 +220,8 @@ final class ContentListingEndpoint
 
     private static function mapItem(\WP_Post $post): array
     {
+        $articleDate = self::normalizeArticleDate((string) get_post_meta($post->ID, 'article_date', true));
+
         $item = [
             'id'        => (int) $post->ID,
             'post_type' => (string) $post->post_type,
@@ -174,9 +242,9 @@ final class ContentListingEndpoint
                 ?? 0;
         } else {
             $item['acf'] = [
-                'item_date' => (string) get_post_meta($post->ID, 'item_date', true),
+                'article_date' => $articleDate,
             ];
-            $item['_sort_ts'] = self::toTimestamp((string) $item['acf']['item_date'])
+            $item['_sort_ts'] = self::toTimestamp((string) $item['acf']['article_date'])
                 ?? self::toTimestamp((string) $item['date'])
                 ?? 0;
         }
@@ -220,5 +288,23 @@ final class ContentListingEndpoint
         $timestamp = strtotime($raw);
 
         return $timestamp === false ? null : $timestamp;
+    }
+
+    private static function normalizeArticleDate(string $raw): string
+    {
+        $value = trim($raw);
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $matches) === 1) {
+            return $matches[0];
+        }
+
+        if (preg_match('/^(\d{4})(\d{2})(\d{2})$/', $value, $matches) === 1) {
+            return sprintf('%s-%s-%s', $matches[1], $matches[2], $matches[3]);
+        }
+
+        return '';
     }
 }

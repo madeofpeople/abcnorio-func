@@ -31,11 +31,9 @@ final class CollectiveListingQuery
 
         self::enqueueComponentAssets();
 
-        $order = strtoupper(sanitize_key((string) ($attributes['order'] ?? 'desc')));
-
-        if ($order !== 'ASC' && $order !== 'DESC') {
-            $order = 'DESC';
-        }
+        $orderMode = strtolower(sanitize_key((string) ($attributes['order'] ?? 'desc')));
+        $order = $orderMode === 'asc' ? 'ASC' : 'DESC';
+        $isManualOrder = $orderMode === 'manual';
 
         $queryArgs = [
             'post_type'      => 'collective',
@@ -48,7 +46,9 @@ final class CollectiveListingQuery
         ];
 
         $query = new \WP_Query($queryArgs);
-        $sortOrderSlugs = self::normalizeSortOrderSlugs($attributes['sortOrderSlugs'] ?? []);
+        $sortOrderSlugs = $isManualOrder
+            ? self::filterCanonicalSortOrderSlugs($attributes['sortOrderSlugs'] ?? [])
+            : [];
         $posts = self::orderPostsBySlug($query->posts, $sortOrderSlugs);
 
         $itemsHtml = '';
@@ -64,7 +64,7 @@ final class CollectiveListingQuery
         return self::renderListingFromDist(null, $itemsHtml);
     }
 
-    private static function normalizeSortOrderSlugs($rawSlugs): array
+    private static function filterCanonicalSortOrderSlugs($rawSlugs): array
     {
         if (! is_array($rawSlugs)) {
             return [];
@@ -78,8 +78,8 @@ final class CollectiveListingQuery
                 continue;
             }
 
-            $value = sanitize_title($slug);
-            if ($value === '' || isset($seen[$value])) {
+            $value = trim($slug);
+            if ($value === '' || sanitize_title($value) !== $value || isset($seen[$value])) {
                 continue;
             }
 
@@ -141,10 +141,12 @@ final class CollectiveListingQuery
         $postId = (int) $post->ID;
         $href = get_permalink($postId);
         $title = get_the_title($postId);
+        $excerpt = get_the_excerpt($postId);
 
         return self::renderCollectiveCardFromDist([
             'href'        => (string) $href,
             'title'       => (string) $title,
+            'excerpt'     => (string) $excerpt,
             'featured_image' => self::getCardImageData($postId),
         ]);
     }
@@ -207,6 +209,24 @@ final class CollectiveListingQuery
 
         $link->setAttribute('href', esc_url($data['href']));
         $title->nodeValue = wp_strip_all_tags((string) $data['title']);
+
+        $excerpt = $xpath->query(
+            './/*[contains(concat(" ", normalize-space(@class), " "), " collective-teaser__excerpt ")]',
+            $root
+        )->item(0);
+
+        if ($excerpt instanceof \DOMElement) {
+            while ($excerpt->firstChild) {
+                $excerpt->removeChild($excerpt->firstChild);
+            }
+
+            HtmlFragmentSupport::appendHtmlFragment(
+                $dom,
+                $excerpt,
+                wp_kses_post((string) ($data['excerpt'] ?? '')),
+                'collective teaser excerpt'
+            );
+        }
 
         if (! empty($data['isPastCollective'])) {
             HtmlFragmentSupport::addClass($root, 'past');

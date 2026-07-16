@@ -30,9 +30,20 @@
       "type": "string",
       "default": "desc"
     },
+    "variant": {
+      "type": "string",
+      "default": "grid"
+    },
     "showCount": {
       "type": "boolean",
       "default": false
+    },
+    "sortOrderPostIds": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "number"
+      }
     }
   },
   "supports": {

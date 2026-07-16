@@ -21,6 +21,8 @@ use abcnorio\CustomFunc\Blocks\Patterns;
 use abcnorio\CustomFunc\Blocks\EventListingQuery;
 use abcnorio\CustomFunc\Blocks\ContentListingQuery;
 use abcnorio\CustomFunc\Blocks\CollectiveListingQuery;
+use abcnorio\CustomFunc\Blocks\AnnouncementTout;
+use abcnorio\CustomFunc\Blocks\SidebarTout;
 use abcnorio\CustomFunc\Dashboard\Dashboard;
 use abcnorio\CustomFunc\Components\ComponentIngestor;
 
@@ -46,6 +48,10 @@ final class Plugin
         ContentListingQuery::registerHooks();
         /*  Collective listing wordpress block */
         CollectiveListingQuery::registerHooks();
+        /*  Announcement tout wordpress block */
+        AnnouncementTout::registerHooks();
+        /*  Sidebar tout wordpress block */
+        SidebarTout::registerHooks();
         /*  Deployment dashboard */
         Deployment::registerHooks();
         /*  Allows advanced querying of Events */
@@ -92,23 +98,19 @@ final class Plugin
             if (!is_array($components)) {
                 throw new \RuntimeException('Components System Error: manifest.components must be an object.');
             }
-
-            $skipBlocks = [
-                'event-listing',
-                'content-listing',
-                'collective-listing',
-            ];
             
             // Automate asset handling based on compiled artifacts
             foreach (array_keys($components) as $component_name) {
-                if (in_array($component_name, $skipBlocks, true)) {
+                $block_name = "abcnorio/{$component_name}";
+
+                if (\WP_Block_Type_Registry::get_instance()->is_registered($block_name)) {
                     continue;
                 }
 
                 ComponentIngestor::register_block_assets($component_name);
                 
                 // Dynamically create the Gutenberg block type registration hook
-                register_block_type("abcnorio/{$component_name}", [
+                register_block_type($block_name, [
                     'render_callback' => function($attributes, $content) use ($component_name) {
                         return ComponentIngestor::render($component_name, $content);
                     }

@@ -4,6 +4,50 @@ namespace abcnorio\CustomFunc\Deployment;
 
 final class DeploymentActions
 {
+    /**
+     * @return array<int, array{name: string, mtime: int}>
+     */
+    private static function fetchMediaBackups(string $env): array
+    {
+        return DeploymentStatus::listMediaBackups($env);
+    }
+
+    private static function validateMediaEnv(string $env): string
+    {
+        if (!in_array($env, ['dev', 'staging'], true)) {
+            wp_die(__('Invalid media backup environment.', 'abcnorio-func'), 400);
+        }
+
+        return $env;
+    }
+
+    private static function resolveMediaBackupFile(string $requested, string $env): string
+    {
+        if ($requested === '') {
+            wp_die(__('Missing media backup file.', 'abcnorio-func'), 400);
+        }
+
+        $available = self::fetchMediaBackups($env);
+        $names = array_map(static fn(array $entry): string => $entry['name'], $available);
+        if (!in_array($requested, $names, true)) {
+            wp_die(__('Media backup file not found.', 'abcnorio-func'), 404);
+        }
+
+        $archiveDir = DeploymentStatus::mediaArchiveDir();
+        $archiveRealDir = realpath($archiveDir);
+        if ($archiveRealDir === false) {
+            wp_die(__('Media backup directory not found.', 'abcnorio-func'), 404);
+        }
+
+        $candidatePath = $archiveRealDir . '/' . $requested;
+        $realFile = realpath($candidatePath);
+        if ($realFile === false || strpos($realFile, $archiveRealDir . '/') !== 0 || !is_file($realFile)) {
+            wp_die(__('Media backup file not found.', 'abcnorio-func'), 404);
+        }
+
+        return $realFile;
+    }
+
     private static function resolveBackupFile(string $requested, string $env): string
     {
         if ($requested === '') {
@@ -205,7 +249,97 @@ final class DeploymentActions
         exit;
     }
 
-    private static function devToolPost(string $nonce, string $endpoint, string $verb): void
+    public static function listMediaBackups(): void
+    {
+        check_ajax_referer('abcnorio_list_media_backups', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $env = sanitize_key((string) ($_POST['env'] ?? ''));
+        if (!in_array($env, ['dev', 'staging'], true)) {
+            wp_send_json_error(['message' => 'Invalid media backup environment'], 400);
+        }
+
+        $backups = self::fetchMediaBackups($env);
+        wp_send_json_success(['env' => $env, 'backups' => $backups]);
+    }
+
+    public static function deleteMediaBackup(): void
+    {
+        check_ajax_referer('abcnorio_delete_media_backup', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $env = sanitize_key((string) ($_POST['env'] ?? ''));
+        if (!in_array($env, ['dev', 'staging'], true)) {
+            wp_send_json_error(['message' => 'Invalid media backup environment'], 400);
+        }
+
+        $file = sanitize_file_name((string) ($_POST['file'] ?? ''));
+        if ($file === '') {
+            wp_send_json_error(['message' => 'Missing media backup file'], 400);
+        }
+
+        // Backup mount in WP containers is read-only; delegate deletion to orchestrator.
+        $response = wp_remote_post(Deployment::orchestratorBaseUrl() . '/dev-tools/media-backups/delete', [
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . Deployment::orchestratorSecret(),
+            ],
+            'body' => wp_json_encode([
+                'target' => $env,
+                'file' => $file,
+            ]),
+            'timeout' => 10,
+        ]);
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(['message' => $response->get_error_message()], 502);
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        $body = json_decode((string) wp_remote_retrieve_body($response), true);
+        if ($code !== 200) {
+            $message = is_array($body) ? (string) ($body['message'] ?? $body['error'] ?? '') : '';
+            wp_send_json_error(['message' => $message !== '' ? $message : 'Delete failed'], $code > 0 ? $code : 502);
+        }
+
+        wp_send_json_success(['status' => 'deleted', 'env' => $env, 'file' => $file]);
+    }
+
+    public static function downloadMediaBackup(): void
+    {
+        $nonce = sanitize_text_field((string) ($_GET['nonce'] ?? ''));
+        if (!wp_verify_nonce($nonce, 'abcnorio_download_media_backup')) {
+            wp_die(__('Invalid request.', 'abcnorio-func'), 403);
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Insufficient permissions.', 'abcnorio-func'), 403);
+        }
+
+        $env = self::validateMediaEnv(sanitize_key((string) ($_GET['env'] ?? '')));
+        $file = sanitize_file_name((string) ($_GET['file'] ?? ''));
+        if ($file === '') {
+            wp_die(__('Missing media backup file.', 'abcnorio-func'), 400);
+        }
+
+        $realFile = self::resolveMediaBackupFile($file, $env);
+
+        nocache_headers();
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . basename($realFile) . '"');
+        header('Content-Length: ' . (string) filesize($realFile));
+        readfile($realFile);
+        exit;
+    }
+
+    private static function devToolPost(string $nonce, string $endpoint, string $verb, array $payload = []): void
     {
         check_ajax_referer($nonce, 'nonce');
 
@@ -213,10 +347,17 @@ final class DeploymentActions
             wp_send_json_error(['message' => 'Insufficient permissions'], 403);
         }
 
-        $response = wp_remote_post(Deployment::orchestratorBaseUrl() . $endpoint, [
+        $args = [
             'headers' => ['Authorization' => 'Bearer ' . Deployment::orchestratorSecret()],
             'timeout' => 10,
-        ]);
+        ];
+
+        if ($payload !== []) {
+            $args['headers']['Content-Type'] = 'application/json';
+            $args['body'] = wp_json_encode($payload);
+        }
+
+        $response = wp_remote_post(Deployment::orchestratorBaseUrl() . $endpoint, $args);
 
         if (is_wp_error($response)) {
             wp_send_json_error(['message' => $response->get_error_message()], 502);
@@ -297,6 +438,26 @@ final class DeploymentActions
     public static function pollCopyMediaToStagingStatus(): void
     {
         self::devToolPoll('abcnorio_poll_copy_media_to_staging_status', 'copyMediaToStagingFromDev');
+    }
+
+    public static function backupMediaDev(): void
+    {
+        self::devToolPost('abcnorio_backup_media_dev', '/dev-tools/backup-media-dev', 'backup');
+    }
+
+    public static function pollBackupMediaDevStatus(): void
+    {
+        self::devToolPoll('abcnorio_poll_backup_media_dev_status', 'backupMediaDev');
+    }
+
+    public static function backupMediaStaging(): void
+    {
+        self::devToolPost('abcnorio_backup_media_staging', '/dev-tools/backup-media-staging', 'backup');
+    }
+
+    public static function pollBackupMediaStagingStatus(): void
+    {
+        self::devToolPoll('abcnorio_poll_backup_media_staging_status', 'backupMediaStaging');
     }
 
     public static function pullFromDev(): void

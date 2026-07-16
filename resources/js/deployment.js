@@ -1,6 +1,6 @@
 /* global abcnorioDeployment */
 (function () {
-    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, copyMediaNonce, pollCopyMediaNonce, pullFromStagingNonce, pollPullFromStagingNonce, copyMediaToStagingNonce, pollCopyMediaToStagingNonce, pullFromDevNonce, pollPullFromDevNonce, targets = {} } = abcnorioDeployment;
+    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, copyMediaNonce, pollCopyMediaNonce, pullFromStagingNonce, pollPullFromStagingNonce, copyMediaToStagingNonce, pollCopyMediaToStagingNonce, backupMediaDevNonce, pollBackupMediaDevNonce, backupMediaStagingNonce, pollBackupMediaStagingNonce, listMediaBackupsNonce, deleteMediaBackupNonce, pullFromDevNonce, pollPullFromDevNonce, targets = {} } = abcnorioDeployment;
 
     let pollTimer = null;
     let buildStartTime = null;
@@ -96,6 +96,62 @@
 
         wrap.insertBefore(notice, wrap.firstChild);
         setTimeout(() => dismissNotice(notice), NOTICE_TIMEOUT_MS);
+    }
+
+    function escapeHtml(s) {
+        return String(s)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function mediaDownloadUrl(env, file) {
+        return '/app/backups/media/' + encodeURIComponent(file);
+    }
+
+    function renderMediaBackupList(env, backups) {
+        const list = document.querySelector('.js-media-backup-list[data-env="' + env + '"]');
+        const empty = document.querySelector('.js-media-backup-empty[data-env="' + env + '"]');
+        if (!list || !empty) return;
+
+        if (!Array.isArray(backups) || backups.length === 0) {
+            list.innerHTML = '';
+            empty.style.display = '';
+            return;
+        }
+
+        empty.style.display = 'none';
+        list.innerHTML = backups.map((b) => {
+            const name = escapeHtml(b.name || '');
+            const href = mediaDownloadUrl(env, b.name || '');
+            return '<li class="backup-item">'
+                + '<span class="backup-item-name">' + name + '</span>'
+                + '<span style="margin-left: 0.5rem; display: inline-flex; gap: 0.5rem;">'
+                + '<a href="' + href + '" class="button button-secondary button-small">Download</a>'
+                + '<button class="button button-small js-delete-media-backup" data-env="' + escapeHtml(env) + '" data-file="' + name + '">Delete</button>'
+                + '</span>'
+                + '</li>';
+        }).join('');
+    }
+
+    function refreshMediaBackupList(env) {
+        return fetch(ajaxUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+                action: 'abcnorio_list_media_backups',
+                nonce: listMediaBackupsNonce,
+                env,
+            }),
+        })
+            .then((r) => r.json())
+            .then((data) => {
+                if (!data.success) {
+                    throw new Error(data.data && data.data.message ? data.data.message : 'Could not load media backups.');
+                }
+                renderMediaBackupList(env, (data.data && data.data.backups) || []);
+            });
     }
 
     function redirectToDeploymentNotice(envKey, type = 'success', message = '') {
@@ -368,7 +424,7 @@
                 });
         });
     });    // --- Dev tools ---
-    function wireDevToolButton(selector, { statusClass, startingText, startAction, startNonce, pollAction, pollNonce: pollNonceVal, startErrPrefix, failPrefix }) {
+    function wireDevToolButton(selector, { statusClass, startingText, startAction, startNonce, pollAction, pollNonce: pollNonceVal, startErrPrefix, failPrefix, onDone }) {
         const btn = document.querySelector(selector);
         if (!btn) return;
         let devPollTimer = null;
@@ -399,6 +455,9 @@
                                     setButtonIdle(btn);
                                     if (statusEl) statusEl.textContent = '';
                                     showAdminNotice(st.message || 'Done.', 'success');
+                                    if (typeof onDone === 'function') {
+                                        onDone(btn, st);
+                                    }
                                 } else if (st.status === 'failed') {
                                     clearInterval(devPollTimer); devPollTimer = null;
                                     setButtonIdle(btn);
@@ -471,5 +530,77 @@
         startErrPrefix: 'Could not start push',
         failPrefix: 'Push failed',
     });
+
+    wireDevToolButton('.js-backup-media-dev', {
+        statusClass: '.js-backup-media-dev-status',
+        startingText: 'Backing up\u2026',
+        startAction: 'abcnorio_backup_media_dev',
+        startNonce: backupMediaDevNonce,
+        pollAction: 'abcnorio_poll_backup_media_dev_status',
+        pollNonce: pollBackupMediaDevNonce,
+        startErrPrefix: 'Could not start backup',
+        failPrefix: 'Backup failed',
+        onDone: () => {
+            refreshMediaBackupList('dev').catch((error) => {
+                showAdminNotice(error.message || 'Could not refresh media backups.', 'error');
+            });
+        },
+    });
+
+    wireDevToolButton('.js-backup-media-staging', {
+        statusClass: '.js-backup-media-staging-status',
+        startingText: 'Backing up\u2026',
+        startAction: 'abcnorio_backup_media_staging',
+        startNonce: backupMediaStagingNonce,
+        pollAction: 'abcnorio_poll_backup_media_staging_status',
+        pollNonce: pollBackupMediaStagingNonce,
+        startErrPrefix: 'Could not start backup',
+        failPrefix: 'Backup failed',
+        onDone: () => {
+            refreshMediaBackupList('staging').catch((error) => {
+                showAdminNotice(error.message || 'Could not refresh media backups.', 'error');
+            });
+        },
+    });
+
+    document.addEventListener('click', (event) => {
+        const btn = event.target.closest('.js-delete-media-backup');
+        if (!btn) return;
+
+        event.preventDefault();
+        const env = btn.dataset.env || '';
+        const file = btn.dataset.file || '';
+        if (!env || !file) return;
+        if (!window.confirm('Delete this media backup archive?')) return;
+
+        btn.disabled = true;
+        fetch(ajaxUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+                action: 'abcnorio_delete_media_backup',
+                nonce: deleteMediaBackupNonce,
+                env,
+                file,
+            }),
+        })
+            .then((r) => r.json())
+            .then((data) => {
+                if (!data.success) {
+                    const msg = data.data && data.data.message ? data.data.message : 'Delete failed.';
+                    throw new Error(msg);
+                }
+                showAdminNotice('Media backup deleted.', 'success');
+                return refreshMediaBackupList(env);
+            })
+            .catch((error) => {
+                showAdminNotice(error.message || 'Delete failed.', 'error');
+            })
+            .finally(() => {
+                btn.disabled = false;
+            });
+    });
+
+    refreshMediaBackupList('dev').catch(() => {});
+    refreshMediaBackupList('staging').catch(() => {});
 
 }());

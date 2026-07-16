@@ -6,6 +6,9 @@ use abcnorio\CustomFunc\Components\ComponentIngestor;
 
 final class EventListingQuery
 {
+    private const MIN_ITEM_COUNT = 1;
+    private const MAX_ITEM_COUNT = 12;
+
     public static function registerHooks(): void
     {
         add_action('init', [self::class, 'registerBlock']);
@@ -35,15 +38,16 @@ final class EventListingQuery
 
         $dateFilter = sanitize_key((string) ($attributes['dateFilter'] ?? 'upcoming'));
         $order = strtoupper(sanitize_key((string) ($attributes['order'] ?? 'desc')));
+        $isSlider = strtolower(sanitize_key((string) ($attributes['variant'] ?? 'grid'))) === 'slider';
         $itemCount = (int) ($attributes['itemCount'] ?? 6);
         $eventType = sanitize_title((string) ($attributes['eventType'] ?? ''));
         $collectiveAssociation = sanitize_title((string) ($attributes['collectiveAssociation'] ?? ''));
 
-        if ($itemCount < 1) {
-            $itemCount = 1;
+        if ($itemCount < self::MIN_ITEM_COUNT) {
+            $itemCount = self::MIN_ITEM_COUNT;
         }
-        if ($itemCount > 50) {
-            $itemCount = 50;
+        if ($itemCount > self::MAX_ITEM_COUNT) {
+            $itemCount = self::MAX_ITEM_COUNT;
         }
 
         if ($order !== 'ASC' && $order !== 'DESC') {
@@ -131,7 +135,7 @@ final class EventListingQuery
             );
         }
 
-        return self::renderListingFromDist($countLabel, $itemsHtml);
+        return self::renderListingFromDist($countLabel, $itemsHtml, $isSlider);
     }
 
     private static function renderEventCard(\WP_Post $post): string
@@ -168,7 +172,7 @@ final class EventListingQuery
         ]);
     }
 
-    private static function renderListingFromDist(?string $countLabel, string $itemsHtml): string
+    private static function renderListingFromDist(?string $countLabel, string $itemsHtml, bool $isSlider): string
     {
         $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('event-listing/empty.html'));
         $xpath = new \DOMXPath($dom);
@@ -207,6 +211,39 @@ final class EventListingQuery
         }
 
         HtmlFragmentSupport::appendHtmlFragment($dom, $teaserList, $itemsHtml, 'event listing');
+
+        if ($isSlider) {
+            HtmlFragmentSupport::removeClass($listing, 'card-grid');
+            HtmlFragmentSupport::addClass($listing, 'blaze-slider');
+
+            HtmlFragmentSupport::addClass($teaserList, 'blaze-track');
+
+            $blazeContainer = $dom->createElement('div');
+            $blazeContainer->setAttribute('class', 'blaze-container');
+
+            $trackContainer = $dom->createElement('div');
+            $trackContainer->setAttribute('class', 'blaze-track-container');
+
+            $teaserParent = $teaserList->parentNode;
+            if ($teaserParent instanceof \DOMNode) {
+                $teaserParent->replaceChild($blazeContainer, $teaserList);
+            }
+
+            $blazeContainer->appendChild($trackContainer);
+            $trackContainer->appendChild($teaserList);
+
+            $prevButton = $dom->createElement('button', 'previous');
+            $prevButton->setAttribute('class', 'blaze-prev');
+            $blazeContainer->appendChild($prevButton);
+
+            $nextButton = $dom->createElement('button', 'next');
+            $nextButton->setAttribute('class', 'blaze-next');
+            $blazeContainer->appendChild($nextButton);
+
+            $pagination = $dom->createElement('div');
+            $pagination->setAttribute('class', 'blaze-pagination');
+            $blazeContainer->appendChild($pagination);
+        }
 
         return trim((string) $dom->saveHTML($listing));
     }

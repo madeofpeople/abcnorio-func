@@ -8,6 +8,8 @@ use abcnorio\CustomFunc\RestApi\ContentListingEndpoint;
 final class ContentListingQuery
 {
     private const ALLOWED_POST_TYPES = ['event', 'article'];
+    private const MIN_ITEM_COUNT = 1;
+    private const MAX_ITEM_COUNT = 12;
 
     public static function registerHooks(): void
     {
@@ -37,15 +39,23 @@ final class ContentListingQuery
         $showCount = ! empty($attributes['showCount']);
 
         $postTypes = self::normalizePostTypes($attributes['listingPostTypes'] ?? []);
-        $count = max(1, min(50, (int) ($attributes['listingCount'] ?? 5)));
-        $order = strtolower(sanitize_key((string) ($attributes['order'] ?? 'desc'))) === 'asc' ? 'asc' : 'desc';
+        $count = max(
+            self::MIN_ITEM_COUNT,
+            min(self::MAX_ITEM_COUNT, (int) ($attributes['listingCount'] ?? 5))
+        );
+        $orderMode = strtolower(sanitize_key((string) ($attributes['order'] ?? 'desc')));
+        $order = $orderMode === 'asc' ? 'asc' : 'desc';
+        $isManualOrder = $orderMode === 'manual';
         $tags = self::normalizeTags($attributes['listingTagFilter'] ?? []);
+        $orderIds = $isManualOrder ? self::normalizeOrderPostIds($attributes['sortOrderPostIds'] ?? []) : [];
+        $isSlider = strtolower(sanitize_key((string) ($attributes['variant'] ?? 'grid'))) === 'slider';
 
         $request = new \WP_REST_Request('GET', '/abcnorio/v1/content-listing');
         $request->set_param('post_types', $postTypes);
         $request->set_param('tags', $tags);
         $request->set_param('count', $count);
         $request->set_param('order', $order);
+        $request->set_param('orderIds', $orderIds);
 
         $response = ContentListingEndpoint::serve($request);
 
@@ -75,12 +85,13 @@ final class ContentListingQuery
             }
         }
 
-        return self::renderListingFromDist(count($items), $itemsHtml, $showCount);
+        return self::renderListingFromDist(count($items), $itemsHtml, $showCount, $isSlider);
     }
 
-    private static function renderListingFromDist(int $totalItems, string $itemsHtml, bool $showCount): string
+    private static function renderListingFromDist(int $totalItems, string $itemsHtml, bool $showCount, bool $isSlider): string
     {
-        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('content-listing.html'));
+        $fixturePath = $isSlider ? 'content-listing/slider.html' : 'content-listing.html';
+        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml($fixturePath));
         $xpath = new \DOMXPath($dom);
 
         $listing = $dom->getElementsByTagName('content-listing')->item(0);
@@ -109,7 +120,7 @@ final class ContentListingQuery
 
         $itemsNode = $dom->getElementById('teaser-list');
         if (! $itemsNode instanceof \DOMElement) {
-            $itemsNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__items ")]')->item(0);
+            $itemsNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " teaser-list ")]')->item(0);
         }
 
         if (! $itemsNode instanceof \DOMElement) {
@@ -204,7 +215,7 @@ final class ContentListingQuery
         $link->setAttribute('href', esc_url(self::resolveItemHref($item, '/articles')));
         $title->nodeValue = wp_strip_all_tags((string) ($item['title']['rendered'] ?? 'Untitled article'));
 
-        $rawDate = (string) ($item['acf']['item_date'] ?? $item['date'] ?? '');
+        $rawDate = (string) ($item['acf']['article_date'] ?? $item['date'] ?? '');
         $time = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " article-teaser__date ")]')->item(0);
         if ($time instanceof \DOMElement) {
             if ($rawDate === '') {
@@ -263,6 +274,28 @@ final class ContentListingQuery
         $allowed = array_values(array_filter($postTypes, static fn (string $postType): bool => in_array($postType, self::ALLOWED_POST_TYPES, true)));
 
         return $allowed === [] ? self::ALLOWED_POST_TYPES : $allowed;
+    }
+
+    private static function normalizeOrderPostIds($rawOrderPostIds): array
+    {
+        if (! is_array($rawOrderPostIds)) {
+            return [];
+        }
+
+        $normalized = [];
+        $seen = [];
+
+        foreach ($rawOrderPostIds as $value) {
+            $id = absint($value);
+            if ($id < 1 || isset($seen[$id])) {
+                continue;
+            }
+
+            $seen[$id] = true;
+            $normalized[] = $id;
+        }
+
+        return $normalized;
     }
 
     private static function enqueueComponentAssets(): void

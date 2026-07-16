@@ -8,6 +8,7 @@ namespace abcnorio\CustomFunc\ImageStyles;
 final class BlockImageAttributeEnricher
 {
     private const IMAGE_BLOCK = 'core/image';
+    private const COVER_BLOCK = 'core/cover';
     private const DEFAULT_SIZE_SLUG = 'full';
     private const REST_BLOCKS_FIELD = 'abcnorio_blocks';
 
@@ -16,7 +17,7 @@ final class BlockImageAttributeEnricher
      */
     public static function registerHooks(): void
     {
-        add_filter('vip_block_data_api__sourced_block_result', [self::class, 'enrichCoreImageBlock'], 20, 2);
+        add_filter('vip_block_data_api__sourced_block_result', [self::class, 'enrichCoreImageBlock'], 20, 4);
         add_filter('rest_prepare_attachment', [self::class, 'enrichAttachmentResponse'], 20, 3);
         add_action('rest_api_init', [self::class, 'registerParsedBlocksField']);
     }
@@ -72,7 +73,7 @@ final class BlockImageAttributeEnricher
 
         $parsedBlocks = parse_blocks((string) $post->post_content);
 
-        return self::mapParsedBlocks($parsedBlocks);
+        return self::mapParsedBlocks($parsedBlocks, $postId);
     }
 
     /**
@@ -82,7 +83,7 @@ final class BlockImageAttributeEnricher
      *
      * @return array<int, array{name: string|null, attributes: array<string, mixed>, innerBlocks: array<int, array<string, mixed>>}>
      */
-    private static function mapParsedBlocks(array $parsedBlocks): array
+    private static function mapParsedBlocks(array $parsedBlocks, int $postId): array
     {
         $mapped = [];
 
@@ -97,16 +98,10 @@ final class BlockImageAttributeEnricher
 
             $attributes = is_array($parsedBlock['attrs'] ?? null) ? $parsedBlock['attrs'] : [];
 
-            if ($blockName === self::IMAGE_BLOCK) {
-                $attachmentId = self::attachmentIdFromAttributes($attributes);
-                if ($attachmentId > 0) {
-                    $sizeSlug = self::sizeSlugFromAttributes($attributes);
-                    $attributes = array_merge($attributes, ImageVariantBuilder::build($attachmentId, $sizeSlug));
-                }
-            }
+            $attributes = self::enrichImageCapableAttributes($blockName, $attributes, $postId);
 
             $innerBlocks = is_array($parsedBlock['innerBlocks'] ?? null)
-                ? self::mapParsedBlocks($parsedBlock['innerBlocks'])
+                ? self::mapParsedBlocks($parsedBlock['innerBlocks'], $postId)
                 : [];
 
             $mapped[] = [
@@ -161,25 +156,38 @@ final class BlockImageAttributeEnricher
      *
      * @return array<string, mixed>
      */
-    public static function enrichCoreImageBlock(array $sourcedBlock, string $blockName): array
+    public static function enrichCoreImageBlock(array $sourcedBlock, string $blockName, int $postId = 0, array $parsedBlock = []): array
     {
-        if (self::IMAGE_BLOCK !== $blockName) {
-            return $sourcedBlock;
-        }
-
         $attributes = is_array($sourcedBlock['attributes'] ?? null) ? $sourcedBlock['attributes'] : [];
-        $attachmentId = self::attachmentIdFromAttributes($attributes);
-
-        if ($attachmentId <= 0) {
-            return $sourcedBlock;
-        }
-
-        $sizeSlug = self::sizeSlugFromAttributes($attributes);
-        $attributes = array_merge($attributes, ImageVariantBuilder::build($attachmentId, $sizeSlug));
+        $attributes = self::enrichImageCapableAttributes($blockName, $attributes, $postId);
 
         $sourcedBlock['attributes'] = $attributes;
 
         return $sourcedBlock;
+    }
+
+    /**
+     * Enrich image-capable block attributes with normalized image variant data.
+     *
+     * @param string|null $blockName
+     * @param array<string, mixed> $attributes
+     *
+     * @return array<string, mixed>
+     */
+    private static function enrichImageCapableAttributes(?string $blockName, array $attributes, int $postId): array
+    {
+        if ($blockName !== self::IMAGE_BLOCK && $blockName !== self::COVER_BLOCK) {
+            return $attributes;
+        }
+
+        $attachmentId = self::attachmentIdForBlock($blockName, $attributes, $postId);
+        if ($attachmentId <= 0) {
+            return $attributes;
+        }
+
+        $sizeSlug = self::sizeSlugFromAttributes($attributes);
+
+        return array_merge($attributes, ImageVariantBuilder::build($attachmentId, $sizeSlug));
     }
 
     /**
@@ -190,6 +198,28 @@ final class BlockImageAttributeEnricher
     private static function attachmentIdFromAttributes(array $attributes): int
     {
         return isset($attributes['id']) ? (int) $attributes['id'] : 0;
+    }
+
+    /**
+     * Resolve attachment ID for image-capable blocks.
+     *
+     * @param string|null $blockName
+     * @param array<string, mixed> $attributes
+     */
+    private static function attachmentIdForBlock(?string $blockName, array $attributes, int $postId): int
+    {
+        $attachmentId = self::attachmentIdFromAttributes($attributes);
+        if ($attachmentId > 0) {
+            return $attachmentId;
+        }
+
+        $usesFeaturedImage = $attributes['useFeaturedImage'] ?? false;
+
+        if ($blockName === self::COVER_BLOCK && $usesFeaturedImage === true && $postId > 0) {
+            return (int) get_post_thumbnail_id($postId);
+        }
+
+        return 0;
     }
 
     /**

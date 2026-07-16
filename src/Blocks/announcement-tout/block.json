@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "abcnorio/announcement-tout",
+  "title": "Announcement Tout",
+  "category": "widgets",
+  "icon": "megaphone",
+  "description": "Single announcement tout block.",
+  "keywords": ["announcement", "tout", "abcnorio"],
+  "attributes": {
+    "toast": {
+      "type": "string",
+      "role": "content",
+      "default": "Announcement Toast"
+    },
+    "title": {
+      "type": "string",
+      "role": "content",
+      "default": "Title"
+    },
+    "details": {
+      "type": "string",
+      "role": "content",
+      "default": "Add details here."
+    },
+    "buttonLabel": {
+      "type": "string",
+      "role": "content",
+      "default": "Register Here"
+    },
+    "buttonUrl": {
+      "type": "string",
+      "role": "content",
+      "default": "#"
+    }
+  },
+  "supports": {
+    "align": false,
+    "html": false,
+    "customClassName": false
+  }
+}

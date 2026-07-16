@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "abcnorio/sidebar-tout",
+  "title": "Sidebar Tout",
+  "category": "widgets",
+  "icon": "id-alt",
+  "description": "Sidebar announcement tout block with image.",
+  "keywords": ["sidebar", "tout", "announcement", "abcnorio"],
+  "attributes": {
+    "title": {
+      "type": "string",
+      "default": "Announcement Title"
+    },
+    "details": {
+      "type": "string",
+      "default": "Add details here."
+    },
+    "buttonLabel": {
+      "type": "string",
+      "default": "Register Here"
+    },
+    "buttonUrl": {
+      "type": "string",
+      "default": "#"
+    },
+    "imageUrl": {
+      "type": "string",
+      "default": "https://ucarecdn.com/05f649bf-b70b-4cf8-90f7-2588ce404a08/-/resize/680x/"
+    },
+    "imageAlt": {
+      "type": "string",
+      "default": "Description of the image"
+    }
+  },
+  "supports": {
+    "align": false,
+    "html": false,
+    "customClassName": false
+  }
+}

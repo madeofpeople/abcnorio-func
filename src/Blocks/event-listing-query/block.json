@@ -24,6 +24,10 @@
       "type": "string",
       "default": "desc"
     },
+    "variant": {
+      "type": "string",
+      "default": "grid"
+    },
     "itemCount": {
       "type": "number",
       "default": 6

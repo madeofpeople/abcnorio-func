@@ -49,6 +49,7 @@ return [
         'supports' => [
             'title',
             'editor',
+            'excerpt',
             'thumbnail',
             'custom-fields',
             'page-attributes'
@@ -77,6 +78,7 @@ return [
         'has_archive' => true,
         'menu_icon' => 'dashicons-calendar-alt',
         'taxonomies' => [
+            'post_tag',
             'collective_association',
             'sidebar_scope',
         ],

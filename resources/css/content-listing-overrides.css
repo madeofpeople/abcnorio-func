@@ -1,18 +1,14 @@
 /* WordPress-only overrides for content-listing */
-.content-listing {
-    position: relative;
-}
 
 .content-listing::after {
-    font-size: 30px;
-    text-align: center;
-    font-weight: bold;
-    content: "content-listing preview";
+    font-size: 12px;
+    content: "query block";
     position: absolute;
-    padding-top: 6rem;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #ffcc0055;
+    background-color: #ffffff66;
+    box-sizing: border-box;
+    border: 2px #f solid;
 }

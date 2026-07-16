@@ -3,6 +3,7 @@ import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { PanelBody, RangeControl, SelectControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import ServerSideRender from '@wordpress/server-side-render';
+import { QUERY_BLOCK_MAX_ITEM_COUNT, QUERY_BLOCK_MIN_ITEM_COUNT } from './blockHelpers';
 
 const DATE_FILTER_OPTIONS = [
     { label: 'Upcoming', value: 'upcoming' },
@@ -13,6 +14,11 @@ const DATE_FILTER_OPTIONS = [
 const ORDER_OPTIONS = [
     { label: 'Descending', value: 'desc' },
     { label: 'Ascending', value: 'asc' },
+];
+
+const VARIANT_OPTIONS = [
+    { label: 'Grid', value: 'grid' },
+    { label: 'Slider', value: 'slider' },
 ];
 
 function useTaxonomyOptions( taxonomy ) {
@@ -83,11 +89,17 @@ function useTaxonomyOptions( taxonomy ) {
                                 setAttributes( { order: value } )
                             }
                         />
+                        <SelectControl
+                            label="Variant"
+                            value={ attributes.variant === 'slider' ? 'slider' : 'grid' }
+                            options={ VARIANT_OPTIONS }
+                            onChange={ ( value ) => setAttributes( { variant: value } ) }
+                        />
                         <RangeControl
                             label="Item Count"
                             value={ attributes.itemCount }
-                            min={ 1 }
-                            max={ 50 }
+                            min={ QUERY_BLOCK_MIN_ITEM_COUNT }
+                            max={ QUERY_BLOCK_MAX_ITEM_COUNT }
                             onChange={ ( value ) =>
                                 setAttributes( { itemCount: value ?? 6 } )
                             }

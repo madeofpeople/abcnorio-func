@@ -2,6 +2,8 @@
 
 namespace abcnorio\CustomFunc\AdminExperience;
 
+use abcnorio\CustomFunc\Components\ComponentIngestor;
+
 final class AdminExperience
 {
     public static function registerHooks(): void
@@ -66,6 +68,15 @@ final class AdminExperience
             'dashicons-menu',
             60
         );
+        add_menu_page(
+            __('Patterns', 'abcnorio-func'),
+            __('Patterns', 'abcnorio-func'),
+            'edit_pages',
+            'site-editor.php?p=%2Fpattern',
+            '',
+            'dashicons-art',
+            60
+        );
     }
 
     public static function registerRestLinkRewrites(): void
@@ -110,11 +121,13 @@ final class AdminExperience
             return;
         }
 
-        $relativePath = 'resources/css/admin-styles.css';
+        ComponentIngestor::enqueueRuntimeStyles();
+
+        $relativePath = 'resources/css/admin-overrides.css';
         $absolutePath = plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . $relativePath;
 
         if (! file_exists($absolutePath)) {
-            return;
+            throw new \RuntimeException("Components System Error: Admin overrides missing at '{$absolutePath}'.");
         }
 
         $styleUrl = plugin_dir_url(ABCNORIO_CUSTOM_FUNC_FILE) . $relativePath;
@@ -123,9 +136,9 @@ final class AdminExperience
         }
 
         wp_enqueue_style(
-            'abcnorio-custom-func-admin',
+            'abcnorio-custom-func-admin-overrides',
             $styleUrl,
-            [],
+            ['abcnorio-components-runtime'],
             (string) filemtime($absolutePath)
         );
     }

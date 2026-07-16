@@ -23,10 +23,9 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 
 ## Admin CSS Contract
 
-- Runtime admin stylesheet remains `resources/css/admin-styles.css`.
-- Source token bundle is `resources/css/admin-tokens.scss` and compiles from `../abcnorio-astro/design-tokens/tokens`.
-- WP-specific rules live in `resources/css/admin-overrides.css`.
-- `npm run build:admin-css` regenerates `resources/css/admin-styles.css` by compiling tokens and appending overrides.
+- Admin CSS is direct: `ComponentIngestor::enqueueRuntimeStyles()` plus `resources/css/admin-overrides.css`.
+- `resources/css/admin-overrides.css` stays manual and small.
+- No generated `resources/css/admin-styles.css` is part of the runtime contract.
 
 ## Content Listing Contract
 

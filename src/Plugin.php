@@ -77,6 +77,9 @@ final class Plugin
         BlockImageAttributeEnricher::registerHooks();
         /* Registers our menus */
         MenuRegistrar::registerHooks();
+
+        add_filter( 'block_type_metadata', [self::class, 'disableGutenbergLayoutPanel']);
+
         add_action('after_setup_theme', [self::class, 'enableFeaturedImages']);
         add_action('enqueue_block_assets', [self::class, 'enqueueBlockComponentAssets']);
         add_action('enqueue_block_editor_assets', [self::class, 'enqueueEditorAssets']);
@@ -297,6 +300,24 @@ final class Plugin
 
         $message = sprintf('[abcnorio-func] Component system skipped in %s: %s', $context, $error->getMessage());
         error_log($message);
+    }
+
+
+    public static function disableGutenbergLayoutPanel( $metadata ) {
+        if ( isset( $metadata['supports']['layout'] ) ) {
+            if ( is_array( $metadata['supports']['layout'] ) ) {
+                $metadata['supports']['layout']['allowEditing'] = false;
+            } else {
+                $metadata['supports']['layout'] = false;
+            }
+        }
+
+        // Backward compatibility for older block types.
+        if ( isset( $metadata['supports']['__experimentalLayout'] ) ) {
+            $metadata['supports']['__experimentalLayout'] = false;
+        }
+
+        return $metadata;
     }
 
 }

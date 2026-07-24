@@ -14,6 +14,7 @@ use abcnorio\CustomFunc\RestApi\EventQueryFilters;
 use abcnorio\CustomFunc\RestApi\FeaturedImageField;
 use abcnorio\CustomFunc\RestApi\ContentListingEndpoint;
 use abcnorio\CustomFunc\RestApi\ICalEndpoint;
+use abcnorio\CustomFunc\RestApi\MailchimpEndpoint;
 use abcnorio\CustomFunc\RestApi\SidebarBlocksField;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
@@ -62,6 +63,8 @@ final class Plugin
         ContentListingEndpoint::registerHooks();
         /*  Outputs all events as an ics for subscribing to from cals */
         ICalEndpoint::registerHooks();
+        /*  Mailchimp list config and reactive submit endpoints */
+        MailchimpEndpoint::registerHooks();
         /*  Login redirection */
         LoginAlias::registerHooks();
         /*  ACF Field Groups — custom post type fields */

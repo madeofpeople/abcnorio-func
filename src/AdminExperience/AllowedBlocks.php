@@ -73,7 +73,7 @@ final class AllowedBlocks
             'abcnorio/event-listing',
             'abcnorio/content-listing',
             'abcnorio/collective-listing',
-            
+            'mailchimp/mailchimp'
         ],
     ];
 

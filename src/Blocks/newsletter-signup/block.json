@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "abcnorio/newsletter-signup",
+  "title": "Newsletter Signup",
+  "category": "widgets",
+  "icon": "email",
+  "description": "Newsletter signup placement block rendered by Astro.",
+  "keywords": ["newsletter", "mailchimp", "signup", "abcnorio"],
+  "attributes": {
+    "listId": {
+      "type": "string",
+      "default": ""
+    },
+    "header": {
+      "type": "string",
+      "default": ""
+    },
+    "subHeader": {
+      "type": "string",
+      "default": ""
+    },
+    "submitText": {
+      "type": "string",
+      "default": "Subscribe"
+    },
+    "showRequiredIndicator": {
+      "type": "boolean",
+      "default": true
+    },
+    "requiredIndicatorText": {
+      "type": "string",
+      "default": "* = required field"
+    },
+    "doubleOptIn": {
+      "type": "boolean",
+      "default": true
+    },
+    "updateExistingSubscribers": {
+      "type": "boolean",
+      "default": true
+    },
+    "template": {
+      "type": "string",
+      "default": "default"
+    },
+    "fieldTags": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "groupIds": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "supports": {
+    "align": false,
+    "html": false,
+    "customClassName": false
+  },
+  "editorStyle": "file:./editor.css"
+}

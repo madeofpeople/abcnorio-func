@@ -215,7 +215,13 @@ a:visited {
 .search__field button,
 main .wp-block-buttons>div>div,
 main a.button,
-main button {
+main button,
+.editor-styles-wrapper .wp-block-buttons>div>div,
+.editor-styles-wrapper a.button,
+.editor-styles-wrapper button,
+.block-editor-iframe__body .wp-block-buttons>div>div,
+.block-editor-iframe__body a.button,
+.block-editor-iframe__body button {
 	border-radius: 0;
 	outline: none;
 	border: 2px transparent solid;
@@ -236,7 +242,13 @@ main button {
 .search__field button svg,
 main .wp-block-buttons>div>div svg,
 main a.button svg,
-main button svg {
+main button svg,
+.editor-styles-wrapper .wp-block-buttons>div>div svg,
+.editor-styles-wrapper a.button svg,
+.editor-styles-wrapper button svg,
+.block-editor-iframe__body .wp-block-buttons>div>div svg,
+.block-editor-iframe__body a.button svg,
+.block-editor-iframe__body button svg {
 	display: inline-block;
 	padding-top: .125rem;
 	vertical-align: top
@@ -247,7 +259,13 @@ main button svg {
 .search__field button.secondary,
 main .wp-block-buttons>div>div.secondary,
 main a.button.secondary,
-main button.secondary {
+main button.secondary,
+.editor-styles-wrapper .wp-block-buttons>div>div.secondary,
+.editor-styles-wrapper a.button.secondary,
+.editor-styles-wrapper button.secondary,
+.block-editor-iframe__body .wp-block-buttons>div>div.secondary,
+.block-editor-iframe__body a.button.secondary,
+.block-editor-iframe__body button.secondary {
 	background-color: var(--color-accent-secondary);
 	border-color: var(--color-accent-secondary);
 	color: var(--color-page-bg)
@@ -258,7 +276,13 @@ main button.secondary {
 .search__field button.alt,
 main .wp-block-buttons>div>div.alt,
 main a.button.alt,
-main button.alt {
+main button.alt,
+.editor-styles-wrapper .wp-block-buttons>div>div.alt,
+.editor-styles-wrapper a.button.alt,
+.editor-styles-wrapper button.alt,
+.block-editor-iframe__body .wp-block-buttons>div>div.alt,
+.block-editor-iframe__body a.button.alt,
+.block-editor-iframe__body button.alt {
 	background-color: var(--color-grey-mid);
 	border-color: var(--color-grey-mid);
 	color: var(--color-page-bg)
@@ -280,7 +304,19 @@ main .wp-block-buttons>div>div:hover,
 main a.button:focus,
 main a.button:hover,
 main button:focus,
-main button:hover {
+main button:hover,
+.editor-styles-wrapper .wp-block-buttons>div>div:focus,
+.editor-styles-wrapper .wp-block-buttons>div>div:hover,
+.editor-styles-wrapper a.button:focus,
+.editor-styles-wrapper a.button:hover,
+.editor-styles-wrapper button:focus,
+.editor-styles-wrapper button:hover,
+.block-editor-iframe__body .wp-block-buttons>div>div:focus,
+.block-editor-iframe__body .wp-block-buttons>div>div:hover,
+.block-editor-iframe__body a.button:focus,
+.block-editor-iframe__body a.button:hover,
+.block-editor-iframe__body button:focus,
+.block-editor-iframe__body button:hover {
 	border-color: var(--color-link);
 	background-color: var(--color-page-bg);
 	color: var(--color-link)

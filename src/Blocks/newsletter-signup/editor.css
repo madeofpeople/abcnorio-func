@@ -1,0 +1,60 @@
+.wp-block-abcnorio-newsletter-signup {
+  border: 1px solid #dcdcde;
+  padding: 1rem;
+  background: #fff;
+}
+
+.wp-block-abcnorio-newsletter-signup .abcnorio-newsletter-signup__preview-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+  line-height: 1.25;
+}
+
+.wp-block-abcnorio-newsletter-signup .abcnorio-newsletter-signup__preview-subtitle {
+  margin: 0 0 0.75rem;
+  color: #50575e;
+}
+
+.wp-block-abcnorio-newsletter-signup .abcnorio-newsletter-signup__preview-field {
+  margin-bottom: 0.55rem;
+}
+
+.wp-block-abcnorio-newsletter-signup .abcnorio-newsletter-signup__preview-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.wp-block-abcnorio-newsletter-signup .abcnorio-newsletter-signup__preview-input {
+  width: 100%;
+  border: 1px solid #c3c4c7;
+  min-height: 36px;
+  padding: 0.35rem 0.55rem;
+  background: #f6f7f7;
+}
+
+.wp-block-abcnorio-newsletter-signup .abcnorio-newsletter-signup__preview-button {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border: 0;
+  background: #1d2327;
+  color: #fff;
+}
+
+.wp-block-abcnorio-newsletter-signup .abcnorio-newsletter-signup__required {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  color: #646970;
+}
+
+.wp-block-abcnorio-newsletter-signup .abcnorio-newsletter-signup__group {
+  margin: 0.7rem 0;
+  border: 1px dashed #dcdcde;
+  padding: 0.5rem;
+}
+
+.wp-block-abcnorio-newsletter-signup .abcnorio-newsletter-signup__group-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}

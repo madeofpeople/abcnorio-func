@@ -9,6 +9,7 @@ final class BlockImageAttributeEnricher
 {
     private const IMAGE_BLOCK = 'core/image';
     private const COVER_BLOCK = 'core/cover';
+    private const ABCNORIO_HERO_BLOCK = 'abcnorio/hero';
     private const DEFAULT_SIZE_SLUG = 'full';
     private const REST_BLOCKS_FIELD = 'abcnorio_blocks';
 
@@ -176,7 +177,7 @@ final class BlockImageAttributeEnricher
      */
     private static function enrichImageCapableAttributes(?string $blockName, array $attributes, int $postId): array
     {
-        if ($blockName !== self::IMAGE_BLOCK && $blockName !== self::COVER_BLOCK) {
+        if ($blockName !== self::IMAGE_BLOCK && $blockName !== self::COVER_BLOCK && $blockName !== self::ABCNORIO_HERO_BLOCK) {
             return $attributes;
         }
 

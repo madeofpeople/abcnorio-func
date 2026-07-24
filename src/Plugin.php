@@ -23,7 +23,9 @@ use abcnorio\CustomFunc\Blocks\EventListingQuery;
 use abcnorio\CustomFunc\Blocks\ContentListingQuery;
 use abcnorio\CustomFunc\Blocks\CollectiveListingQuery;
 use abcnorio\CustomFunc\Blocks\AnnouncementTout;
+use abcnorio\CustomFunc\Blocks\Hero;
 use abcnorio\CustomFunc\Blocks\SidebarTout;
+use abcnorio\CustomFunc\Blocks\NewsletterSignup;
 use abcnorio\CustomFunc\Dashboard\Dashboard;
 use abcnorio\CustomFunc\Components\ComponentIngestor;
 
@@ -51,8 +53,12 @@ final class Plugin
         CollectiveListingQuery::registerHooks();
         /*  Announcement tout wordpress block */
         AnnouncementTout::registerHooks();
+        /*  Hero block with in-canvas editing */
+        Hero::registerHooks();
         /*  Sidebar tout wordpress block */
         SidebarTout::registerHooks();
+        /*  Newsletter signup placement block */
+        NewsletterSignup::registerHooks();
         /*  Deployment dashboard */
         Deployment::registerHooks();
         /*  Allows advanced querying of Events */

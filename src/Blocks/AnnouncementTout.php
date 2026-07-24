@@ -40,7 +40,12 @@ final class AnnouncementTout
         $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('announcement-tout.html'));
         $xpath = new \DOMXPath($dom);
 
-        $root = $dom->getElementsByTagName('section')->item(0);
+        $root = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " announcement-tout ")]')->item(0);
+
+        if (! $root instanceof \DOMElement) {
+            $root = $dom->getElementsByTagName('section')->item(0);
+        }
+
         if (! $root instanceof \DOMElement) {
             throw new \RuntimeException('Components System Error: announcement-tout fixture root missing.');
         }

@@ -85,10 +85,10 @@
     "src": "src/components/taxonomy-links/taxonomy-links.js",
     "isEntry": true
   },
-  "src/components/wp-blocks/cover/cover.js": {
-    "file": "wp-blocks/cover.js",
-    "name": "wp-blocks/cover",
-    "src": "src/components/wp-blocks/cover/cover.js",
+  "src/components/wp-blocks/hero/hero.js": {
+    "file": "wp-blocks/hero.js",
+    "name": "wp-blocks/hero",
+    "src": "src/components/wp-blocks/hero/hero.js",
     "isEntry": true
   }
 }

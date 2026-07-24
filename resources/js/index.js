@@ -5,7 +5,9 @@ import './contentListingBlock';
 import './eventListingBlock';
 import './collectiveListingBlock';
 import './announcementToutBlock';
+import './heroBlock';
 import './sidebarToutBlock';
+import './newsletterSignupBlock';
 
 const LINK_SELECTORS = [
     '.editor-post-preview',

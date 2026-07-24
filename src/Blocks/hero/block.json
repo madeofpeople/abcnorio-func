@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "abcnorio/hero",
+  "title": "ABCNorio Hero",
+  "category": "media",
+  "icon": "cover-image",
+  "description": "Cover block with in-canvas editing and canonical component structure.",
+  "keywords": ["cover", "hero", "abcnorio"],
+  "attributes": {
+    "id": {
+      "type": "number",
+      "default": 0
+    },
+    "url": {
+      "type": "string",
+      "default": ""
+    },
+    "alt": {
+      "type": "string",
+      "default": ""
+    },
+    "sizeSlug": {
+      "type": "string",
+      "default": "full"
+    }
+  },
+  "supports": {
+    "align": false,
+    "html": false,
+    "customClassName": false
+  }
+}

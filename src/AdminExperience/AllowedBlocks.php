@@ -61,6 +61,7 @@ final class AllowedBlocks
             'core/button',
             'core/group',
             'core/cover',
+            'abcnorio/hero',
             // 'core/columns',
             // 'core/column',
             // 'core/separator',
@@ -73,7 +74,7 @@ final class AllowedBlocks
             'abcnorio/event-listing',
             'abcnorio/content-listing',
             'abcnorio/collective-listing',
-            'mailchimp/mailchimp'
+            'abcnorio/newsletter-signup'
         ],
     ];
 

@@ -32,10 +32,11 @@ final class AnnouncementTout
         self::enqueueComponentAssets();
 
         $toast = sanitize_text_field((string) ($attributes['toast'] ?? 'toast'));
-        $title = sanitize_text_field((string) ($attributes['title'] ?? 'Title'));
+        $title = sanitize_text_field((string) ($attributes['title'] ?? ''));
         $details = sanitize_textarea_field((string) ($attributes['details'] ?? 'Add details here.'));
         $buttonLabel = sanitize_text_field((string) ($attributes['buttonLabel'] ?? 'Register Here'));
         $buttonUrl = esc_url_raw((string) ($attributes['buttonUrl'] ?? '#'));
+        $variant = sanitize_key((string) ($attributes['variant'] ?? 'default'));
 
         $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('announcement-tout.html'));
         $xpath = new \DOMXPath($dom);
@@ -51,6 +52,9 @@ final class AnnouncementTout
         }
 
         HtmlFragmentSupport::addClass($root, 'wp-block-abcnorio-announcement-tout');
+        if ($variant === 'secondary') {
+            HtmlFragmentSupport::addClass($root, 'announcement-tout--secondary');
+        }
 
         $toastNode = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " announcement-tout__toast ")]', $root)->item(0);
         $titleNode = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " announcement-tout__title ")]', $root)->item(0);

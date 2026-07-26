@@ -8,6 +8,8 @@ final class EventQueryFilters
     {
         add_action('init', [self::class, 'registerEventMeta']);
         add_action('save_post_event', [self::class, 'computeEffectiveEnd'], 10, 1);
+        add_action('updated_post_meta', [self::class, 'recomputeOnMetaUpdate'], 10, 3);
+        add_action('added_post_meta', [self::class, 'recomputeOnMetaUpdate'], 10, 3);
         add_filter('rest_event_query', [self::class, 'applyMetaFilters'], 10, 2);
         add_filter('rest_event_collection_params', [self::class, 'addOrderbyParams']);
         add_filter('rest_event_query', [self::class, 'applyOrderby'], 10, 2);
@@ -38,6 +40,19 @@ final class EventQueryFilters
             'single'         => true,
             'type'           => 'string',
         ]);
+    }
+
+    // Fires when event_start_date or event_end_date meta is written directly
+    // (e.g. via WP CLI, ACF, or REST), not just on post save.
+    public static function recomputeOnMetaUpdate(int $meta_id, int $post_id, string $meta_key): void
+    {
+        if (!in_array($meta_key, ['event_start_date', 'event_end_date'], true)) {
+            return;
+        }
+        if (get_post_type($post_id) !== 'event') {
+            return;
+        }
+        self::computeEffectiveEnd($post_id);
     }
 
     // On post save: compute and store event_effective_end.
@@ -92,9 +107,12 @@ final class EventQueryFilters
         $before              = $request->get_param('event_start_before');
         $effective_end_after = $request->get_param('event_effective_end_after');
 
+        error_log('[EventQueryFilters::applyMetaFilters] params: after=' . var_export($after, true) . ' before=' . var_export($before, true) . ' effective_end_after=' . var_export($effective_end_after, true));
+
         $clauses = [];
 
         if ($after) {
+            error_log('[EventQueryFilters] Applying $after filter: ' . sanitize_text_field($after));
             $clauses[] = self::buildEffectiveEndClause('>=', sanitize_text_field($after));
         }
 

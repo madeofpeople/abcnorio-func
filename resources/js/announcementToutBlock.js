@@ -1,6 +1,6 @@
 import { registerBlockType } from '@wordpress/blocks';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import { PanelBody, TextControl, TextareaControl } from '@wordpress/components';
+import { PanelBody, RadioControl, TextControl, TextareaControl } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 
 registerBlockType('abcnorio/announcement-tout', {
@@ -35,6 +35,15 @@ registerBlockType('abcnorio/announcement-tout', {
                             label="Button URL"
                             value={attributes.buttonUrl || ''}
                             onChange={(value) => setAttributes({ buttonUrl: value })}
+                        />
+                        <RadioControl
+                            label="Variant"
+                            selected={attributes.variant || 'default'}
+                            options={[
+                                { label: 'Default', value: 'default' },
+                                { label: 'Secondary', value: 'secondary' },
+                            ]}
+                            onChange={(value) => setAttributes({ variant: value })}
                         />
                     </PanelBody>
                 </InspectorControls>

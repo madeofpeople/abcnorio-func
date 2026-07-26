@@ -16,7 +16,7 @@
     "title": {
       "type": "string",
       "role": "content",
-      "default": "Title"
+      "default": ""
     },
     "details": {
       "type": "string",
@@ -32,6 +32,10 @@
       "type": "string",
       "role": "content",
       "default": "#"
+    },
+    "variant": {
+      "type": "string",
+      "default": "default"
     }
   },
   "supports": {

@@ -266,8 +266,8 @@ main button.secondary,
 .block-editor-iframe__body .wp-block-buttons>div>div.secondary,
 .block-editor-iframe__body a.button.secondary,
 .block-editor-iframe__body button.secondary {
-	background-color: var(--color-accent-secondary);
-	border-color: var(--color-accent-secondary);
+	background-color: var(--color-accent--secondary);
+	border-color: var(--color-accent--secondary);
 	color: var(--color-page-bg)
 }
 

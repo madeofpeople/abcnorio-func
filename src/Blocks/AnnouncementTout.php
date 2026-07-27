@@ -27,11 +27,13 @@ final class AnnouncementTout
 
     public static function render(array $attributes = [], string $content = '', $block = null): string
     {
-        unset($content, $block);
+        unset($block);
 
         self::enqueueComponentAssets();
 
         $toast = sanitize_text_field((string) ($attributes['toast'] ?? 'toast'));
+        $toastHeadingLevel = self::normalizeToastHeadingLevel($attributes['toastHeadingLevel'] ?? 2);
+        $toastTag = 'h' . $toastHeadingLevel;
         $title = sanitize_text_field((string) ($attributes['title'] ?? ''));
         $details = sanitize_textarea_field((string) ($attributes['details'] ?? 'Add details here.'));
         $buttonLabel = sanitize_text_field((string) ($attributes['buttonLabel'] ?? 'Register Here'));
@@ -62,25 +64,92 @@ final class AnnouncementTout
         $buttonNode = $xpath->query('.//a[contains(concat(" ", normalize-space(@class), " "), " announcement-tout__button ")]', $root)->item(0);
 
         if ($toastNode instanceof \DOMElement) {
+            $toastNode = self::retagNode($dom, $toastNode, $toastTag);
             $toastNode->nodeValue = $toast;
         }
         if ($titleNode instanceof \DOMElement) {
             $titleNode->nodeValue = $title;
         }
-        if ($detailsNode instanceof \DOMElement) {
-            $detailsNode->nodeValue = $details;
-        }
-        if ($buttonNode instanceof \DOMElement) {
-            $buttonNode->nodeValue = $buttonLabel;
-            $buttonNode->setAttribute('href', $buttonUrl !== '' ? $buttonUrl : '#');
+
+        $contentNode = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " announcement-tout__content ")]', $root)->item(0);
+
+        if ($contentNode instanceof \DOMElement) {
+            while ($contentNode->firstChild) {
+                $contentNode->removeChild($contentNode->firstChild);
+            }
+
+            HtmlFragmentSupport::appendHtmlFragment(
+                $dom,
+                $contentNode,
+                self::resolvedContentMarkup($content, $details, $buttonLabel, $buttonUrl),
+                'announcement tout content'
+            );
         }
 
         return trim((string) $dom->saveHTML($root));
+    }
+
+    private static function resolvedContentMarkup(string $content, string $details, string $buttonLabel, string $buttonUrl): string
+    {
+        if (trim($content) !== '') {
+            return $content;
+        }
+
+        $html = '';
+        if ($details !== '') {
+            $html .= '<div class="announcement-tout__details">' . esc_html($details) . '</div>';
+        }
+
+        if ($buttonLabel !== '' && $buttonUrl !== '') {
+            $html .= '<div class="announcement-tout__actions">';
+            $html .= '<a class="button reversed announcement-tout__button" href="' . esc_url($buttonUrl) . '">';
+            $html .= esc_html($buttonLabel);
+            $html .= '</a>';
+            $html .= '</div>';
+        }
+
+        return $html;
     }
 
     private static function enqueueComponentAssets(): void
     {
         ComponentIngestor::enqueueRuntimeStyles();
         ComponentIngestor::enqueue_component_deps('announcement-tout');
+    }
+
+    private static function normalizeToastHeadingLevel($rawLevel): int
+    {
+        $level = (int) $rawLevel;
+        if ($level < 1) {
+            return 1;
+        }
+
+        if ($level > 6) {
+            return 6;
+        }
+
+        return $level;
+    }
+
+    private static function retagNode(\DOMDocument $dom, \DOMElement $node, string $tagName): \DOMElement
+    {
+        if (strtolower($node->tagName) === strtolower($tagName)) {
+            return $node;
+        }
+
+        $replacement = $dom->createElement($tagName);
+        foreach ($node->attributes as $attribute) {
+            if ($attribute instanceof \DOMAttr) {
+                $replacement->setAttribute($attribute->name, $attribute->value);
+            }
+        }
+
+        while ($node->firstChild) {
+            $replacement->appendChild($node->firstChild);
+        }
+
+        $node->parentNode?->replaceChild($replacement, $node);
+
+        return $replacement;
     }
 }

@@ -13,6 +13,10 @@
       "role": "content",
       "default": "Announcement Toast"
     },
+    "toastHeadingLevel": {
+      "type": "number",
+      "default": 2
+    },
     "title": {
       "type": "string",
       "role": "content",

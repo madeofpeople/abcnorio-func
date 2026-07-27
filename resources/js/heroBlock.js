@@ -88,22 +88,23 @@ registerBlockType('abcnorio/hero', {
                             allowedTypes={['image']}
                         />
                     )}
-                    <div className="abcnorio-hero__content-wrapper">
-                        <div className="abcnorio-hero__content">
-                            <InnerBlocks
-                                template={TEMPLATE}
-                                templateLock={false}
-                                allowedBlocks={[
-                                    'core/heading',
-                                    'core/paragraph',
-                                    'core/buttons',
-                                    'core/button',
-                                    'core/list',
-                                    'core/list-item',
-                                    'core/image',
-                                ]}
-                            />
-                        </div>
+                </div>
+                <div className="abcnorio-hero__content-wrapper">
+                    <div className="abcnorio-hero__content">
+                        <InnerBlocks
+                            template={TEMPLATE}
+                            templateLock={false}
+                            allowedBlocks={[
+                                'core/heading',
+                                'core/paragraph',
+                                'core/buttons',
+                                'core/button',
+                                'core/group',
+                                'core/list',
+                                'core/list-item',
+                                'core/image',
+                            ]}
+                        />
                     </div>
                 </div>
             </div>

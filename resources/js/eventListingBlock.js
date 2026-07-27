@@ -1,6 +1,6 @@
 import { registerBlockType } from '@wordpress/blocks';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import { PanelBody, RangeControl, SelectControl } from '@wordpress/components';
+import { PanelBody, RangeControl, SelectControl, TextControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import ServerSideRender from '@wordpress/server-side-render';
 import { QUERY_BLOCK_MAX_ITEM_COUNT, QUERY_BLOCK_MIN_ITEM_COUNT } from './blockHelpers';
@@ -57,6 +57,13 @@ function useTaxonomyOptions( taxonomy ) {
             <div { ...blockProps }>
                 <InspectorControls>
                     <PanelBody title="Event Listing Options" initialOpen={ true }>
+                        <TextControl
+                            label="Title"
+                            value={ attributes.title || '' }
+                            onChange={ ( value ) =>
+                                setAttributes( { title: value } )
+                            }
+                        />
                         <SelectControl
                             label="Date Range"
                             value={ attributes.dateFilter }

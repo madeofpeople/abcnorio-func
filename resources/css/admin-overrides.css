@@ -397,6 +397,96 @@ main>.article>section.full {
 	margin: 0 auto
 }
 
+/* Editor parity: announcement tout styles in Gutenberg do not include Astro scope attrs. */
+.block-editor-iframe__body .announcement-tout {
+	background: var(--color-text);
+	color: var(--color-page-bg);
+	display: flex;
+	flex-direction: column;
+	position: relative;
+	padding: 1rem;
+	gap: 1rem;
+	margin-top: 1rem;
+}
+
+.block-editor-iframe__body .announcement-tout .announcement-tout__toast {
+	font-family: var(--font-impact-label-reversed), monospace;
+	color: #fff;
+	font-size: 1.5rem;
+	background-color: var(--color-link);
+	font-weight: 400;
+	display: inline;
+	margin: 0;
+	padding-left: 0.5rem;
+	padding-right: 0.5rem;
+	width: fit-content;
+	position: absolute;
+	top: -1.2rem;
+	left: 2.25rem;
+}
+
+.block-editor-iframe__body .announcement-tout .announcement-tout__title {
+	font-size: 2rem;
+	margin: 0;
+}
+
+.block-editor-iframe__body .announcement-tout .announcement-tout__content {
+	padding: 2rem 0.5rem 0.5rem 0.5rem;
+}
+
+.block-editor-iframe__body .announcement-tout .announcement-tout__content .block-editor-block-list__layout {
+	display: flex;
+	flex-direction: row;
+	column-gap: 2rem;
+}
+
+.block-editor-iframe__body .announcement-tout .announcement-tout__content .block-editor-block-list__layout > :first-child {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.block-editor-iframe__body .announcement-tout .announcement-tout__content .wp-block-buttons,
+.block-editor-iframe__body .announcement-tout .announcement-tout__content .announcement-tout__actions {
+	flex: 0 0 auto;
+	align-self: flex-start;
+	margin: 0;
+}
+
+.block-editor-iframe__body .announcement-tout.announcement-tout--secondary {
+	background: var(--color-page-bg);
+	color: var(--color-text);
+	border: 2px solid var(--color-accent--secondary);
+}
+
+.block-editor-iframe__body .announcement-tout.announcement-tout--secondary .announcement-tout__content {
+	padding: 3rem 0.5rem 0.5rem 0.5rem;
+}
+
+.block-editor-iframe__body .announcement-tout.announcement-tout--secondary .announcement-tout__content .block-editor-block-list__layout {
+	flex-direction: column;
+	row-gap: 1rem;
+}
+
+.block-editor-iframe__body .announcement-tout.announcement-tout--secondary .announcement-tout__toast {
+	background-color: var(--color-accent--secondary);
+	color: var(--color-page-bg);
+	display: inline;
+	text-align: center;
+	width: min-content;
+}
+
+.block-editor-iframe__body .announcement-tout.announcement-tout--secondary .announcement-tout__title {
+	font-size: 1.5rem;
+}
+
+.block-editor-iframe__body .announcement-tout.announcement-tout--secondary .button,
+.block-editor-iframe__body .announcement-tout.announcement-tout--secondary .wp-block-button,
+.block-editor-iframe__body .announcement-tout.announcement-tout--secondary .wp-block-button__link {
+	width: 100%;
+	box-sizing: border-box;
+	text-align: center;
+}
+
 footer {
 	background-color: var(--color-footer-bg);
 	color: var(--color-page-bg);

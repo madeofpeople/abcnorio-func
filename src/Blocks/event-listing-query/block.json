@@ -8,6 +8,10 @@
   "description": "Lists events matching configured criteria.",
   "keywords": ["events", "listing", "abcnorio"],
   "attributes": {
+    "title": {
+      "type": "string",
+      "default": ""
+    },
     "dateFilter": {
       "type": "string",
       "default": "upcoming"

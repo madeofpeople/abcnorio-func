@@ -8,6 +8,22 @@
   "description": "Lists N events and articles matching configured criteria.",
   "keywords": ["content", "listing", "abcnorio"],
   "attributes": {
+    "title": {
+      "type": "string",
+      "default": ""
+    },
+    "hasCta": {
+      "type": "boolean",
+      "default": false
+    },
+    "ctaLabel": {
+      "type": "string",
+      "default": ""
+    },
+    "ctaUrl": {
+      "type": "string",
+      "default": ""
+    },
     "listingPostTypes": {
       "type": "array",
       "default": ["event", "article"],

@@ -150,6 +150,30 @@ registerBlockType('abcnorio/content-listing', {
             <div {...blockProps}>
                 <InspectorControls>
                     <PanelBody title="Content Listing Options" initialOpen={true}>
+                        <TextControl
+                            label="Title"
+                            value={attributes.title || ''}
+                            onChange={(value) => setAttributes({ title: value })}
+                        />
+                        <CheckboxControl
+                            label="Has CTA"
+                            checked={Boolean(attributes.hasCta)}
+                            onChange={(value) => setAttributes({ hasCta: Boolean(value) })}
+                        />
+                        {Boolean(attributes.hasCta) && (
+                            <>
+                                <TextControl
+                                    label="CTA"
+                                    value={attributes.ctaLabel || ''}
+                                    onChange={(value) => setAttributes({ ctaLabel: value })}
+                                />
+                                <TextControl
+                                    label="URL"
+                                    value={attributes.ctaUrl || ''}
+                                    onChange={(value) => setAttributes({ ctaUrl: value })}
+                                />
+                            </>
+                        )}
                         {POST_TYPE_OPTIONS.map((option) => (
                             <CheckboxControl
                                 key={option.value}

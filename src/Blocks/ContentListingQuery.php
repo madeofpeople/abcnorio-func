@@ -37,6 +37,10 @@ final class ContentListingQuery
         self::enqueueComponentAssets();
 
         $showCount = ! empty($attributes['showCount']);
+        $title = sanitize_text_field((string) ($attributes['title'] ?? ''));
+        $hasCta = ! empty($attributes['hasCta']);
+        $ctaLabel = sanitize_text_field((string) ($attributes['ctaLabel'] ?? ''));
+        $ctaUrl = esc_url_raw((string) ($attributes['ctaUrl'] ?? ''));
 
         $postTypes = self::normalizePostTypes($attributes['listingPostTypes'] ?? []);
         $count = max(
@@ -85,10 +89,10 @@ final class ContentListingQuery
             }
         }
 
-        return self::renderListingFromDist(count($items), $itemsHtml, $showCount, $isSlider);
+        return self::renderListingFromDist(count($items), $itemsHtml, $showCount, $isSlider, $title, $hasCta, $ctaLabel, $ctaUrl);
     }
 
-    private static function renderListingFromDist(int $totalItems, string $itemsHtml, bool $showCount, bool $isSlider): string
+    private static function renderListingFromDist(int $totalItems, string $itemsHtml, bool $showCount, bool $isSlider, string $title, bool $hasCta, string $ctaLabel, string $ctaUrl): string
     {
         $fixturePath = $isSlider ? 'content-listing/slider.html' : 'content-listing.html';
         $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml($fixturePath));
@@ -100,6 +104,19 @@ final class ContentListingQuery
         }
 
         HtmlFragmentSupport::addClass($listing, 'wp-block-abcnorio-content-listing');
+
+        $titleNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__title ")]')->item(0);
+        if ($title !== '') {
+            if (! $titleNode instanceof \DOMElement) {
+                $titleNode = $dom->createElement('h2');
+                $titleNode->setAttribute('class', 'content-listing__title');
+                $listing->insertBefore($titleNode, $listing->firstChild);
+            }
+
+            $titleNode->nodeValue = $title;
+        } elseif ($titleNode instanceof \DOMElement) {
+            $titleNode->parentNode?->removeChild($titleNode);
+        }
 
         $countNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__count ")]')->item(0);
         if ($showCount) {
@@ -132,6 +149,37 @@ final class ContentListingQuery
         }
 
         HtmlFragmentSupport::appendHtmlFragment($dom, $itemsNode, $itemsHtml, 'content listing');
+
+        $actionsNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " actions ")]')->item(0);
+        $hasRenderableCta = $hasCta && $ctaLabel !== '' && $ctaUrl !== '';
+
+        if ($hasRenderableCta) {
+            if (! $actionsNode instanceof \DOMElement) {
+                $actionsNode = $dom->createElement('div');
+                $actionsNode->setAttribute('class', 'actions');
+                $listing->appendChild($actionsNode);
+            }
+
+            $existingCta = $xpath->query('.//a[contains(concat(" ", normalize-space(@class), " "), " content-listing__cta ")]', $actionsNode);
+            if ($existingCta !== false) {
+                foreach ($existingCta as $node) {
+                    $node->parentNode?->removeChild($node);
+                }
+            }
+
+            $ctaNode = $dom->createElement('a');
+            $ctaNode->setAttribute('class', 'button content-listing__cta');
+            $ctaNode->setAttribute('href', esc_url($ctaUrl));
+            $ctaNode->appendChild($dom->createTextNode($ctaLabel));
+            $actionsNode->appendChild($ctaNode);
+        } elseif ($actionsNode instanceof \DOMElement) {
+            $existingCta = $xpath->query('.//a[contains(concat(" ", normalize-space(@class), " "), " content-listing__cta ")]', $actionsNode);
+            if ($existingCta !== false) {
+                foreach ($existingCta as $node) {
+                    $node->parentNode?->removeChild($node);
+                }
+            }
+        }
 
         return trim((string) $dom->saveHTML($listing));
     }

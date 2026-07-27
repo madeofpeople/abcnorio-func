@@ -1,11 +1,25 @@
 import { registerBlockType } from '@wordpress/blocks';
-import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import { PanelBody, RadioControl, TextControl, TextareaControl } from '@wordpress/components';
-import ServerSideRender from '@wordpress/server-side-render';
+import { InspectorControls, InnerBlocks, useBlockProps } from '@wordpress/block-editor';
+import { PanelBody, RadioControl, SelectControl, TextControl } from '@wordpress/components';
+
+const ALLOWED_BLOCKS = [
+    'core/heading',
+    'core/paragraph',
+    'core/buttons',
+    'core/button',
+    'core/group',
+    'core/list',
+    'core/list-item',
+    'core/image',
+];
 
 registerBlockType('abcnorio/announcement-tout', {
     edit({ attributes, setAttributes }) {
-        const blockProps = useBlockProps();
+        const variantClass = attributes.variant === 'secondary' ? 'announcement-tout--secondary' : '';
+        const blockProps = useBlockProps({ className: ['announcement-tout', variantClass].filter(Boolean).join(' ') });
+        const headingLevel = Number.parseInt(String(attributes.toastHeadingLevel ?? 2), 10);
+        const normalizedHeadingLevel = headingLevel >= 1 && headingLevel <= 6 ? headingLevel : 2;
+        const ToastHeadingTag = `h${normalizedHeadingLevel}`;
 
         return (
             <div {...blockProps}>
@@ -16,25 +30,23 @@ registerBlockType('abcnorio/announcement-tout', {
                             value={attributes.toast || ''}
                             onChange={(value) => setAttributes({ toast: value })}
                         />
+                        <SelectControl
+                            label="Toast heading level"
+                            value={String(normalizedHeadingLevel)}
+                            options={[
+                                { label: '1', value: '1' },
+                                { label: '2', value: '2' },
+                                { label: '3', value: '3' },
+                                { label: '4', value: '4' },
+                                { label: '5', value: '5' },
+                                { label: '6', value: '6' },
+                            ]}
+                            onChange={(value) => setAttributes({ toastHeadingLevel: Number.parseInt(String(value), 10) || 2 })}
+                        />
                         <TextControl
                             label="Title"
                             value={attributes.title || ''}
                             onChange={(value) => setAttributes({ title: value })}
-                        />
-                        <TextareaControl
-                            label="Details"
-                            value={attributes.details || ''}
-                            onChange={(value) => setAttributes({ details: value })}
-                        />
-                        <TextControl
-                            label="Button Label"
-                            value={attributes.buttonLabel || ''}
-                            onChange={(value) => setAttributes({ buttonLabel: value })}
-                        />
-                        <TextControl
-                            label="Button URL"
-                            value={attributes.buttonUrl || ''}
-                            onChange={(value) => setAttributes({ buttonUrl: value })}
                         />
                         <RadioControl
                             label="Variant"
@@ -47,11 +59,19 @@ registerBlockType('abcnorio/announcement-tout', {
                         />
                     </PanelBody>
                 </InspectorControls>
-                <ServerSideRender block="abcnorio/announcement-tout" attributes={attributes} />
+
+                {attributes.toast && <ToastHeadingTag className="announcement-tout__toast">{attributes.toast}</ToastHeadingTag>}
+                {attributes.title && <h3 className="announcement-tout__title">{attributes.title}</h3>}
+                <div className="announcement-tout__content">
+                    <InnerBlocks
+                        templateLock={false}
+                        allowedBlocks={ALLOWED_BLOCKS}
+                    />
+                </div>
             </div>
         );
     },
     save() {
-        return null;
+        return <InnerBlocks.Content />;
     },
 });

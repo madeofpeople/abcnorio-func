@@ -35,6 +35,7 @@ final class EventListingQuery
         self::enqueueComponentAssets();
 
         $showCount = ! empty($attributes['showCount']);
+        $title = sanitize_text_field((string) ($attributes['title'] ?? ''));
 
         $dateFilter = sanitize_key((string) ($attributes['dateFilter'] ?? 'upcoming'));
         $order = strtoupper(sanitize_key((string) ($attributes['order'] ?? 'desc')));
@@ -135,7 +136,7 @@ final class EventListingQuery
             );
         }
 
-        return self::renderListingFromDist($countLabel, $itemsHtml, $isSlider);
+        return self::renderListingFromDist($countLabel, $itemsHtml, $isSlider, $title);
     }
 
     private static function renderEventCard(\WP_Post $post): string
@@ -172,7 +173,7 @@ final class EventListingQuery
         ]);
     }
 
-    private static function renderListingFromDist(?string $countLabel, string $itemsHtml, bool $isSlider): string
+    private static function renderListingFromDist(?string $countLabel, string $itemsHtml, bool $isSlider, string $title): string
     {
         $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('event-listing/empty.html'));
         $xpath = new \DOMXPath($dom);
@@ -186,6 +187,19 @@ final class EventListingQuery
             'class',
             trim($listing->getAttribute('class') . ' wp-block-abcnorio-event-listing')
         );
+
+        $titleNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " event-listing__title ")]')->item(0);
+        if ($title !== '') {
+            if (! $titleNode instanceof \DOMElement) {
+                $titleNode = $dom->createElement('h2');
+                $titleNode->setAttribute('class', 'event-listing__title');
+                $listing->insertBefore($titleNode, $listing->firstChild);
+            }
+
+            $titleNode->nodeValue = $title;
+        } elseif ($titleNode instanceof \DOMElement) {
+            $titleNode->parentNode?->removeChild($titleNode);
+        }
 
         $countNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " events__count ") or contains(concat(" ", normalize-space(@class), " "), " event-listing__count ")]')->item(0);
         if ($countLabel !== null) {
@@ -208,6 +222,10 @@ final class EventListingQuery
         $teaserList = $dom->getElementById('teaser-list');
         if (! $teaserList instanceof \DOMElement) {
             throw new \RuntimeException('Components System Error: teaser-list node missing.');
+        }
+
+        while ($teaserList->firstChild) {
+            $teaserList->removeChild($teaserList->firstChild);
         }
 
         HtmlFragmentSupport::appendHtmlFragment($dom, $teaserList, $itemsHtml, 'event listing');

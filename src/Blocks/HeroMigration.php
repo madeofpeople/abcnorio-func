@@ -4,6 +4,8 @@ namespace abcnorio\CustomFunc\Blocks;
 
 final class HeroMigration
 {
+    private const TARGET_POST_TYPES = ['page', 'collective', 'article'];
+
     public static function registerHooks(): void
     {
         if (defined('WP_CLI') && \WP_CLI) {
@@ -23,10 +25,18 @@ final class HeroMigration
         if ($postIdFilter > 0) {
             $postIds = [$postIdFilter];
         } else {
+            $targetPostTypes = implode(
+                ',',
+                array_map(
+                    static fn (string $postType): string => "'" . esc_sql($postType) . "'",
+                    self::TARGET_POST_TYPES
+                )
+            );
+
             $postIds = $wpdb->get_col(
                 "SELECT ID FROM {$wpdb->posts}
                 WHERE post_content LIKE '%wp:abcnorio/hero%'
-                  AND post_type = 'page'
+                  AND post_type IN ({$targetPostTypes})
                   AND post_status NOT IN ('auto-draft', 'trash', 'inherit')"
             );
         }
@@ -40,7 +50,7 @@ final class HeroMigration
                 continue;
             }
 
-            if ($post->post_type !== 'page') {
+            if (! in_array($post->post_type, self::TARGET_POST_TYPES, true)) {
                 continue;
             }
 
@@ -68,8 +78,9 @@ final class HeroMigration
         }
 
         \WP_CLI::success(sprintf(
-            'Scanned %d page posts. %s %d posts.',
+            'Scanned %d posts (%s). %s %d posts.',
             $scanned,
+            implode(', ', self::TARGET_POST_TYPES),
             $dryRun ? 'Would migrate' : 'Migrated',
             $updated
         ));

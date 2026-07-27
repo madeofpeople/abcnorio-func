@@ -28,12 +28,14 @@ final class Hero
         unset($block);
 
         $url = esc_url_raw((string) ($attributes['url'] ?? ''));
+        $variant = self::normalizeVariant($attributes['variant'] ?? 'default');
+        $variantClass = $variant === 'short' ? ' short' : '';
 
         $style = self::heroStyle($url);
         $renderedContent = self::ensureContentWrappers($content);
 
         $html = '';
-        $html .= '<div class="abcnorio-hero wp-block-abcnorio-hero">';
+        $html .= '<div class="abcnorio-hero wp-block-abcnorio-hero' . $variantClass . '">';
         $html .= '<div class="abcnorio-hero__image-wrapper" style="' . esc_attr($style) . '">';
         $html .= $renderedContent;
         $html .= '</div>';
@@ -61,5 +63,16 @@ final class Hero
         $bg = "url('{$escapedUrl}')";
 
         return "--cover-bg-xs:{$bg};--cover-bg-sm:{$bg};--cover-bg-md:{$bg};--cover-bg-lg:{$bg};";
+    }
+
+    private static function normalizeVariant($rawVariant): string
+    {
+        $variant = strtolower(sanitize_key((string) $rawVariant));
+
+        if ($variant === 'short') {
+            return 'short';
+        }
+
+        return 'default';
     }
 }

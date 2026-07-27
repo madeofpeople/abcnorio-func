@@ -23,6 +23,11 @@
     "sizeSlug": {
       "type": "string",
       "default": "full"
+    },
+    "variant": {
+      "type": "string",
+      "default": "default",
+      "enum": ["default", "short"]
     }
   },
   "supports": {

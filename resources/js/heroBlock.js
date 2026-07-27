@@ -1,13 +1,14 @@
 import { registerBlockType } from '@wordpress/blocks';
 import {
     BlockControls,
+    InspectorControls,
     InnerBlocks,
     MediaPlaceholder,
     MediaUpload,
     MediaUploadCheck,
     useBlockProps,
 } from '@wordpress/block-editor';
-import { ToolbarButton, ToolbarGroup } from '@wordpress/components';
+import { PanelBody, SelectControl, ToolbarButton, ToolbarGroup } from '@wordpress/components';
 
 const TEMPLATE = [
     ['core/heading', { level: 2, placeholder: 'Write title...' }],
@@ -18,6 +19,7 @@ const TEMPLATE = [
 registerBlockType('abcnorio/hero', {
     edit({ attributes, setAttributes }) {
         const imageUrl = String(attributes.url || '').trim();
+        const variant = attributes.variant === 'short' ? 'short' : 'default';
 
         const onSelectImage = (media) => {
             setAttributes({
@@ -49,10 +51,26 @@ registerBlockType('abcnorio/hero', {
                 '--cover-bg-lg': `url("${imageUrl}")`,
             };
 
-        const blockProps = useBlockProps({ className: 'abcnorio-hero' });
+        const blockProps = useBlockProps({ className: variant === 'short' ? 'abcnorio-hero short' : 'abcnorio-hero' });
 
         return (
             <div {...blockProps}>
+                <InspectorControls>
+                    <PanelBody title="Hero settings" initialOpen={true}>
+                        <SelectControl
+                            label="Variant"
+                            value={variant}
+                            options={[
+                                { label: 'Default', value: 'default' },
+                                { label: 'Short', value: 'short' },
+                            ]}
+                            onChange={(nextVariant) => {
+                                setAttributes({ variant: nextVariant === 'short' ? 'short' : 'default' });
+                            }}
+                        />
+                    </PanelBody>
+                </InspectorControls>
+
                 <BlockControls group="block">
                     <ToolbarGroup>
                         <MediaUploadCheck>

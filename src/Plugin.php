@@ -25,6 +25,7 @@ use abcnorio\CustomFunc\Blocks\CollectiveListingQuery;
 use abcnorio\CustomFunc\Blocks\AnnouncementTout;
 use abcnorio\CustomFunc\Blocks\AnnouncementToutMigration;
 use abcnorio\CustomFunc\Blocks\Hero;
+use abcnorio\CustomFunc\Blocks\HeroMigration;
 use abcnorio\CustomFunc\Blocks\SidebarTout;
 use abcnorio\CustomFunc\Blocks\NewsletterSignup;
 use abcnorio\CustomFunc\Dashboard\Dashboard;
@@ -58,6 +59,8 @@ final class Plugin
         AnnouncementToutMigration::registerHooks();
         /*  Hero block with in-canvas editing */
         Hero::registerHooks();
+        /*  One-time hero content migration */
+        HeroMigration::registerHooks();
         /*  Sidebar tout wordpress block */
         SidebarTout::registerHooks();
         /*  Newsletter signup placement block */

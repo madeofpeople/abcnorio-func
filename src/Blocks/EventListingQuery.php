@@ -180,7 +180,13 @@ final class EventListingQuery
 
         $listing = $dom->getElementsByTagName('event-listing')->item(0);
         if (! $listing instanceof \DOMElement) {
-            throw new \RuntimeException('Components System Error: event-listing fixture root missing.');
+            $dom = self::createFallbackListingDom();
+            $xpath = new \DOMXPath($dom);
+            $listing = $dom->getElementsByTagName('event-listing')->item(0);
+
+            if (! $listing instanceof \DOMElement) {
+                throw new \RuntimeException('Components System Error: event-listing fallback root missing.');
+            }
         }
 
         $listing->setAttribute(
@@ -264,6 +270,16 @@ final class EventListingQuery
         }
 
         return trim((string) $dom->saveHTML($listing));
+    }
+
+    private static function createFallbackListingDom(): \DOMDocument
+    {
+        return HtmlFragmentSupport::loadHtmlFragment(
+            '<event-listing class="event-listing card-grid" data-component="abcnorio/event-listing">'
+            . '<section id="teaser-list" class="teaser-list" role="region" aria-label="Events" aria-busy="false"></section>'
+            . '<div class="actions"><a href="/events" class="show-all button">View all</a></div>'
+            . '</event-listing>'
+        );
     }
 
     private static function renderEventCardFromDist(array $data): string

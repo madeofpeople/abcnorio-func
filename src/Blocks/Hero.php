@@ -16,63 +16,7 @@ final class Hero
         }
 
         register_block_type(
-            plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . 'src/Blocks/hero',
-            [
-                'render_callback' => [self::class, 'render'],
-            ]
+            plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . 'src/Blocks/hero'
         );
-    }
-
-    public static function render(array $attributes = [], string $content = '', $block = null): string
-    {
-        unset($block);
-
-        $url = esc_url_raw((string) ($attributes['url'] ?? ''));
-        $variant = self::normalizeVariant($attributes['variant'] ?? 'default');
-        $variantClass = $variant === 'short' ? ' short' : '';
-
-        $style = self::heroStyle($url);
-        $renderedContent = self::ensureContentWrappers($content);
-
-        $html = '';
-        $html .= '<div class="abcnorio-hero wp-block-abcnorio-hero' . $variantClass . '">';
-        $html .= '<div class="abcnorio-hero__image-wrapper" style="' . esc_attr($style) . '">';
-        $html .= $renderedContent;
-        $html .= '</div>';
-        $html .= '</div>';
-
-        return $html;
-    }
-
-    private static function ensureContentWrappers(string $content): string
-    {
-        if (str_contains($content, 'abcnorio-hero__content-wrapper')) {
-            return $content;
-        }
-
-        return '<div class="abcnorio-hero__content-wrapper"><div class="abcnorio-hero__content">' . $content . '</div></div>';
-    }
-
-    private static function heroStyle(string $url): string
-    {
-        if ($url === '') {
-            return '--cover-bg-xs:none;--cover-bg-sm:none;--cover-bg-md:none;--cover-bg-lg:none;';
-        }
-
-        $escapedUrl = esc_url($url);
-        $bg = "url('{$escapedUrl}')";
-
-        return "--cover-bg-xs:{$bg};--cover-bg-sm:{$bg};--cover-bg-md:{$bg};--cover-bg-lg:{$bg};";
-    }
-
-    private static function normalizeVariant($rawVariant): string
-    {
-        $variant = strtolower(sanitize_key((string) $rawVariant));
-
-        if ($variant === 'short') {
-            return 'short';
-        }
-
-        return 'default';
     }
 }

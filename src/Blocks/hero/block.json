@@ -27,7 +27,7 @@
     "variant": {
       "type": "string",
       "default": "default",
-      "enum": ["default", "short"]
+      "enum": ["default", "short", "thin"]
     }
   },
   "supports": {

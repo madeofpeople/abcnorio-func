@@ -19,7 +19,7 @@ const TEMPLATE = [
 registerBlockType('abcnorio/hero', {
     edit({ attributes, setAttributes }) {
         const imageUrl = String(attributes.url || '').trim();
-        const variant = attributes.variant === 'short' ? 'short' : 'default';
+        const variant = attributes.variant === 'short' || attributes.variant === 'thin' ? attributes.variant : 'default';
 
         const onSelectImage = (media) => {
             setAttributes({
@@ -51,7 +51,7 @@ registerBlockType('abcnorio/hero', {
                 '--cover-bg-lg': `url("${imageUrl}")`,
             };
 
-        const blockProps = useBlockProps({ className: variant === 'short' ? 'abcnorio-hero short' : 'abcnorio-hero' });
+        const blockProps = useBlockProps({ className: variant === 'default' ? 'abcnorio-hero' : `abcnorio-hero ${variant}` });
 
         return (
             <div {...blockProps}>
@@ -63,9 +63,15 @@ registerBlockType('abcnorio/hero', {
                             options={[
                                 { label: 'Default', value: 'default' },
                                 { label: 'Short', value: 'short' },
+                                { label: 'Thin', value: 'thin' },
                             ]}
                             onChange={(nextVariant) => {
-                                setAttributes({ variant: nextVariant === 'short' ? 'short' : 'default' });
+                                if (nextVariant === 'short' || nextVariant === 'thin') {
+                                    setAttributes({ variant: nextVariant });
+                                    return;
+                                }
+
+                                setAttributes({ variant: 'default' });
                             }}
                         />
                     </PanelBody>

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Custom Func
  * Description:       Headless site functionality plugin for abcnorio.org.
- * Version:           0.15.0
+ * Version:           0.16.0
  * Requires PHP:      8.3
  * Author:            abcnorio
  * Text Domain:       custom-func

@@ -13,7 +13,7 @@ final class AdminExperience
         ListTableTermEditor::registerHooks();
         CollectiveSubPages::registerHooks();
         add_action('admin_menu', [self::class, 'customizeAdminMenu']);
-        add_action('admin_menu', [self::class,'customizeACFMenu']);
+        add_action('admin_menu', [self::class, 'customizeACFMenu']);
         add_action('rest_api_init', [self::class, 'registerRestLinkRewrites']);
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminStyles']);
         add_action('enqueue_block_assets', [self::class, 'enqueueAdminStyles']);
@@ -81,6 +81,10 @@ final class AdminExperience
 
     public static function registerRestLinkRewrites(): void
     {
+        if (self::frontendBaseUrl() === '') {
+            return;
+        }
+
         foreach (get_post_types(['show_in_rest' => true], 'names') as $postType) {
             add_filter("rest_prepare_{$postType}", [self::class, 'rewriteRestPreparedEntity'], 10, 3);
         }

@@ -19,13 +19,7 @@ use abcnorio\CustomFunc\RestApi\SidebarBlocksField;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
 use abcnorio\CustomFunc\Blocks\Patterns;
-use abcnorio\CustomFunc\Blocks\EventListingQuery;
-use abcnorio\CustomFunc\Blocks\ContentListingQuery;
-use abcnorio\CustomFunc\Blocks\CollectiveListingQuery;
-use abcnorio\CustomFunc\Blocks\AnnouncementTout;
-use abcnorio\CustomFunc\Blocks\Hero;
-use abcnorio\CustomFunc\Blocks\SidebarTout;
-use abcnorio\CustomFunc\Blocks\NewsletterSignup;
+use abcnorio\CustomFunc\Blocks\BlockRegistrar;
 use abcnorio\CustomFunc\Dashboard\Dashboard;
 use abcnorio\CustomFunc\Components\ComponentIngestor;
 
@@ -45,20 +39,8 @@ final class Plugin
         Dashboard::registerHooks();
         /*  Assembled blocks */
         Patterns::registerHooks();
-        /*  Event listing wordpress block */
-        EventListingQuery::registerHooks();
-        /*  Content listing wordpress block */
-        ContentListingQuery::registerHooks();
-        /*  Collective listing wordpress block */
-        CollectiveListingQuery::registerHooks();
-        /*  Announcement tout wordpress block */
-        AnnouncementTout::registerHooks();
-        /*  Hero block with in-canvas editing */
-        Hero::registerHooks();
-        /*  Sidebar tout wordpress block */
-        SidebarTout::registerHooks();
-        /*  Newsletter signup placement block */
-        NewsletterSignup::registerHooks();
+        /*  Shared register for wordpress blocks */
+        BlockRegistrar::registerHooks();
         /*  Deployment dashboard */
         Deployment::registerHooks();
         /*  Allows advanced querying of Events */

@@ -10,6 +10,11 @@ final class BlockRegistry
             'abcnorio/announcement-tout' => [
                 'path' => 'src/Blocks/announcement-tout',
             ],
+            'abcnorio/gallery' => [
+                'path' => 'src/Blocks/gallery',
+                'renderClass' => Gallery::class,
+                'renderMethod' => 'render',
+            ],
             'abcnorio/hero' => [
                 'path' => 'src/Blocks/hero',
             ],

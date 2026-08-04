@@ -29,6 +29,12 @@ final class ImageStyleRegistrar
             'crop' => false,
             'label' => 'ABC No Rio Hero (1080 wide)',
         ],
+        'galery-slider' => [
+            'width' => 400,
+            'height' => 9999,
+            'crop' => false,
+            'label' => 'Gallery Slider (400 wide)',
+        ],
     ];
 
     public static function registerHooks(): void

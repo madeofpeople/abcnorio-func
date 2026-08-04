@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "abcnorio/gallery",
+  "title": "ABCNorio Gallery",
+  "category": "media",
+  "icon": "images-alt2",
+  "description": "Gallery block with preview parity and item/page navigation modes.",
+  "keywords": ["gallery", "images", "abcnorio"],
+  "attributes": {
+    "navigationMode": {
+      "type": "string",
+      "default": "item"
+    },
+    "variant": {
+      "type": "string",
+      "default": "slider"
+    }
+  },
+  "supports": {
+    "align": false,
+    "html": false,
+    "customClassName": false
+  }
+}

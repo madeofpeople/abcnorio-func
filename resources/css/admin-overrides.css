@@ -157,3 +157,135 @@ body.wp-admin :where(a, a:visited) {
 	animation: abcnorio-highlight-new 3s ease-out forwards;
 	border-radius: 3px;
 }
+
+/* --- Gallery editor parity --- */
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing {
+	display: block;
+	margin-left: -2rem;
+	margin-right: -2rem;
+	background-color: var(--color-text);
+	padding-top: 2rem;
+	padding-bottom: 2rem;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-track {
+	display: flex;
+	gap: 2rem;
+	align-items: center;
+	padding: 0 1rem;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .gallery-item {
+	height: 400px;
+	min-width: fit-content;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-track > .wp-block {
+	height: 400px;
+	min-width: fit-content;
+	margin-block-start: 0;
+	margin-block-end: 0;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-track > .wp-block figure {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-track > .wp-block img {
+	display: block;
+	height: 100%;
+	width: auto;
+	max-width: none;
+	object-fit: contain;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-prev,
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-next {
+	position: absolute;
+	top: 40%;
+	width: 2rem;
+	height: 2rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	text-decoration: none;
+	background-color: var(--color-link);
+	color: var(--color-page-bg);
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-prev {
+	left: -0.75rem;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-next {
+	right: -0.75rem;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-prev > span,
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-next > span {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-prev::after {
+	content: '‹';
+	font-size: 2rem;
+	line-height: 0.875;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-next::after {
+	content: '›';
+	font-size: 2rem;
+	line-height: 0.875;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-slide-dots {
+	margin: 1.5rem 0 3rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-slide-dots::before {
+	content: '';
+	width: 0.625rem;
+	height: 0.625rem;
+	border-radius: 50%;
+	border: 2px var(--color-accent) solid;
+	background: var(--color-accent);
+	box-shadow: 1.125rem 0 0 0 var(--color-grey--light), 2.25rem 0 0 0 var(--color-grey--light);
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .gallery-item > a,
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .gallery-item > figure,
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .gallery-item > img {
+	display: block;
+	height: 100%;
+	width: auto;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .gallery-item img,
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .blaze-track > .wp-block img {
+	display: block;
+	height: 100%;
+	width: auto;
+	max-width: none;
+	object-fit: contain;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing .gallery-item--ghost {
+	opacity: 0;
+	pointer-events: none;
+	user-select: none;
+}

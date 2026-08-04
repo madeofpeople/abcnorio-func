@@ -61,6 +61,7 @@ final class AllowedBlocks
             'core/button',
             'core/group',
             'abcnorio/hero',
+            'abcnorio/gallery',
             'core/embed',
             'core/html',
             'abcnorio/announcement-tout',

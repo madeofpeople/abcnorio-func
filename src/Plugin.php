@@ -267,6 +267,7 @@ final class Plugin
                 null
             );
         }
+
     }
 
     public static function enqueueComponentRuntimeStyles(): void

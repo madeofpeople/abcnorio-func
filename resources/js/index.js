@@ -6,6 +6,7 @@ import './eventListingBlock';
 import './collectiveListingBlock';
 import './announcementToutBlock';
 import './heroBlock';
+import './galleryBlock';
 import './sidebarToutBlock';
 import './newsletterSignupBlock';
 

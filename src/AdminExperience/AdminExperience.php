@@ -9,6 +9,7 @@ final class AdminExperience
     public static function registerHooks(): void
     {
         AllowedBlocks::registerHooks();
+        ListTableDateColumns::registerHooks();
         TaxonomyColumnSorter::registerHooks();
         ListTableTermEditor::registerHooks();
         CollectiveSubPages::registerHooks();

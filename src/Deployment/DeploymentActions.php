@@ -400,6 +400,34 @@ final class DeploymentActions
         wp_send_json_success(is_array($body) ? ($body[$statusKey] ?? []) : []);
     }
 
+    /**
+     * @return array{ok: bool, message: string}
+     */
+    private static function verifyStagingPluginArtifactContract(): array
+    {
+        $pluginRoot = rtrim(plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE), '/');
+        $requiredFiles = [
+            $pluginRoot . '/build/index.js',
+            $pluginRoot . '/build/index.asset.php',
+            $pluginRoot . '/resources/vendor/components/dist/manifest.json',
+        ];
+
+        foreach ($requiredFiles as $requiredFile) {
+            if (!is_readable($requiredFile)) {
+                return [
+                    'ok' => false,
+                    'message' => sprintf(
+                        /* translators: %s: Missing required plugin artifact path. */
+                        __('Staging artifact contract failed: missing %s', 'abcnorio-func'),
+                        $requiredFile
+                    ),
+                ];
+            }
+        }
+
+        return ['ok' => true, 'message' => ''];
+    }
+
     public static function pushToStaging(): void
     {
         self::devToolPost('abcnorio_push_to_staging', '/dev-tools/push-to-staging', 'push');
@@ -407,7 +435,33 @@ final class DeploymentActions
 
     public static function pollPushStatus(): void
     {
-        self::devToolPoll('abcnorio_poll_push_status', 'push');
+        check_ajax_referer('abcnorio_poll_push_status', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $response = wp_remote_get(Deployment::orchestratorBaseUrl() . '/dev-tools/status', [
+            'headers' => ['Authorization' => 'Bearer ' . Deployment::orchestratorSecret()],
+            'timeout' => 5,
+        ]);
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(['message' => $response->get_error_message()], 502);
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        $pushStatus = is_array($body) ? ($body['push'] ?? []) : [];
+
+        if (is_array($pushStatus) && (($pushStatus['status'] ?? '') === 'done')) {
+            $artifactContract = self::verifyStagingPluginArtifactContract();
+            if (!$artifactContract['ok']) {
+                $pushStatus['status'] = 'failed';
+                $pushStatus['message'] = $artifactContract['message'];
+            }
+        }
+
+        wp_send_json_success($pushStatus);
     }
 
     public static function copyMediaToDev(): void

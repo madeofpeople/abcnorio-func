@@ -21,6 +21,7 @@ $buildPostTypeCapabilities = static function (string $singular, string $plural):
             "publish_{$plural}",
             "read_private_{$plural}",
             "edit_published_{$plural}",
+            "edit_posts",
         ],
         'admin' => [
             "edit_others_{$plural}",
@@ -29,6 +30,7 @@ $buildPostTypeCapabilities = static function (string $singular, string $plural):
             "delete_published_{$plural}",
             "delete_others_{$plural}",
             "edit_private_{$plural}",
+            "manage_options",
         ],
     ];
 };

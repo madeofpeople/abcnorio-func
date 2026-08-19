@@ -36,9 +36,11 @@ final class PostTypeRegistrar
             'labels' => $labels,
             'public' => $definition['public'] ?? true,
             'show_ui' => $definition['show_ui'] ?? true,
+            'show_in_menu' => $definition['show_in_menu'] ?? true,
             'show_in_nav_menus' => $definition['show_in_nav_menus'] ?? false,
             'show_in_rest' => $definition['show_in_rest'] ?? true,
             'rest_base' => $definition['rest_base'] ?? self::defaultRestBase($slug),
+            'menu_position' => $definition['menu_position'] ?? null,
             'rewrite' => [
                 'slug' => $definition['rewrite_slug'] ?? $slug,
                 'with_front' => $definition['with_front'] ?? false,

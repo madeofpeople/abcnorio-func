@@ -40,6 +40,25 @@ return [
 
 
     ],
+    'form' => [
+        'name' => 'Forms',
+        'singular_name' => 'Form',
+        'rest_base' => 'forms',
+        'show_in_rest' => true,
+        'show_in_menu' => false,
+        'menu_position' => 25,
+        'supports' => [
+            'title',
+            'editor',
+            'custom-fields',
+        ],
+        'menu_icon' => 'dashicons-feedback',
+        'capability_type' => [
+            'form',
+            'forms',
+        ],
+        'map_meta_cap' => true,
+    ],
     'collective' => [
         'name' => 'Collectives',
         'singular_name' => 'Collective',
@@ -67,6 +86,7 @@ return [
         'name' => 'Articles',
         'singular_name' => 'Article',
         'rest_base' => 'articles',
+        'show_in_nav_menus' => true,
         'rewrite_slug' => 'articles',
         'supports' => [
             'title',

@@ -2,6 +2,7 @@
 
 namespace abcnorio\CustomFunc;
 use abcnorio\CustomFunc\ContentModel\ACFFieldGroups;
+use abcnorio\CustomFunc\ContentModel\PublicFormGroups;
 use abcnorio\CustomFunc\ContentModel\PostTypeRegistrar;
 use abcnorio\CustomFunc\ContentModel\TaxonomyRegistrar;
 use abcnorio\CustomFunc\ContentModel\SidebarScopeSaveGuard;
@@ -15,6 +16,7 @@ use abcnorio\CustomFunc\RestApi\FeaturedImageField;
 use abcnorio\CustomFunc\RestApi\ContentListingEndpoint;
 use abcnorio\CustomFunc\RestApi\ICalEndpoint;
 use abcnorio\CustomFunc\RestApi\MailchimpEndpoint;
+use abcnorio\CustomFunc\RestApi\FormSubmissionEndpoint;
 use abcnorio\CustomFunc\RestApi\SidebarBlocksField;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
@@ -35,7 +37,7 @@ final class Plugin
     {
         /*  URL redirects for headless wordpress, admin UX bits */
         AdminExperience::registerHooks();
-        /*  Removes useless crap */
+        /*  Deployment Dashboard */
         Dashboard::registerHooks();
         /*  Assembled blocks */
         Patterns::registerHooks();
@@ -53,10 +55,13 @@ final class Plugin
         ICalEndpoint::registerHooks();
         /*  Mailchimp list config and reactive submit endpoints */
         MailchimpEndpoint::registerHooks();
+        /*  Shared form submission endpoint */
+        FormSubmissionEndpoint::registerHooks();
         /*  Login redirection */
         LoginAlias::registerHooks();
         /*  ACF Field Groups — custom post type fields */
         ACFFieldGroups::registerHooks();
+        PublicFormGroups::registerHooks();
         /*  Provides sidebar blocks to associated pages, and makes them accessible to REST API */
         SidebarBlocksField::registerHooks();
         /*  Keeps us from assigning multiple sidebars to a single post
@@ -80,7 +85,7 @@ final class Plugin
         add_action('init', [self::class, 'registerContentModels']);
         add_action('init', [self::class, 'disableComments'], 15);
         add_action('init', [self::class, 'ingestAstroComponentLibrary'], 40);
-        remove_action( 'enqueue_block_editor_assets', [self::class, 'wp_enqueue_editor_block_directory_assets'], 999);
+        // remove_action( 'enqueue_block_editor_assets', [self::class, 'wp_enqueue_editor_block_directory_assets'], 999);
     }
 
     public static function ingestAstroComponentLibrary(): void
@@ -121,6 +126,77 @@ final class Plugin
         $taxonomies = require __DIR__ . '/ContentModel/taxonomies.php';
         PostTypeRegistrar::registerMany($postTypes);
         TaxonomyRegistrar::registerMany($taxonomies);
+    }
+
+    public static function ensureVolunteerFormPost(): void
+    {
+        if (! function_exists('get_posts')) {
+            return;
+        }
+
+        $existing = get_posts([
+            'post_type' => 'form',
+            'name' => 'volunteer',
+            'post_status' => 'publish',
+            'posts_per_page' => 1,
+            'ignore_sticky_posts' => true,
+            'fields' => 'ids',
+        ]);
+
+        $postId = ! empty($existing) ? (int) $existing[0] : 0;
+
+        if ($postId <= 0) {
+            $postId = wp_insert_post([
+                'post_type' => 'form',
+                'post_status' => 'publish',
+                'post_title' => 'Volunteer',
+                'post_name' => 'volunteer',
+            ], true);
+        }
+
+        if (! $postId || $postId <= 0) {
+            return;
+        }
+
+        if (! function_exists('get_field') || ! function_exists('update_field')) {
+            return;
+        }
+
+        $existingFields = get_field('form_fields', $postId);
+        if (! empty($existingFields)) {
+            return;
+        }
+
+        update_field('form_success_message', 'Thanks for reaching out! We\'ll be in touch.', $postId);
+        update_field('form_error_message', 'Something went wrong. Please try again.', $postId);
+        update_field('form_submit_label', 'Send', $postId);
+        update_field('form_recipient_email', get_option('admin_email', ''), $postId);
+        update_field('form_fields', [
+            [
+                'field_name' => 'name',
+                'field_label' => 'Name',
+                'field_type' => 'text',
+                'field_required' => true,
+                'field_placeholder' => '',
+                'field_validation' => 'required',
+            ],
+            [
+                'field_name' => 'email',
+                'field_label' => 'Email',
+                'field_type' => 'email',
+                'field_required' => true,
+                'field_placeholder' => '',
+                'field_validation' => 'email',
+            ],
+            [
+                'field_name' => 'message',
+                'field_label' => 'Message',
+                'field_type' => 'textarea',
+                'field_required' => true,
+                'field_placeholder' => '',
+                'field_validation' => 'min_length',
+            ],
+        ], $postId);
     }
 
     public static function enableFeaturedImages(): void
@@ -295,19 +371,31 @@ final class Plugin
     }
 
 
-    public static function disableGutenbergLayoutPanel( $metadata ) {
-        if ( isset( $metadata['supports']['layout'] ) ) {
-            if ( is_array( $metadata['supports']['layout'] ) ) {
-                $metadata['supports']['layout']['allowEditing'] = false;
+    public static function disableGutenbergLayoutPanel($metadata)
+    {
+        if (! is_array($metadata)) {
+            return $metadata;
+        }
+
+        $supports = $metadata['supports'] ?? null;
+        if (! is_array($supports)) {
+            return $metadata;
+        }
+
+        if (isset($supports['layout'])) {
+            if (is_array($supports['layout'])) {
+                $supports['layout']['allowEditing'] = false;
             } else {
-                $metadata['supports']['layout'] = false;
+                $supports['layout'] = false;
             }
         }
 
         // Backward compatibility for older block types.
-        if ( isset( $metadata['supports']['__experimentalLayout'] ) ) {
-            $metadata['supports']['__experimentalLayout'] = false;
+        if (isset($supports['__experimentalLayout'])) {
+            $supports['__experimentalLayout'] = false;
         }
+
+        $metadata['supports'] = $supports;
 
         return $metadata;
     }

@@ -1,6 +1,6 @@
 import { registerBlockType } from '@wordpress/blocks';
 import { InspectorControls, InnerBlocks, useBlockProps } from '@wordpress/block-editor';
-import { PanelBody, RadioControl, SelectControl, TextControl } from '@wordpress/components';
+import { PanelBody, SelectControl, TextControl } from '@wordpress/components';
 
 const ALLOWED_BLOCKS = [
     'core/heading',
@@ -25,6 +25,15 @@ registerBlockType('abcnorio/announcement-tout', {
             <div {...blockProps}>
                 <InspectorControls>
                     <PanelBody title="Announcement Tout" initialOpen={true}>
+                        <SelectControl
+                            label="Variant"
+                            value={attributes.variant || 'default'}
+                            options={[
+                                { label: 'Default', value: 'default' },
+                                { label: 'Secondary', value: 'secondary' },
+                            ]}
+                            onChange={(value) => setAttributes({ variant: value })}
+                        />
                         <TextControl
                             label="Toast"
                             value={attributes.toast || ''}
@@ -47,15 +56,6 @@ registerBlockType('abcnorio/announcement-tout', {
                             label="Title"
                             value={attributes.title || ''}
                             onChange={(value) => setAttributes({ title: value })}
-                        />
-                        <RadioControl
-                            label="Variant"
-                            selected={attributes.variant || 'default'}
-                            options={[
-                                { label: 'Default', value: 'default' },
-                                { label: 'Secondary', value: 'secondary' },
-                            ]}
-                            onChange={(value) => setAttributes({ variant: value })}
                         />
                     </PanelBody>
                 </InspectorControls>

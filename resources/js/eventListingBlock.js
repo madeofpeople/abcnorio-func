@@ -1,6 +1,6 @@
 import { registerBlockType } from '@wordpress/blocks';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import { PanelBody, RangeControl, SelectControl, TextControl } from '@wordpress/components';
+import { CheckboxControl, PanelBody, RangeControl, SelectControl, TextControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import ServerSideRender from '@wordpress/server-side-render';
 import { QUERY_BLOCK_MAX_ITEM_COUNT, QUERY_BLOCK_MIN_ITEM_COUNT } from './blockHelpers';
@@ -19,6 +19,7 @@ const ORDER_OPTIONS = [
 const VARIANT_OPTIONS = [
     { label: 'Grid', value: 'grid' },
     { label: 'Slider', value: 'slider' },
+    { label: 'Paged Grid', value: 'paged-grid' },
 ];
 
 function useTaxonomyOptions( taxonomy ) {
@@ -52,11 +53,28 @@ function useTaxonomyOptions( taxonomy ) {
         const blockProps = useBlockProps();
         const eventTypeOptions = useTaxonomyOptions( 'event_type' );
         const collectiveOptions = useTaxonomyOptions( 'collective_association' );
+        const variantValue = String( attributes.variant || 'grid' ).toLowerCase();
+        const variant = variantValue === 'slider' || variantValue === 'paged-grid' ? variantValue : 'grid';
+        const isPaged = variant === 'paged-grid';
+        const showAllLink = Boolean( attributes.showAllLink ?? true );
+        const effectiveShowAllLink = isPaged ? false : showAllLink;
+        const showAllLinkLabel = String( attributes.showAllLinkLabel || 'View all' );
+        const showAllLinkHref = String( attributes.showAllLinkHref || '/events/' );
+        const itemCount = Math.max(
+            QUERY_BLOCK_MIN_ITEM_COUNT,
+            Math.min( QUERY_BLOCK_MAX_ITEM_COUNT, Number.parseInt( attributes.itemCount, 10 ) || 6 )
+        );
 
         return (
             <div { ...blockProps }>
                 <InspectorControls>
                     <PanelBody title="Event Listing Options" initialOpen={ true }>
+                        <SelectControl
+                            label="Variant"
+                            value={ variant }
+                            options={ VARIANT_OPTIONS }
+                            onChange={ ( value ) => setAttributes( { variant: value } ) }
+                        />
                         <TextControl
                             label="Title"
                             value={ attributes.title || '' }
@@ -96,19 +114,40 @@ function useTaxonomyOptions( taxonomy ) {
                                 setAttributes( { order: value } )
                             }
                         />
-                        <SelectControl
-                            label="Variant"
-                            value={ attributes.variant === 'slider' ? 'slider' : 'grid' }
-                            options={ VARIANT_OPTIONS }
-                            onChange={ ( value ) => setAttributes( { variant: value } ) }
+                        <CheckboxControl
+                            label="Show View All Button"
+                            checked={ effectiveShowAllLink }
+                            disabled={ isPaged }
+                            help={ isPaged ? 'Paged Grid does not render a View All button.' : undefined }
+                            onChange={ ( value ) =>
+                                setAttributes( { showAllLink: Boolean( value ) } )
+                            }
                         />
+                        {effectiveShowAllLink && (
+                            <>
+                                <TextControl
+                                    label="View All Button Text"
+                                    value={ showAllLinkLabel }
+                                    onChange={ ( value ) =>
+                                        setAttributes( { showAllLinkLabel: value } )
+                                    }
+                                />
+                                <TextControl
+                                    label="View All Button URL"
+                                    value={ showAllLinkHref }
+                                    onChange={ ( value ) =>
+                                        setAttributes( { showAllLinkHref: value } )
+                                    }
+                                />
+                            </>
+                        )}
                         <RangeControl
-                            label="Item Count"
-                            value={ attributes.itemCount }
+                            label={ isPaged ? 'Items Per Page' : 'Item Count' }
+                            value={ itemCount }
                             min={ QUERY_BLOCK_MIN_ITEM_COUNT }
                             max={ QUERY_BLOCK_MAX_ITEM_COUNT }
                             onChange={ ( value ) =>
-                                setAttributes( { itemCount: value ?? 6 } )
+                                setAttributes( { itemCount: value ?? itemCount } )
                             }
                         />
                     </PanelBody>

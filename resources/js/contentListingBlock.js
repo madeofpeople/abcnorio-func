@@ -150,6 +150,12 @@ registerBlockType('abcnorio/content-listing', {
             <div {...blockProps}>
                 <InspectorControls>
                     <PanelBody title="Content Listing Options" initialOpen={true}>
+                        <SelectControl
+                            label="Variant"
+                            value={attributes.variant === 'slider' ? 'slider' : 'grid'}
+                            options={VARIANT_OPTIONS}
+                            onChange={(value) => setAttributes({ variant: value })}
+                        />
                         <TextControl
                             label="Title"
                             value={attributes.title || ''}
@@ -207,12 +213,6 @@ registerBlockType('abcnorio/content-listing', {
                                         : [],
                                 })
                             }
-                        />
-                        <SelectControl
-                            label="Variant"
-                            value={attributes.variant === 'slider' ? 'slider' : 'grid'}
-                            options={VARIANT_OPTIONS}
-                            onChange={(value) => setAttributes({ variant: value })}
                         />
                         <RangeControl
                             label="Item Count"

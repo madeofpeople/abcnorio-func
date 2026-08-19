@@ -490,6 +490,10 @@ final class FormSubmissionEndpoint
         return trim($value) !== '';
     }
 
+    /* 
+        human vs script timing check
+        keeps spam submissions at bay
+     */
     private static function passesSubmitTimingThreshold(array $submitted): bool
     {
         $startedAt = isset($submitted['_started_at']) ? (int) $submitted['_started_at'] : 0;

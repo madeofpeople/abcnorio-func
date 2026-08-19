@@ -158,6 +158,16 @@ body.wp-admin :where(a, a:visited) {
 	border-radius: 3px;
 }
 
+/* editor layout stuff */
+.block-editor-iframe__body.editor-styles-wrapper {
+padding: 0 2rem 2rem 2rem;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper.post-type-sidebar .is-root-container {
+	margin: 0 auto;
+	width: 300px;
+}
+
 /* --- Gallery editor parity --- */
 
 .block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing {
@@ -289,3 +299,13 @@ body.wp-admin :where(a, a:visited) {
 	pointer-events: none;
 	user-select: none;
 }
+
+/* Hero editor: let clicks pass through wrapper padding to media placeholder */
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-hero .abcnorio-hero__content-wrapper {
+	pointer-events: none;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-hero .abcnorio-hero__content {
+	pointer-events: auto;
+}
+

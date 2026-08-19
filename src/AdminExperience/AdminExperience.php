@@ -14,7 +14,6 @@ final class AdminExperience
         ListTableTermEditor::registerHooks();
         CollectiveSubPages::registerHooks();
         add_action('admin_menu', [self::class, 'customizeAdminMenu']);
-        add_action('admin_menu', [self::class, 'customizeACFMenu']);
         add_action('rest_api_init', [self::class, 'registerRestLinkRewrites']);
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminStyles']);
         add_action('enqueue_block_assets', [self::class, 'enqueueAdminStyles']);
@@ -49,12 +48,6 @@ final class AdminExperience
     {
         remove_menu_page( 'edit.php' );
     }
-    public static function customizeACFMenu(): void
-    {
-        remove_menu_page('edit.php?post_type=posts');
-        remove_menu_page('edit.php?post_type=acf');
-        remove_menu_page('edit.php?post_type=acf-field-group');
-    }
 
     public static function customizeAdminMenu(): void
     {
@@ -78,6 +71,10 @@ final class AdminExperience
             'dashicons-art',
             60
         );
+
+        remove_menu_page('edit.php?post_type=posts');
+        // remove_menu_page('edit.php?post_type=acf');
+        // remove_menu_page('edit.php?post_type=acf-field-group');
     }
 
     public static function registerRestLinkRewrites(): void

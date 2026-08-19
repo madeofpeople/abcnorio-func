@@ -36,6 +36,18 @@
       "type": "number",
       "default": 6
     },
+    "showAllLink": {
+      "type": "boolean",
+      "default": true
+    },
+    "showAllLinkHref": {
+      "type": "string",
+      "default": "/events/"
+    },
+    "showAllLinkLabel": {
+      "type": "string",
+      "default": "View all"
+    },
     "showCount": {
       "type": "boolean",
       "default": false

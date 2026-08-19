@@ -39,10 +39,20 @@ final class EventListingQuery
 
         $dateFilter = sanitize_key((string) ($attributes['dateFilter'] ?? 'upcoming'));
         $order = strtoupper(sanitize_key((string) ($attributes['order'] ?? 'desc')));
-        $isSlider = strtolower(sanitize_key((string) ($attributes['variant'] ?? 'grid'))) === 'slider';
+        $variant = strtolower(sanitize_key((string) ($attributes['variant'] ?? 'grid')));
+        $isSlider = $variant === 'slider';
+        $isPaged = $variant === 'paged-grid';
         $itemCount = (int) ($attributes['itemCount'] ?? 6);
+        $showAllLink = ! array_key_exists('showAllLink', $attributes) || ! empty($attributes['showAllLink']);
+        $showAllLinkHref = esc_url_raw((string) ($attributes['showAllLinkHref'] ?? '/events/'));
+        $showAllLinkLabel = sanitize_text_field((string) ($attributes['showAllLinkLabel'] ?? 'View all'));
         $eventType = sanitize_title((string) ($attributes['eventType'] ?? ''));
         $collectiveAssociation = sanitize_title((string) ($attributes['collectiveAssociation'] ?? ''));
+
+        if ($isPaged) {
+            $isSlider = false;
+            $showAllLink = false;
+        }
 
         if ($itemCount < self::MIN_ITEM_COUNT) {
             $itemCount = self::MIN_ITEM_COUNT;
@@ -136,7 +146,7 @@ final class EventListingQuery
             );
         }
 
-        return self::renderListingFromDist($countLabel, $itemsHtml, $isSlider, $title);
+        return self::renderListingFromDist($countLabel, $itemsHtml, $isSlider, $title, $showAllLink, $showAllLinkHref, $showAllLinkLabel);
     }
 
     private static function renderEventCard(\WP_Post $post): string
@@ -173,7 +183,7 @@ final class EventListingQuery
         ]);
     }
 
-    private static function renderListingFromDist(?string $countLabel, string $itemsHtml, bool $isSlider, string $title): string
+    private static function renderListingFromDist(?string $countLabel, string $itemsHtml, bool $isSlider, string $title, bool $showAllLink, string $showAllLinkHref, string $showAllLinkLabel): string
     {
         $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('event-listing/empty.html'));
         $xpath = new \DOMXPath($dom);
@@ -235,6 +245,30 @@ final class EventListingQuery
         }
 
         HtmlFragmentSupport::appendHtmlFragment($dom, $teaserList, $itemsHtml, 'event listing');
+
+        $actionsNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " actions ")]')->item(0);
+        $showAllNode = $xpath->query('//a[contains(concat(" ", normalize-space(@class), " "), " show-all ")]')->item(0);
+
+        if ($showAllLink) {
+            if (! $actionsNode instanceof \DOMElement) {
+                $actionsNode = $dom->createElement('div');
+                $actionsNode->setAttribute('class', 'actions');
+                $listing->appendChild($actionsNode);
+            }
+
+            if (! $showAllNode instanceof \DOMElement) {
+                $showAllNode = $dom->createElement('a');
+                $showAllNode->setAttribute('class', 'show-all button');
+                $actionsNode->appendChild($showAllNode);
+            }
+
+            $resolvedHref = $showAllLinkHref !== '' ? $showAllLinkHref : '/events/';
+            $resolvedLabel = $showAllLinkLabel !== '' ? $showAllLinkLabel : 'View all';
+            $showAllNode->setAttribute('href', esc_url($resolvedHref));
+            $showAllNode->nodeValue = $resolvedLabel;
+        } elseif ($showAllNode instanceof \DOMElement) {
+            $showAllNode->parentNode?->removeChild($showAllNode);
+        }
 
         if ($isSlider) {
             HtmlFragmentSupport::removeClass($listing, 'card-grid');

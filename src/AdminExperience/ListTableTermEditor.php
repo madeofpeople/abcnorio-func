@@ -10,8 +10,8 @@ final class ListTableTermEditor
      * @var array<string, list<string>>
      */
     private const MAP = [
-        'post'  => ['post_tag'],
-        'event' => ['collective_association', 'event_type', 'event_tag'],
+        'article'  => ['collective_association', 'post_tag'],
+        'event' => ['collective_association', 'event_type','sidebar_scope', 'post_tag'],
     ];
 
     /** @var array<string, list<\WP_Term>> */
@@ -47,6 +47,10 @@ final class ListTableTermEditor
 
         foreach (self::MAP[$postType] as $taxonomy) {
             unset($columns["taxonomy-{$taxonomy}"]);
+        }
+
+        if (in_array('post_tag', self::MAP[$postType], true)) {
+            unset($columns['tags']);
         }
 
         foreach (self::MAP[$postType] as $taxonomy) {

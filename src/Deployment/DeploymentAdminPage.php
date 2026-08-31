@@ -202,7 +202,7 @@ final class DeploymentAdminPage
                         <?php esc_html_e('Push Staging Branch to Staging', 'abcnorio-func'); ?>
                     </button>
                     <p style="margin: 0.75rem 0 0; color: #666; font-size: 0.875em;">
-                        <em><?php esc_html_e('Deploys the current site-dev staging branch head commit to staging and reports the deployed SHA.', 'abcnorio-func'); ?></em>
+                        <em><?php esc_html_e('Deploys the current site-frontend staging branch head commit to staging and reports the deployed SHA.', 'abcnorio-func'); ?></em>
                     </p>
                 </div>
                 <div style="margin-top: 1.5rem;">

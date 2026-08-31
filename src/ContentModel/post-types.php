@@ -15,7 +15,7 @@ return [
         'menu_icon' => 'dashicons-calendar-alt',
         'taxonomies' => [
             'event_type',
-            'event_tag',
+            'post_tag',
             'collective_association',
             'sidebar_scope',
         ],

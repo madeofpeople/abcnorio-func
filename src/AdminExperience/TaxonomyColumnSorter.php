@@ -6,7 +6,7 @@ final class TaxonomyColumnSorter
 {
     /** @var array<string, list<string>> post_type => taxonomy slugs */
     private const MAP = [
-        'event'      => ['event_type', 'event_tag', 'collective_association'],
+        'event'      => ['event_type', 'post_tag', 'collective_association'],
         'collective' => ['collective_association'],
         'press_item' => ['press_flag'],
     ];
@@ -18,7 +18,7 @@ final class TaxonomyColumnSorter
 
     /** @var array<string, list<string>> post_type => filterable taxonomy slugs */
     private const FILTER_MAP = [
-        'event'      => ['event_type', 'event_tag', 'collective_association'],
+        'event'      => ['event_type', 'post_tag', 'collective_association'],
         'article'    => ['collective_association'],
         'press_item' => ['press_flag'],
     ];
@@ -26,7 +26,7 @@ final class TaxonomyColumnSorter
     /** @var array<string, string> taxonomy slug => dropdown label */
     private const FILTER_LABELS = [
         'event_type'             => 'All Event Types',
-        'event_tag'              => 'All Event Tags',
+        'post_tag'               => 'All Tags',
         'collective_association' => 'All Collectives',
         'press_flag'             => 'All Flags',
     ];

@@ -25,7 +25,6 @@ final class MenuRegistrar
                 'add-taxonomy-collective_association',
             ];
             $hide = [
-                'add-taxonomy-event_tag',
                 'add-taxonomy-post_tag',
             ];
             $hidden = array_diff($hidden, $show);

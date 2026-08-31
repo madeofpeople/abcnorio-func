@@ -11,7 +11,7 @@ final class ListTableDateColumns
      */
     private const MAP = [
         'event' => [
-            'event_start_date' => 'Effective Start Time',
+            'event_start_date' => 'Start Date',
         ],
         'article' => [
             'article_date' => 'Display Date',

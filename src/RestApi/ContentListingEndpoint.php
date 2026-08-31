@@ -199,15 +199,7 @@ final class ContentListingEndpoint
             return [];
         }
 
-        if ($postType === 'event') {
-            return [[
-                'taxonomy' => 'event_tag',
-                'field'    => 'slug',
-                'terms'    => $tags,
-            ]];
-        }
-
-        if ($postType === 'article' && taxonomy_exists('post_tag')) {
+        if (($postType === 'event' || $postType === 'article') && taxonomy_exists('post_tag')) {
             return [[
                 'taxonomy' => 'post_tag',
                 'field'    => 'slug',

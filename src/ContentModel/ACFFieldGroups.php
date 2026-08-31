@@ -83,7 +83,7 @@ final class ACFFieldGroups
                     'name'          => 'event_tags',
                     'label'         => __('Tags', 'abcnorio-func'),
                     'type'          => 'taxonomy',
-                    'taxonomy'      => 'event_tag',
+                    'taxonomy'      => 'post_tag',
                     'field_type'    => 'multi_select',
                     'add_term'      => 1,
                     'save_terms'    => 1,

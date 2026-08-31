@@ -14,6 +14,7 @@ use abcnorio\CustomFunc\Navigation\MenuRegistrar;
 use abcnorio\CustomFunc\RestApi\EventQueryFilters;
 use abcnorio\CustomFunc\RestApi\FeaturedImageField;
 use abcnorio\CustomFunc\RestApi\ContentListingEndpoint;
+use abcnorio\CustomFunc\RestApi\DatePayloadNormalizer;
 use abcnorio\CustomFunc\RestApi\ICalEndpoint;
 use abcnorio\CustomFunc\RestApi\MailchimpEndpoint;
 use abcnorio\CustomFunc\RestApi\FormSubmissionEndpoint;
@@ -47,6 +48,8 @@ final class Plugin
         Deployment::registerHooks();
         /*  Allows advanced querying of Events */
         EventQueryFilters::registerHooks();
+        /*  Normalize article/event custom date payloads in REST responses */
+        DatePayloadNormalizer::registerHooks();
         /*  Makes featured image accessible from REST API */
         FeaturedImageField::registerHooks();
         /*  Joing the different post types that get listed in ContentListing */        

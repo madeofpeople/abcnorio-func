@@ -60,6 +60,7 @@ final class AllowedBlocks
             'core/buttons',
             'core/button',
             'core/group',
+            'core/block',
             'abcnorio/hero',
             'abcnorio/gallery',
             'core/embed',
@@ -88,7 +89,7 @@ final class AllowedBlocks
         }
 
         if (isset(self::ALLOWED['*'])) {
-            return self::ALLOWED['*'];
+            return true;
         }
 
         return $allowedBlocks;

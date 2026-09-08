@@ -101,7 +101,8 @@ final class DeploymentAdminPage
 
         $view = self::deploymentTargets();
         $jsUrl = plugins_url('resources/js/deployment.js', ABCNORIO_CUSTOM_FUNC_FILE);
-        wp_enqueue_script('abcnorio-deployment', $jsUrl, [], '1.0.4', true);
+        $scriptVersion = '1.0.5';
+        wp_enqueue_script('abcnorio-deployment', $jsUrl, [], $scriptVersion, true);
         wp_localize_script('abcnorio-deployment', 'abcnorioDeployment', [
             'ajaxUrl'             => admin_url('admin-ajax.php'),
             'triggerNonce'        => wp_create_nonce('abcnorio_trigger_build'),

@@ -271,7 +271,15 @@
             fetch(ajaxUrl, { method: 'POST', body })
                 .then((r) => r.json())
                 .then((data) => {
-                    if (!data.success) return;
+                    if (!data.success) {
+                        stopPolling();
+                        stopTimer();
+                        setButtonIdle(btn);
+                        const errorMessage = data.data && data.data.message ? data.data.message : 'Status check failed.';
+                        setStatus(panel, 'Error: ' + errorMessage);
+                        redirectToDeploymentNotice(envKey, 'error', 'Build status check failed: ' + errorMessage);
+                        return;
+                    }
 
                     const st = data.data;
 
@@ -323,7 +331,11 @@
                     }
                 })
                 .catch(() => {
-                    // network hiccup — keep polling
+                    stopPolling();
+                    stopTimer();
+                    setButtonIdle(btn);
+                    setStatus(panel, 'Status check failed.');
+                    redirectToDeploymentNotice(envKey, 'error', 'Status check failed while polling build.');
                 });
         }, 2500);
     }
@@ -428,11 +440,21 @@
         const btn = document.querySelector(selector);
         if (!btn) return;
         let devPollTimer = null;
+
+        const stopDevPolling = () => {
+            if (devPollTimer) {
+                clearInterval(devPollTimer);
+                devPollTimer = null;
+            }
+        };
+
         btn.addEventListener('click', () => {
             const panel = btn.closest('.deployment-tab');
             const statusEl = panel && panel.querySelector(statusClass);
+
             setButtonRunning(btn);
             if (statusEl) statusEl.textContent = startingText;
+
             fetch(ajaxUrl, { method: 'POST', body: new URLSearchParams({ action: startAction, nonce: startNonce }) })
                 .then((r) => r.json())
                 .then((data) => {
@@ -443,29 +465,70 @@
                         showAdminNotice(startErrPrefix + ': ' + msg, 'error');
                         return;
                     }
-                    if (devPollTimer) clearInterval(devPollTimer);
+
+                    stopDevPolling();
                     devPollTimer = setInterval(() => {
                         fetch(ajaxUrl, { method: 'POST', body: new URLSearchParams({ action: pollAction, nonce: pollNonceVal }) })
                             .then((r) => r.json())
                             .then((pollData) => {
-                                if (!pollData.success) return;
+                                if (!pollData || !pollData.success) {
+                                    stopDevPolling();
+                                    setButtonIdle(btn);
+                                    if (statusEl) statusEl.textContent = '';
+                                    const msg = pollData && pollData.data && pollData.data.message ? pollData.data.message : 'Status check failed.';
+                                    showAdminNotice(failPrefix + ': ' + msg, 'error');
+                                    return;
+                                }
+
                                 const st = pollData.data;
-                                if (st.status === 'done') {
-                                    clearInterval(devPollTimer); devPollTimer = null;
+                                if (!st || typeof st !== 'object' || Array.isArray(st) || !('status' in st)) {
+                                    stopDevPolling();
+                                    setButtonIdle(btn);
+                                    if (statusEl) statusEl.textContent = 'Status check failed.';
+                                    showAdminNotice(failPrefix + ': Unable to verify status.', 'error');
+                                    return;
+                                }
+
+                                const currentStatus = String(st.status || '').toLowerCase();
+                                const activeStatuses = ['running', 'requested', 'in_progress', 'pending', 'processing'];
+
+                                if (currentStatus === 'done') {
+                                    stopDevPolling();
                                     setButtonIdle(btn);
                                     if (statusEl) statusEl.textContent = '';
                                     showAdminNotice(st.message || 'Done.', 'success');
                                     if (typeof onDone === 'function') {
                                         onDone(btn, st);
                                     }
-                                } else if (st.status === 'failed') {
-                                    clearInterval(devPollTimer); devPollTimer = null;
-                                    setButtonIdle(btn);
-                                    if (statusEl) statusEl.textContent = '';
-                                    showAdminNotice(failPrefix + ': ' + (st.message || 'Check server logs.'), 'error');
+                                    return;
                                 }
+
+                                if (currentStatus === 'failed') {
+                                    stopDevPolling();
+                                    setButtonIdle(btn);
+                                    if (statusEl) statusEl.textContent = st.message || 'Check server logs.';
+                                    showAdminNotice(failPrefix + ': ' + (st.message || 'Check server logs.'), 'error');
+                                    return;
+                                }
+
+                                if (activeStatuses.includes(currentStatus)) {
+                                    if (statusEl) {
+                                        statusEl.textContent = st.message || startingText;
+                                    }
+                                    return;
+                                }
+
+                                stopDevPolling();
+                                setButtonIdle(btn);
+                                if (statusEl) statusEl.textContent = 'Status check failed.';
+                                showAdminNotice(failPrefix + ': Unable to verify status.', 'error');
                             })
-                            .catch(() => {});
+                            .catch((error) => {
+                                stopDevPolling();
+                                setButtonIdle(btn);
+                                if (statusEl) statusEl.textContent = 'Status check failed.';
+                                showAdminNotice(failPrefix + ': Unable to check status.' + (error && error.message ? ' ' + error.message : ''), 'error');
+                            });
                     }, 2000);
                 })
                 .catch(() => {

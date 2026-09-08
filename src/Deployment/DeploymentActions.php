@@ -397,7 +397,13 @@ final class DeploymentActions
         }
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
-        wp_send_json_success(is_array($body) ? ($body[$statusKey] ?? []) : []);
+        if (!is_array($body) || !isset($body[$statusKey]) || !is_array($body[$statusKey])) {
+            wp_send_json_error([
+                'message' => sprintf('No status available for %s', $statusKey),
+            ], 404);
+        }
+
+        wp_send_json_success($body[$statusKey]);
     }
 
     /**

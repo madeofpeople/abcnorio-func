@@ -5,6 +5,18 @@ namespace abcnorio\CustomFunc\Deployment;
 final class DeploymentActions
 {
     /**
+     * @return array<string, mixed>
+     */
+    private static function orchestratorData(mixed $response): array
+    {
+        if (!is_array($response) || ($response['ok'] ?? false) !== true || !array_key_exists('data', $response) || !is_array($response['data'])) {
+            wp_send_json_error(['message' => 'Invalid orchestrator response envelope'], 502);
+        }
+
+        return $response['data'];
+    }
+
+    /**
      * @return array<int, array{name: string, mtime: int}>
      */
     private static function fetchMediaBackups(string $env): array
@@ -124,7 +136,7 @@ final class DeploymentActions
             wp_send_json_error(['message' => $errorMessage, 'detail' => $body], $code);
         }
 
-        wp_send_json_success($body);
+        wp_send_json_success(self::orchestratorData($body));
     }
 
     public static function pollBuildStatus(): void
@@ -145,7 +157,7 @@ final class DeploymentActions
         }
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
-        wp_send_json_success($body);
+        wp_send_json_success(self::orchestratorData($body));
     }
 
     public static function downloadBackup(): void
@@ -397,13 +409,14 @@ final class DeploymentActions
         }
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
-        if (!is_array($body) || !isset($body[$statusKey]) || !is_array($body[$statusKey])) {
+        $statusBody = self::orchestratorData($body);
+        if (!isset($statusBody[$statusKey]) || !is_array($statusBody[$statusKey])) {
             wp_send_json_error([
                 'message' => sprintf('No status available for %s', $statusKey),
             ], 404);
         }
 
-        wp_send_json_success($body[$statusKey]);
+        wp_send_json_success($statusBody[$statusKey]);
     }
 
     /**
@@ -457,7 +470,11 @@ final class DeploymentActions
         }
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
-        $pushStatus = is_array($body) ? ($body['push'] ?? []) : [];
+        $statusBody = self::orchestratorData($body);
+        if (!isset($statusBody['push']) || !is_array($statusBody['push'])) {
+            wp_send_json_error(['message' => 'No status available for push'], 404);
+        }
+        $pushStatus = $statusBody['push'];
 
         if (is_array($pushStatus) && (($pushStatus['status'] ?? '') === 'done')) {
             $artifactContract = self::verifyStagingPluginArtifactContract();

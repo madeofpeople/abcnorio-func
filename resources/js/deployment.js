@@ -1,6 +1,6 @@
 /* global abcnorioDeployment */
 (function () {
-    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, copyMediaNonce, pollCopyMediaNonce, pullFromStagingNonce, pollPullFromStagingNonce, copyMediaToStagingNonce, pollCopyMediaToStagingNonce, backupMediaDevNonce, pollBackupMediaDevNonce, backupMediaStagingNonce, pollBackupMediaStagingNonce, backupDatabaseStagingNonce, pollBackupDatabaseStagingNonce, listMediaBackupsNonce, deleteMediaBackupNonce, listDatabaseBackupsNonce, downloadDatabaseBackupNonce, pullFromDevNonce, pollPullFromDevNonce, targets = {} } = abcnorioDeployment;
+    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, copyMediaNonce, pollCopyMediaNonce, pullFromStagingNonce, pollPullFromStagingNonce, copyMediaToStagingNonce, pollCopyMediaToStagingNonce, backupMediaDevNonce, pollBackupMediaDevNonce, backupMediaStagingNonce, pollBackupMediaStagingNonce, backupDatabaseStagingNonce, pollBackupDatabaseStagingNonce, listMediaBackupsNonce, deleteMediaBackupNonce, listDatabaseBackupsNonce, downloadDatabaseBackupNonce, deleteDatabaseBackupNonce, pullFromDevNonce, pollPullFromDevNonce, targets = {} } = abcnorioDeployment;
 
     let pollTimer = null;
     let buildStartTime = null;
@@ -156,6 +156,7 @@
                 + '<span class="backup-item-name">' + name + '</span>'
                 + '<span style="margin-left: 0.5rem; display: inline-flex; gap: 0.5rem;">'
                 + '<a href="' + href + '" class="button button-secondary button-small">Download</a>'
+                + '<button class="button button-small js-delete-database-backup" data-file="' + name + '">Delete</button>'
                 + '</span></li>';
         }).join('');
     }
@@ -711,6 +712,39 @@
                 }
                 showAdminNotice('Media backup deleted.', 'success');
                 return refreshMediaBackupList(env);
+            })
+            .catch((error) => {
+                showAdminNotice(error.message || 'Delete failed.', 'error');
+            })
+            .finally(() => {
+                btn.disabled = false;
+            });
+    });
+
+    document.addEventListener('click', (event) => {
+        const btn = event.target.closest('.js-delete-database-backup');
+        if (!btn) return;
+
+        event.preventDefault();
+        const file = btn.dataset.file || '';
+        if (!file || !window.confirm('Delete this database backup archive?')) return;
+
+        btn.disabled = true;
+        fetch(ajaxUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+                action: 'abcnorio_delete_database_backup',
+                nonce: deleteDatabaseBackupNonce,
+                file,
+            }),
+        })
+            .then((r) => r.json())
+            .then((data) => {
+                if (!data.success) {
+                    throw new Error(data.data && data.data.message ? data.data.message : 'Delete failed.');
+                }
+                showAdminNotice('Database backup deleted.', 'success');
+                return refreshDatabaseBackupList();
             })
             .catch((error) => {
                 showAdminNotice(error.message || 'Delete failed.', 'error');

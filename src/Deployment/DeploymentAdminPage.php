@@ -123,6 +123,7 @@ final class DeploymentAdminPage
             'pollBackupDatabaseStagingNonce'       => wp_create_nonce('abcnorio_poll_backup_database_staging_status'),
             'listDatabaseBackupsNonce'             => wp_create_nonce('abcnorio_list_database_backups'),
             'downloadDatabaseBackupNonce'          => wp_create_nonce('abcnorio_download_database_backup'),
+            'deleteDatabaseBackupNonce'            => wp_create_nonce('abcnorio_delete_database_backup'),
             'listMediaBackupsNonce'                => wp_create_nonce('abcnorio_list_media_backups'),
             'deleteMediaBackupNonce'               => wp_create_nonce('abcnorio_delete_media_backup'),
             'downloadMediaBackupNonce'             => wp_create_nonce('abcnorio_download_media_backup'),

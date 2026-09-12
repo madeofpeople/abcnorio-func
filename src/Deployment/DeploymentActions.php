@@ -403,7 +403,10 @@ final class DeploymentActions
         }
 
         if ($code !== 202) {
-            $msg = is_array($body) ? (string) ($body['error'] ?? $body['message'] ?? '') : '';
+            $error = is_array($body) ? ($body['error'] ?? null) : null;
+            $msg = is_array($error)
+                ? (string) ($error['message'] ?? '')
+                : (is_string($error) ? $error : (is_array($body) ? (string) ($body['message'] ?? '') : ''));
             $errorMessage = $msg !== '' ? ucfirst($verb) . ' failed: ' . $msg : ucfirst($verb) . ' failed (HTTP ' . $code . ')';
             wp_send_json_error(['message' => $errorMessage], $code);
         }
@@ -612,6 +615,45 @@ final class DeploymentActions
         header('Content-Length: ' . (string) filesize($realFile));
         readfile($realFile);
         exit;
+    }
+
+    public static function deleteDatabaseBackup(): void
+    {
+        check_ajax_referer('abcnorio_delete_database_backup', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $file = sanitize_file_name((string) ($_POST['file'] ?? ''));
+        if ($file === '') {
+            wp_send_json_error(['message' => 'Missing database backup file'], 400);
+        }
+
+        $response = wp_remote_post(Deployment::orchestratorBaseUrl() . '/dev-tools/database-backups/delete', [
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . Deployment::orchestratorSecret(),
+            ],
+            'body' => wp_json_encode(['file' => $file]),
+            'timeout' => 10,
+        ]);
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(['message' => $response->get_error_message()], 502);
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        $body = json_decode((string) wp_remote_retrieve_body($response), true);
+        if ($code !== 200) {
+            $error = is_array($body) ? ($body['error'] ?? null) : null;
+            $message = is_array($error)
+                ? (string) ($error['message'] ?? '')
+                : (is_string($error) ? $error : 'Delete failed');
+            wp_send_json_error(['message' => $message], $code > 0 ? $code : 502);
+        }
+
+        wp_send_json_success(['status' => 'deleted', 'file' => $file]);
     }
 
     public static function pullFromDev(): void

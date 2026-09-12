@@ -60,6 +60,26 @@ final class DeploymentActions
         return $realFile;
     }
 
+    private static function resolveDatabaseBackupFile(string $requested): string
+    {
+        if (!preg_match('/^abcnorio-database-staging-[a-zA-Z0-9_-]+\.sql$/', $requested)) {
+            wp_die(__('Invalid database backup file.', 'abcnorio-func'), 400);
+        }
+
+        $archiveDir = rtrim((string) (getenv('ASTRO_BUILD_DATABASE_ARCHIVE_DIR') ?: '/app/backups/database'), '/');
+        $archiveRealDir = realpath($archiveDir);
+        if ($archiveRealDir === false) {
+            wp_die(__('Database backup directory not found.', 'abcnorio-func'), 404);
+        }
+
+        $realFile = realpath($archiveRealDir . '/' . $requested);
+        if ($realFile === false || strpos($realFile, $archiveRealDir . '/') !== 0 || !is_file($realFile)) {
+            wp_die(__('Database backup file not found.', 'abcnorio-func'), 404);
+        }
+
+        return $realFile;
+    }
+
     private static function resolveBackupFile(string $requested, string $env): string
     {
         if ($requested === '') {
@@ -535,6 +555,63 @@ final class DeploymentActions
     public static function pollBackupMediaStagingStatus(): void
     {
         self::devToolPoll('abcnorio_poll_backup_media_staging_status', 'backupMediaStaging');
+    }
+
+    public static function backupDatabaseStaging(): void
+    {
+        self::devToolPost('abcnorio_backup_database_staging', '/dev-tools/backup-database-staging', 'backup');
+    }
+
+    public static function pollBackupDatabaseStagingStatus(): void
+    {
+        self::devToolPoll('abcnorio_poll_backup_database_staging_status', 'backupDatabaseStaging');
+    }
+
+    public static function listDatabaseBackups(): void
+    {
+        check_ajax_referer('abcnorio_list_database_backups', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $response = wp_remote_get(Deployment::orchestratorBaseUrl() . '/dev-tools/database-backups', [
+            'headers' => ['Authorization' => 'Bearer ' . Deployment::orchestratorSecret()],
+            'timeout' => 5,
+        ]);
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(['message' => $response->get_error_message()], 502);
+        }
+
+        $body = json_decode((string) wp_remote_retrieve_body($response), true);
+        wp_send_json_success(self::orchestratorData($body));
+    }
+
+    public static function downloadDatabaseBackup(): void
+    {
+        $nonce = sanitize_text_field((string) ($_GET['nonce'] ?? ''));
+        if (!wp_verify_nonce($nonce, 'abcnorio_download_database_backup')) {
+            wp_die(__('Invalid request.', 'abcnorio-func'), 403);
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Insufficient permissions.', 'abcnorio-func'), 403);
+        }
+
+        $file = sanitize_file_name((string) ($_GET['file'] ?? ''));
+        if ($file === '') {
+            wp_die(__('Missing database backup file.', 'abcnorio-func'), 400);
+        }
+
+        $realFile = self::resolveDatabaseBackupFile($file);
+        nocache_headers();
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/sql');
+        header('Content-Disposition: attachment; filename="' . basename($realFile) . '"');
+        header('Content-Length: ' . (string) filesize($realFile));
+        readfile($realFile);
+        exit;
     }
 
     public static function pullFromDev(): void

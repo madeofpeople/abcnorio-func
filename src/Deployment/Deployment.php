@@ -44,6 +44,10 @@ final class Deployment
         add_action('wp_ajax_abcnorio_poll_backup_media_dev_status', [DeploymentActions::class, 'pollBackupMediaDevStatus']);
         add_action('wp_ajax_abcnorio_backup_media_staging', [DeploymentActions::class, 'backupMediaStaging']);
         add_action('wp_ajax_abcnorio_poll_backup_media_staging_status', [DeploymentActions::class, 'pollBackupMediaStagingStatus']);
+        add_action('wp_ajax_abcnorio_backup_database_staging', [DeploymentActions::class, 'backupDatabaseStaging']);
+        add_action('wp_ajax_abcnorio_poll_backup_database_staging_status', [DeploymentActions::class, 'pollBackupDatabaseStagingStatus']);
+        add_action('wp_ajax_abcnorio_list_database_backups', [DeploymentActions::class, 'listDatabaseBackups']);
+        add_action('wp_ajax_abcnorio_download_database_backup', [DeploymentActions::class, 'downloadDatabaseBackup']);
         add_action('wp_ajax_abcnorio_pull_from_dev', [DeploymentActions::class, 'pullFromDev']);
         add_action('wp_ajax_abcnorio_poll_pull_from_dev_status', [DeploymentActions::class, 'pollPullFromDevStatus']);
         add_action('wp_ajax_abcnorio_list_media_backups', [DeploymentActions::class, 'listMediaBackups']);

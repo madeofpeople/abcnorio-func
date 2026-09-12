@@ -1,6 +1,6 @@
 /* global abcnorioDeployment */
 (function () {
-    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, copyMediaNonce, pollCopyMediaNonce, pullFromStagingNonce, pollPullFromStagingNonce, copyMediaToStagingNonce, pollCopyMediaToStagingNonce, backupMediaDevNonce, pollBackupMediaDevNonce, backupMediaStagingNonce, pollBackupMediaStagingNonce, listMediaBackupsNonce, deleteMediaBackupNonce, pullFromDevNonce, pollPullFromDevNonce, targets = {} } = abcnorioDeployment;
+    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, copyMediaNonce, pollCopyMediaNonce, pullFromStagingNonce, pollPullFromStagingNonce, copyMediaToStagingNonce, pollCopyMediaToStagingNonce, backupMediaDevNonce, pollBackupMediaDevNonce, backupMediaStagingNonce, pollBackupMediaStagingNonce, backupDatabaseStagingNonce, pollBackupDatabaseStagingNonce, listMediaBackupsNonce, deleteMediaBackupNonce, listDatabaseBackupsNonce, downloadDatabaseBackupNonce, pullFromDevNonce, pollPullFromDevNonce, targets = {} } = abcnorioDeployment;
 
     let pollTimer = null;
     let buildStartTime = null;
@@ -134,6 +134,47 @@
                 + '</span>'
                 + '</li>';
         }).join('');
+    }
+
+    function renderDatabaseBackupList(backups) {
+        const list = document.querySelector('.js-database-backup-list');
+        const empty = document.querySelector('.js-database-backup-empty');
+        if (!list || !empty) return;
+
+        if (!Array.isArray(backups) || backups.length === 0) {
+            list.innerHTML = '';
+            empty.style.display = '';
+            return;
+        }
+
+        empty.style.display = 'none';
+        list.innerHTML = backups.map((backup) => {
+            const name = escapeHtml(backup.name || '');
+            const href = ajaxUrl + '?action=abcnorio_download_database_backup&nonce='
+                + encodeURIComponent(downloadDatabaseBackupNonce) + '&file=' + encodeURIComponent(backup.name || '');
+            return '<li class="backup-item">'
+                + '<span class="backup-item-name">' + name + '</span>'
+                + '<span style="margin-left: 0.5rem; display: inline-flex; gap: 0.5rem;">'
+                + '<a href="' + href + '" class="button button-secondary button-small">Download</a>'
+                + '</span></li>';
+        }).join('');
+    }
+
+    function refreshDatabaseBackupList() {
+        return fetch(ajaxUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+                action: 'abcnorio_list_database_backups',
+                nonce: listDatabaseBackupsNonce,
+            }),
+        })
+            .then((r) => r.json())
+            .then((data) => {
+                if (!data.success) {
+                    throw new Error(data.data && data.data.message ? data.data.message : 'Could not load database backups.');
+                }
+                renderDatabaseBackupList((data.data && data.data.backups) || []);
+            });
     }
 
     function refreshMediaBackupList(env) {
@@ -626,6 +667,22 @@
         },
     });
 
+    wireDevToolButton('.js-backup-database-staging', {
+        statusClass: '.js-backup-database-staging-status',
+        startingText: 'Backing up\u2026',
+        startAction: 'abcnorio_backup_database_staging',
+        startNonce: backupDatabaseStagingNonce,
+        pollAction: 'abcnorio_poll_backup_database_staging_status',
+        pollNonce: pollBackupDatabaseStagingNonce,
+        startErrPrefix: 'Could not start backup',
+        failPrefix: 'Backup failed',
+        onDone: () => {
+            refreshDatabaseBackupList().catch((error) => {
+                showAdminNotice(error.message || 'Could not refresh database backups.', 'error');
+            });
+        },
+    });
+
     document.addEventListener('click', (event) => {
         const btn = event.target.closest('.js-delete-media-backup');
         if (!btn) return;
@@ -665,5 +722,6 @@
 
     refreshMediaBackupList('dev').catch(() => {});
     refreshMediaBackupList('staging').catch(() => {});
+    refreshDatabaseBackupList().catch(() => {});
 
 }());

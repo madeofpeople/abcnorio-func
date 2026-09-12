@@ -101,7 +101,7 @@ final class DeploymentAdminPage
 
         $view = self::deploymentTargets();
         $jsUrl = plugins_url('resources/js/deployment.js', ABCNORIO_CUSTOM_FUNC_FILE);
-        $scriptVersion = '1.0.5';
+        $scriptVersion = '1.0.6';
         wp_enqueue_script('abcnorio-deployment', $jsUrl, [], $scriptVersion, true);
         wp_localize_script('abcnorio-deployment', 'abcnorioDeployment', [
             'ajaxUrl'             => admin_url('admin-ajax.php'),
@@ -119,6 +119,10 @@ final class DeploymentAdminPage
             'pollBackupMediaDevNonce'              => wp_create_nonce('abcnorio_poll_backup_media_dev_status'),
             'backupMediaStagingNonce'              => wp_create_nonce('abcnorio_backup_media_staging'),
             'pollBackupMediaStagingNonce'          => wp_create_nonce('abcnorio_poll_backup_media_staging_status'),
+            'backupDatabaseStagingNonce'           => wp_create_nonce('abcnorio_backup_database_staging'),
+            'pollBackupDatabaseStagingNonce'       => wp_create_nonce('abcnorio_poll_backup_database_staging_status'),
+            'listDatabaseBackupsNonce'             => wp_create_nonce('abcnorio_list_database_backups'),
+            'downloadDatabaseBackupNonce'          => wp_create_nonce('abcnorio_download_database_backup'),
             'listMediaBackupsNonce'                => wp_create_nonce('abcnorio_list_media_backups'),
             'deleteMediaBackupNonce'               => wp_create_nonce('abcnorio_delete_media_backup'),
             'downloadMediaBackupNonce'             => wp_create_nonce('abcnorio_download_media_backup'),
@@ -293,6 +297,25 @@ final class DeploymentAdminPage
                         <?php esc_html_e('No media backups found yet.', 'abcnorio-func'); ?>
                     </p>
                     <ul class="js-media-backup-list" data-env="staging" style="margin-top: 0.5rem;"></ul>
+                </div>
+                <div style="margin-top: 1.5rem;">
+                    <span class="js-backup-database-staging-status" style="color: #666; display: block; margin-bottom: 0.5rem;"></span>
+                    <button
+                        class="button button-primary js-backup-database-staging"
+                        data-label="<?php esc_attr_e('Backup Staging Database', 'abcnorio-func'); ?>"
+                    >
+                        <?php esc_html_e('Backup Staging Database', 'abcnorio-func'); ?>
+                    </button>
+                    <p style="margin: 0.75rem 0 0; color: #666; font-size: 0.875em;">
+                        <em><?php esc_html_e('Creates a timestamped SQL archive of the staging database with automatic retention.', 'abcnorio-func'); ?></em>
+                    </p>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <strong><?php esc_html_e('Recent Staging Database Backups', 'abcnorio-func'); ?></strong>
+                    <p class="js-database-backup-empty" style="margin: 0.5rem 0 0; color: #666;">
+                        <?php esc_html_e('No database backups found yet.', 'abcnorio-func'); ?>
+                    </p>
+                    <ul class="js-database-backup-list" style="margin-top: 0.5rem;"></ul>
                 </div>
                 <?php endif; ?>
             </div>

@@ -15,9 +15,9 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 - `build/` (webpack-compiled editor script, `wp-scripts build` output) is gitignored and never committed — this repo's git history stays source-only.
 - Staging installs this plugin via Composer's `artifact` repository type (a folder of versioned tarballs), not a plain VCS checkout, so `build/` still reaches runtime without ever being tracked in git.
 - Release tarballs are produced by `abcnorio-meta/scripts/build-plugin-release.sh` (invoke via `just build-plugin-release [tag]` from `abcnorio-meta/`): it exports the exact git tag via `git archive` into a clean scratch directory, runs `npm ci && npm run build` there, and packages the runtime footprint (`composer.json`, `custom-func.php`, `src/`, `resources/`, `build/`) into `abcnorio-meta/wp/plugin-artifacts/abcnorio-func-<version>.tar.gz`.
-- `just update-wp-plugin staging <bump>` calls this same script automatically right after tagging a release — no separate manual step needed in normal use.
-- Rebuilding an old release means: checkout that tag, then rerun the same build — the git tag plus a fresh build is the reproducible source of truth, not the tarball itself.
-- Known caveat: `package.json` pins `abcnorio-webcomponents` to `github:...#main` (a floating ref). Rebuilding an old tag currently pulls whatever is on `main` at rebuild time, not the exact state that tag originally shipped with. Pinning to an immutable ref is a tracked follow-up, not yet done.
+- `just update-wp-plugin staging <bump>` builds and validates one candidate artifact from clean `HEAD` before changing the source version, committing, tagging, or pushing. It does not rebuild the live webcomponents `dist/` tree.
+- Rebuild an old release with `just build-plugin-release vX.Y.Z`; the script exports that tag and `npm ci` uses the exact dependency commit recorded in its `package-lock.json`.
+- Keep the tagged `package-lock.json` as the dependency source of truth; `npm install` can refresh the `#main` Git reference and should not be used for historical artifact rebuilds.
 
 ### Component dep enqueue
 

@@ -153,7 +153,7 @@ final class ACFFieldGroups
                     [
                         'param' => 'post_type',
                         'operator' => '==',
-                        'value' => 'collective',
+                        'value' => 'facility',
                     ],
                 ],
             ],

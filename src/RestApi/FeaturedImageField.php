@@ -4,7 +4,7 @@ namespace abcnorio\CustomFunc\RestApi;
 
 final class FeaturedImageField
 {
-    private const POST_TYPES = ['event', 'article', 'collective'];
+    private const POST_TYPES = ['event', 'article', 'facility'];
 
     public static function registerHooks(): void
     {

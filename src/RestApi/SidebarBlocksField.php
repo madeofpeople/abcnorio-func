@@ -6,7 +6,7 @@ use abcnorio\CustomFunc\ImageStyles\BlockImageAttributeEnricher;
 
 final class SidebarBlocksField
 {
-    private const POST_TYPES = ['event', 'collective', 'article', 'page'];
+    private const POST_TYPES = ['event', 'facility', 'article', 'page'];
 
     public static function registerHooks(): void
     {

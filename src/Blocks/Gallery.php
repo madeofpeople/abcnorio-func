@@ -42,7 +42,7 @@ final class Gallery
         $className = trim((string) ($attributes['className'] ?? ''));
         $classes = array_filter([
             'gallery',
-            'blaze-slider',
+            $variant === 'paged-grid' ? null : 'blaze-slider',
             'gallery--' . $variant,
             'gallery--nav-' . $navigationMode,
             'abcnorio-gallery',

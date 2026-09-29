@@ -333,9 +333,9 @@ final class EventListingQuery
         $title->nodeValue = wp_strip_all_tags((string) $data['title']);
 
         if (! empty($data['isPastEvent'])) {
-            HtmlFragmentSupport::addClass($root, 'past');
+            HtmlFragmentSupport::addClass($root, 'event-teaser--past');
         } else {
-            HtmlFragmentSupport::removeClass($root, 'past');
+            HtmlFragmentSupport::removeClass($root, 'event-teaser--past');
         }
 
         $time = $dom->getElementsByTagName('time')->item(0);

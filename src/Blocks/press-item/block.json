@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "abcnorio/press-item",
+  "title": "Press Item",
+  "category": "widgets",
+  "icon": "media-document",
+  "description": "A dated press item with source attribution.",
+  "keywords": ["press", "source", "citation", "abcnorio"],
+  "attributes": {
+    "date": {
+      "type": "string",
+      "role": "content",
+      "default": ""
+    },
+    "fallbackDate": {
+      "type": "string",
+      "role": "content",
+      "default": ""
+    },
+    "title": {
+      "type": "string",
+      "role": "content",
+      "default": ""
+    },
+    "source": {
+      "type": "string",
+      "role": "content",
+      "default": ""
+    },
+    "sourceUrl": {
+      "type": "string",
+      "role": "content",
+      "default": ""
+    }
+  },
+  "supports": {
+    "align": false,
+    "html": false,
+    "customClassName": false
+  }
+}

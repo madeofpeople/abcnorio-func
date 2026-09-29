@@ -36,7 +36,7 @@ final class CollectiveListingQuery
         $isManualOrder = $orderMode === 'manual';
 
         $queryArgs = [
-            'post_type'      => 'collective',
+            'post_type'      => 'facility',
             'post_status'    => 'publish',
             'posts_per_page' => -1,
             'orderby'        => 'date',

@@ -53,7 +53,7 @@ return [
     'collective_association' => [
         'name' => 'Collective Associations',
         'singular_name' => 'Collective Association',
-        'object_types' => ['event', 'collective', 'article', 'page'],
+        'object_types' => ['event', 'facility', 'article', 'page'],
         'public' => false,
         'show_ui' => true,
         'show_in_rest' => true,
@@ -87,7 +87,7 @@ return [
     'sidebar_scope' => [
         'name' => 'Sidebar Scopes',
         'singular_name' => 'Sidebar Scope',
-        'object_types' => ['event', 'collective', 'article', 'page', 'sidebar'],
+        'object_types' => ['event', 'facility', 'article', 'page', 'sidebar'],
         'public' => false,
         'show_ui' => true,
         'show_in_rest' => true,

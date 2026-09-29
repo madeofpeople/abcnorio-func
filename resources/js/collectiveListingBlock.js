@@ -41,7 +41,7 @@ registerBlockType('abcnorio/collective-listing', {
                     return [];
                 }
 
-                const collectives = coreStore.getEntityRecords('postType', 'collective', {
+                const collectives = coreStore.getEntityRecords('postType', 'facility', {
                     per_page: -1,
                     status: 'publish',
                     orderby: 'date',

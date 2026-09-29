@@ -89,7 +89,7 @@ final class AllowedBlocks
         }
 
         if (isset(self::ALLOWED['*'])) {
-            return true;
+            return self::ALLOWED['*'];
         }
 
         return $allowedBlocks;

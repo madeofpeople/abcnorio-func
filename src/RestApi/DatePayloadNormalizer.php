@@ -8,6 +8,7 @@ final class DatePayloadNormalizer
     {
         add_filter('rest_prepare_article', [self::class, 'normalizeArticleResponse'], 20, 3);
         add_filter('rest_prepare_event', [self::class, 'normalizeEventResponse'], 20, 3);
+        add_filter('rest_prepare_press_item', [self::class, 'normalizePressItemResponse'], 20, 3);
     }
 
     public static function normalizeArticleResponse($response, \WP_Post $post, \WP_REST_Request $request)
@@ -63,6 +64,30 @@ final class DatePayloadNormalizer
                 }
                 $data['meta'][$key] = self::normalizeEventDateTime((string) $data['meta'][$key]);
             }
+        }
+
+        $response->set_data($data);
+
+        return $response;
+    }
+
+    public static function normalizePressItemResponse($response, \WP_Post $post, \WP_REST_Request $request)
+    {
+        if (! $response instanceof \WP_REST_Response) {
+            return $response;
+        }
+
+        $data = $response->get_data();
+        if (! is_array($data)) {
+            return $response;
+        }
+
+        if (isset($data['acf']) && is_array($data['acf']) && array_key_exists('press_item_date', $data['acf'])) {
+            $data['acf']['press_item_date'] = self::normalizeArticleDate((string) $data['acf']['press_item_date']);
+        }
+
+        if (isset($data['meta']) && is_array($data['meta']) && array_key_exists('press_item_date', $data['meta'])) {
+            $data['meta']['press_item_date'] = self::normalizeArticleDate((string) $data['meta']['press_item_date']);
         }
 
         $response->set_data($data);

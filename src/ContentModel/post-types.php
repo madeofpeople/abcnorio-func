@@ -59,10 +59,12 @@ return [
         ],
         'map_meta_cap' => true,
     ],
-    'collective' => [
-        'name' => 'Collectives',
-        'singular_name' => 'Collective',
-        'rewrite_slug' => 'collectives',
+    'facility' => [
+        'name' => 'Facilities',
+        'singular_name' => 'Facility',
+        'rest_base' => 'facilities',
+        'rewrite_slug' => 'facilities',
+        'has_archive' => 'false',
         'show_in_nav_menus' => true,
         'hierarchical' => true,
         'supports' => [
@@ -77,8 +79,8 @@ return [
         'menu_icon' => 'dashicons-groups',
         'taxonomies' => ['collective_association', 'sidebar_scope'],
         'capability_type' => [
-            'collective',
-            'collectives'
+            'facility',
+            'facilities'
         ],
         'map_meta_cap' => true,
     ],

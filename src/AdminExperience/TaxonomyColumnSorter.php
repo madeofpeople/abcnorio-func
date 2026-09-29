@@ -7,7 +7,7 @@ final class TaxonomyColumnSorter
     /** @var array<string, list<string>> post_type => taxonomy slugs */
     private const MAP = [
         'event'      => ['event_type', 'post_tag', 'collective_association'],
-        'collective' => ['collective_association'],
+        'facility'   => ['collective_association'],
         'press_item' => ['press_flag'],
     ];
 

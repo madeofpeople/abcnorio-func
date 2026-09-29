@@ -17,7 +17,7 @@ final class MenuRegistrar
     {
         if ($screen->id === 'nav-menus') {
             $show = [
-                'add-post-type-collective',
+                'add-post-type-facility',
                 'add-post-type-event',
                 'add-post-type-article',
                 'add-post-type-press_item',

@@ -136,7 +136,7 @@ final class DeploymentAdminPage
 
     public static function renderPage(): void
     {
-        $activeTab = sanitize_key((string) ($_GET['tab'] ?? 'dev'));
+        $activeTab = sanitize_key((string) ($_GET['tab'] ?? 'staging'));
         if (!Deployment::isValidEnv($activeTab)) {
             $activeTab = 'dev';
         }

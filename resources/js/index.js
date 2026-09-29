@@ -5,6 +5,7 @@ import './contentListingBlock';
 import './eventListingBlock';
 import './collectiveListingBlock';
 import './announcementToutBlock';
+import './pressItemBlock';
 import './heroBlock';
 import './galleryBlock';
 import './sidebarToutBlock';
@@ -19,7 +20,7 @@ const LINK_SELECTORS = [
 ].join( ',' );
 
 const SIDEBAR_SCOPE_TAXONOMY_KEYS = [ 'sidebar_scope', 'sidebar-scopes' ];
-const SIDEBAR_SCOPE_POST_TYPES = [ 'event', 'collective', 'article', 'page', 'sidebar' ];
+const SIDEBAR_SCOPE_POST_TYPES = [ 'event', 'facility', 'article', 'page', 'sidebar' ];
 const EDITOR_CANVAS_BODY_CLASS = 'block-editor-iframe__body';
 
 function enforceNewTabLinks() {

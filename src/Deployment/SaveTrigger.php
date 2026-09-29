@@ -11,7 +11,7 @@ final class SaveTrigger
     private static ?array $scopeMapCache = null;
 
     /** @var array<int, string> */
-    private const SCOPED_SECTIONS = ['events', 'collectives', 'about', 'programming'];
+    private const SCOPED_SECTIONS = ['events', 'facilities', 'about', 'programming'];
 
     public static function registerHooks(): void
     {

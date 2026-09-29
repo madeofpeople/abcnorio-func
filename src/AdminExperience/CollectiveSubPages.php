@@ -7,7 +7,7 @@ final class CollectiveSubPages
     public static function registerHooks(): void
     {
         add_action('add_meta_boxes', [self::class, 'addSubPagesMetaBox']);
-        add_action('add_meta_boxes_collective', [self::class, 'relabelCollectiveAssociationMetaBox']);
+        add_action('add_meta_boxes_facility', [self::class, 'relabelCollectiveAssociationMetaBox']);
         add_action('add_meta_boxes_page', [self::class, 'suppressCollectiveAssociationOnPage']);
     }
 
@@ -18,12 +18,12 @@ final class CollectiveSubPages
 
     public static function relabelCollectiveAssociationMetaBox(): void
     {
-        remove_meta_box('collective_associationdiv', 'collective', 'side');
+        remove_meta_box('collective_associationdiv', 'facility', 'side');
         add_meta_box(
             'collective_associationdiv',
             __('Collective Identity', 'abcnorio-func'),
             'post_categories_meta_box',
-            'collective',
+            'facility',
             'side',
             'default',
             ['taxonomy' => 'collective_association']
@@ -36,7 +36,7 @@ final class CollectiveSubPages
             'collective_sub_pages',
             __('Sub Pages', 'abcnorio-func'),
             [self::class, 'renderSubPagesMetaBox'],
-            'collective',
+            'facility',
             'side',
             'default'
         );

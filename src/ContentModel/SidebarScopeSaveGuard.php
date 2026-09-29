@@ -4,7 +4,7 @@ namespace abcnorio\CustomFunc\ContentModel;
 
 final class SidebarScopeSaveGuard
 {
-    private const POST_TYPES = ['event', 'collective', 'article', 'page', 'sidebar'];
+    private const POST_TYPES = ['event', 'facility', 'article', 'page', 'sidebar'];
     private const TAXONOMY_KEYS = ['sidebar_scope', 'sidebar-scopes'];
 
     public static function registerHooks(): void

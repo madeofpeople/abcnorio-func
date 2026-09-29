@@ -12,6 +12,7 @@ use abcnorio\CustomFunc\ImageStyles\BlockImageAttributeEnricher;
 use abcnorio\CustomFunc\ImageStyles\ImageStyleRegistrar;
 use abcnorio\CustomFunc\Navigation\MenuRegistrar;
 use abcnorio\CustomFunc\RestApi\EventQueryFilters;
+use abcnorio\CustomFunc\RestApi\ArticleQueryFilters;
 use abcnorio\CustomFunc\RestApi\FeaturedImageField;
 use abcnorio\CustomFunc\RestApi\ContentListingEndpoint;
 use abcnorio\CustomFunc\RestApi\DatePayloadNormalizer;
@@ -48,6 +49,8 @@ final class Plugin
         Deployment::registerHooks();
         /*  Allows advanced querying of Events */
         EventQueryFilters::registerHooks();
+        /*  Allows date-range querying of Articles */
+        ArticleQueryFilters::registerHooks();
         /*  Normalize article/event custom date payloads in REST responses */
         DatePayloadNormalizer::registerHooks();
         /*  Makes featured image accessible from REST API */
@@ -204,7 +207,7 @@ final class Plugin
 
     public static function enableFeaturedImages(): void
     {
-        add_theme_support('post-thumbnails', ['post', 'page', 'event', 'collective', 'article']);
+        add_theme_support('post-thumbnails', ['post', 'page', 'event', 'facility', 'article']);
     }
 
     public static function disableComments (): void

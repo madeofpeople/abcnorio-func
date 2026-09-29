@@ -18,7 +18,7 @@ function normalizeNavigationMode(value) {
 }
 
 function normalizeVariant(value) {
-    return value === 'default' ? 'default' : 'slider';
+    return value === 'default' || value === 'paged-grid' ? value : 'slider';
 }
 
 registerBlockType('abcnorio/gallery', {
@@ -58,6 +58,7 @@ registerBlockType('abcnorio/gallery', {
                 'abcnorio-gallery-editor',
                 `abcnorio-gallery-nav-${navigationMode}`,
                 `abcnorio-gallery--${variant}`,
+                variant === 'paged-grid' ? null : 'blaze-slider',
             ].join(' '),
         });
 
@@ -79,6 +80,7 @@ registerBlockType('abcnorio/gallery', {
                             options={[
                                 { label: 'Default', value: 'default' },
                                 { label: 'Slider', value: 'slider' },
+                                { label: 'Paged Grid', value: 'paged-grid' },
                             ]}
                             onChange={(value) => setAttributes({ variant: normalizeVariant(value) })}
                         />
@@ -108,7 +110,7 @@ registerBlockType('abcnorio/gallery', {
                 </InspectorControls>
 
                 <gallery-listing
-                    className={`gallery blaze-slider gallery--${variant} gallery--nav-${navigationMode}`}
+                    className={`gallery ${variant === 'paged-grid' ? '' : 'blaze-slider'} gallery--${variant} gallery--nav-${navigationMode}`}
                     data-variant={variant}
                     data-navigation-mode={navigationMode}
                 >
@@ -117,12 +119,18 @@ registerBlockType('abcnorio/gallery', {
                             <div {...innerBlocksProps} />
                         </div>
 
-                        <a href="javascript:void(0)" role="button" className="blaze-prev"><span>Previous!</span></a>
-                        <a href="javascript:void(0)" role="button" className="blaze-next"><span>Next!</span></a>
-                        <div className="blaze-pagination"></div>
+                        {variant === 'paged-grid' ? (
+                            <nav className="gallery-pagination" aria-label="Gallery pagination" hidden />
+                        ) : (
+                            <>
+                                <a href="javascript:void(0)" role="button" className="blaze-prev"><span>Previous!</span></a>
+                                <a href="javascript:void(0)" role="button" className="blaze-next"><span>Next!</span></a>
+                                <div className="blaze-pagination"></div>
+                            </>
+                        )}
                     </div>
 
-                    <nav className="blaze-slide-dots" aria-label="Slide navigation"></nav>
+                    {variant !== 'paged-grid' && <nav className="blaze-slide-dots" aria-label="Slide navigation"></nav>}
                 </gallery-listing>
             </div>
         );

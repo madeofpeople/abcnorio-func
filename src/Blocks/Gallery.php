@@ -39,6 +39,11 @@ final class Gallery
             $variant = 'slider';
         }
 
+        $itemsPerPage = absint((int) ($attributes['itemsPerPage'] ?? 6));
+        if ($itemsPerPage < 1) {
+            $itemsPerPage = 6;
+        }
+
         $className = trim((string) ($attributes['className'] ?? ''));
         $classes = array_filter([
             'gallery',
@@ -51,17 +56,23 @@ final class Gallery
             $className !== '' ? $className : null,
         ]);
 
+        $isPagedGrid = $variant === 'paged-grid';
+
         $dom = HtmlFragmentSupport::loadHtmlFragment(
-            '<gallery-listing class="' . esc_attr(implode(' ', $classes)) . '" data-variant="' . esc_attr($variant) . '" data-navigation-mode="' . esc_attr($navigationMode) . '">' .
+            '<gallery-listing class="' . esc_attr(implode(' ', $classes)) . '" data-variant="' . esc_attr($variant) . '" data-navigation-mode="' . esc_attr($navigationMode) . '" data-items-per-page="' . esc_attr((string) $itemsPerPage) . '">' .
                 '<div class="blaze-container">' .
                     '<div class="blaze-track-container">' .
                         '<div class="images blaze-track"></div>' .
                     '</div>' .
-                    '<a href="javascript:void(0)" role="button" class="blaze-prev"><span>Previous!</span></a>' .
-                    '<a href="javascript:void(0)" role="button" class="blaze-next"><span>Next!</span></a>' .
-                    '<div class="blaze-pagination"></div>' .
+                    ($isPagedGrid ? '' :
+                        '<a href="javascript:void(0)" role="button" class="blaze-prev"><span>Previous!</span></a>' .
+                        '<a href="javascript:void(0)" role="button" class="blaze-next"><span>Next!</span></a>' .
+                        '<div class="blaze-pagination"></div>'
+                    ) .
                 '</div>' .
-                '<nav class="blaze-slide-dots" aria-label="Slide navigation"></nav>' .
+                ($isPagedGrid
+                    ? '<nav class="gallery-pagination" aria-label="Gallery pagination" hidden></nav>'
+                    : '<nav class="blaze-slide-dots" aria-label="Slide navigation"></nav>') .
             '</gallery-listing>'
         );
 

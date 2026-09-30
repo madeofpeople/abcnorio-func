@@ -127,15 +127,20 @@ final class DeploymentActions
             wp_send_json_error(['message' => 'Build triggers are not available for dev and staging'], 403);
         }
 
-        $response = wp_remote_post(Deployment::orchestratorBaseUrl() . '/trigger', [
+        $endpoint = $target === 'production' ? '/promote-staging' : '/trigger';
+        $requestBody = $target === 'production'
+            ? (object) []
+            : [
+                'target' => $target,
+                'scope' => 'full',
+            ];
+
+        $response = wp_remote_post(Deployment::orchestratorBaseUrl() . $endpoint, [
             'headers' => [
                 'Content-Type' => 'application/json',
                 'Authorization' => 'Bearer ' . Deployment::orchestratorSecret(),
             ],
-            'body' => wp_json_encode([
-                'target' => $target,
-                'scope' => 'full',
-            ]),
+            'body' => wp_json_encode($requestBody),
             'timeout' => 10,
         ]);
 

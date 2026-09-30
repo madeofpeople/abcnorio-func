@@ -7,9 +7,10 @@ import {
     useBlockProps,
     useInnerBlocksProps,
 } from '@wordpress/block-editor';
-import { PanelBody, SelectControl, Button } from '@wordpress/components';
+import { PanelBody, RangeControl, SelectControl, Button } from '@wordpress/components';
 import { useDispatch } from '@wordpress/data';
 import { createBlock } from '@wordpress/blocks';
+import { QUERY_BLOCK_MAX_ITEM_COUNT, QUERY_BLOCK_MIN_ITEM_COUNT } from './blockHelpers';
 
 const ALLOWED_BLOCKS = ['core/image'];
 
@@ -25,6 +26,10 @@ registerBlockType('abcnorio/gallery', {
     edit({ attributes, setAttributes, clientId }) {
         const navigationMode = normalizeNavigationMode(attributes.navigationMode);
         const variant = normalizeVariant(attributes.variant);
+        const itemsPerPage = Math.max(
+            QUERY_BLOCK_MIN_ITEM_COUNT,
+            Math.min(QUERY_BLOCK_MAX_ITEM_COUNT, Number.parseInt(attributes.itemsPerPage, 10) || 6)
+        );
         const { insertBlocks } = useDispatch('core/block-editor');
 
         function insertSelectedImages(mediaItems) {
@@ -84,15 +89,15 @@ registerBlockType('abcnorio/gallery', {
                             ]}
                             onChange={(value) => setAttributes({ variant: normalizeVariant(value) })}
                         />
-                        <SelectControl
-                            label="Navigation"
-                            value={navigationMode}
-                            options={[
-                                { label: 'Item based', value: 'item' },
-                                { label: 'Page based', value: 'page' },
-                            ]}
-                            onChange={(value) => setAttributes({ navigationMode: normalizeNavigationMode(value) })}
-                        />
+                        {variant === 'paged-grid' && (
+                            <RangeControl
+                                label="Items Per Page"
+                                value={itemsPerPage}
+                                min={QUERY_BLOCK_MIN_ITEM_COUNT}
+                                max={QUERY_BLOCK_MAX_ITEM_COUNT}
+                                onChange={(value) => setAttributes({ itemsPerPage: value ?? itemsPerPage })}
+                            />
+                        )}
                         <MediaUploadCheck>
                             <MediaUpload
                                 onSelect={insertSelectedImages}
@@ -113,6 +118,7 @@ registerBlockType('abcnorio/gallery', {
                     className={`gallery ${variant === 'paged-grid' ? '' : 'blaze-slider'} gallery--${variant} gallery--nav-${navigationMode}`}
                     data-variant={variant}
                     data-navigation-mode={navigationMode}
+                    data-items-per-page={itemsPerPage}
                 >
                     <div className="blaze-container">
                         <div className="blaze-track-container">

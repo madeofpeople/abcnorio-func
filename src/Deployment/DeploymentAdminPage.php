@@ -67,6 +67,9 @@ final class DeploymentAdminPage
     {
         $status = DeploymentStatus::read();
         $targets = [];
+        $stagingStatus = $status['ok'] ? ($status['status']['envs']['staging'] ?? []) : [];
+        $stagingDeployment = is_array($stagingStatus) ? ($stagingStatus['stagingDeployment'] ?? []) : [];
+        $stagingPluginVersion = self::stagingPluginVersion();
         $previewEnvMap = [
             'dev' => 'DEV_FRONTEND_URL',
             'staging' => 'STAGING_FRONTEND_URL',
@@ -86,11 +89,34 @@ final class DeploymentAdminPage
             ];
         }
 
+        $targets['staging']['deployment'] = is_array($stagingDeployment) ? $stagingDeployment : [];
+        $targets['staging']['currentPluginVersion'] = $stagingPluginVersion;
+
         return [
             'statusOk' => $status['ok'],
             'statusMessage' => $status['message'],
             'targets' => $targets,
         ];
+    }
+
+    private static function stagingPluginVersion(): string
+    {
+        $url = trim((string) (getenv('STAGING_PLUGIN_VERSION_URL') ?: ''));
+        if ($url === '') {
+            return '';
+        }
+
+        $response = wp_remote_get($url, ['timeout' => 3]);
+        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+            return '';
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        $version = is_array($body) ? trim((string) ($body['version'] ?? '')) : '';
+
+        return preg_match('/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/', $version) === 1
+            ? $version
+            : '';
     }
 
     public static function enqueueAssets(string $hook): void
@@ -145,6 +171,17 @@ final class DeploymentAdminPage
         $targets = $view['targets'];
         $statusOk = $view['statusOk'];
         $statusMessage = $view['statusMessage'];
+        $stagingDeployment = $targets['staging']['deployment'];
+        $stagingPluginVersion = $targets['staging']['currentPluginVersion'];
+        $testedPluginVersion = (string) ($stagingDeployment['pluginVersion'] ?? '');
+        $stagingSourceCommitSha = (string) ($stagingDeployment['sourceCommitSha'] ?? '');
+        $stagingWebcomponentsSha = (string) ($stagingDeployment['webcomponentsCommitSha'] ?? '');
+        $stagingPluginMatchesTested = $stagingPluginVersion !== ''
+            && $testedPluginVersion !== ''
+            && $stagingPluginVersion === $testedPluginVersion;
+        $stagingPromotionReady = $stagingPluginMatchesTested
+            && preg_match('/^[a-f0-9]{40}$/i', $stagingSourceCommitSha) === 1
+            && preg_match('/^[a-f0-9]{40}$/i', $stagingWebcomponentsSha) === 1;
         $showDevTab = !empty($targets['dev']['previewUrl']);
         $lowerTabs = $showDevTab ? ['dev', 'staging'] : ['staging'];
 
@@ -346,8 +383,31 @@ final class DeploymentAdminPage
                     </div>
 
                     <p style="color: #666; margin: 1rem 0 1rem;">
-                        <?php esc_html_e('Backs up the current production build, then deploys the latest build to production.', 'abcnorio-func'); ?>
+                        <?php esc_html_e('Builds and deploys the exact commit currently running on healthy staging. Production builds cannot be triggered independently.', 'abcnorio-func'); ?>
                     </p>
+
+                    <div style="margin: 0 0 1rem; padding: 0.75rem; background: #f6f7f7;">
+                        <strong><?php esc_html_e('Staging promotion source', 'abcnorio-func'); ?></strong>
+                        <p style="margin: 0.5rem 0 0;">
+                            <?php esc_html_e('Current staging plugin:', 'abcnorio-func'); ?>
+                            <code><?php echo esc_html($stagingPluginVersion !== '' ? $stagingPluginVersion : __('unavailable', 'abcnorio-func')); ?></code>
+                        </p>
+                        <p style="margin: 0.25rem 0 0;">
+                            <?php esc_html_e('Plugin version captured with tested frontend:', 'abcnorio-func'); ?>
+                            <code><?php echo esc_html($testedPluginVersion !== '' ? $testedPluginVersion : __('not recorded', 'abcnorio-func')); ?></code>
+                            <?php if ($testedPluginVersion !== '') : ?>
+                                <span><?php echo $stagingPluginMatchesTested ? esc_html__('(matches)', 'abcnorio-func') : esc_html__('(changed; redeploy and verify staging)', 'abcnorio-func'); ?></span>
+                            <?php endif; ?>
+                        </p>
+                        <p style="margin: 0.25rem 0 0;">
+                            <?php esc_html_e('Frontend commit on staging:', 'abcnorio-func'); ?>
+                            <code><?php echo esc_html($stagingSourceCommitSha !== '' ? $stagingSourceCommitSha : __('not recorded', 'abcnorio-func')); ?></code>
+                        </p>
+                        <p style="margin: 0.25rem 0 0;">
+                            <?php esc_html_e('Webcomponents commit tested on staging:', 'abcnorio-func'); ?>
+                            <code><?php echo esc_html($stagingWebcomponentsSha !== '' ? $stagingWebcomponentsSha : __('not recorded', 'abcnorio-func')); ?></code>
+                        </p>
+                    </div>
 
                     <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                         <button
@@ -355,7 +415,7 @@ final class DeploymentAdminPage
                             data-target="production"
                             data-label="<?php esc_attr_e('Deploy Staging to Production', 'abcnorio-func'); ?>"
                             data-confirm="<?php esc_attr_e('Deploy Staging to production? This will replace the live site. Continue?', 'abcnorio-func'); ?>"
-                            <?php disabled(!$statusOk); ?>
+                            <?php disabled(!$statusOk || !$stagingPromotionReady); ?>
                         >
                             <?php esc_html_e('Deploy Staging to Production', 'abcnorio-func'); ?>
                         </button>

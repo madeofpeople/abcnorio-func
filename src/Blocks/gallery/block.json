@@ -15,6 +15,10 @@
     "variant": {
       "type": "string",
       "default": "slider"
+    },
+    "itemsPerPage": {
+      "type": "number",
+      "default": 6
     }
   },
   "supports": {

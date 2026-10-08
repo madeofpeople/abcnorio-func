@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SRC_DIR="${ROOT_DIR}/node_modules/abcnorio-webcomponents/dist"
+SRC_DIR="${ABCNORIO_COMPONENTS_DIST_SOURCE:-${ROOT_DIR}/node_modules/abcnorio-webcomponents/dist}"
 DST_DIR="${ROOT_DIR}/resources/vendor/components/dist"
 REQUIRED_FILES=(
   "manifest.json"

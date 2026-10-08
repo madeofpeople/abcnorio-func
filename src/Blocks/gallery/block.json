@@ -18,8 +18,15 @@
     },
     "itemsPerPage": {
       "type": "number",
-      "default": 6
+      "default": 8
+    },
+    "allowResize": {
+      "type": "boolean",
+      "default": false
     }
+  },
+  "providesContext": {
+    "allowResize": "allowResize"
   },
   "supports": {
     "align": false,

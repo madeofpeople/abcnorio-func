@@ -385,6 +385,10 @@ final class Plugin
             return $metadata;
         }
 
+        if (($metadata['name'] ?? null) === 'core/group') {
+            $metadata['supports']['color']['background'] = false;
+        }
+
         $supports = $metadata['supports'] ?? null;
         if (! is_array($supports)) {
             return $metadata;

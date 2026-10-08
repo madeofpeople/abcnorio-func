@@ -4,8 +4,6 @@ namespace abcnorio\CustomFunc\Blocks;
 
 final class Gallery
 {
-    private const SLIDER_IMAGE_SIZE = 'galery-slider';
-
     public static function registerHooks(): void
     {
         add_action('init', [self::class, 'registerBlock']);
@@ -40,14 +38,15 @@ final class Gallery
         }
 
         $itemsPerPage = absint((int) ($attributes['itemsPerPage'] ?? 6));
-        if ($itemsPerPage < 1) {
-            $itemsPerPage = 6;
-        }
+        $itemsPerPage = min(24, max(8, $itemsPerPage ?: 8));
 
         $className = trim((string) ($attributes['className'] ?? ''));
+        $isPagedGrid = $variant === 'paged-grid';
+        $isMasonry = $variant === 'masonry';
+        $usesBlaze = ! $isPagedGrid && ! $isMasonry;
         $classes = array_filter([
             'gallery',
-            $variant === 'paged-grid' ? null : 'blaze-slider',
+            $usesBlaze ? 'blaze-slider' : null,
             'gallery--' . $variant,
             'gallery--nav-' . $navigationMode,
             'abcnorio-gallery',
@@ -56,23 +55,24 @@ final class Gallery
             $className !== '' ? $className : null,
         ]);
 
-        $isPagedGrid = $variant === 'paged-grid';
+        $containerClass = $usesBlaze ? 'blaze-container' : '';
+        $trackContainerClass = $usesBlaze ? 'blaze-track-container' : '';
+        $trackClass = $usesBlaze ? 'images blaze-track' : 'images';
 
         $dom = HtmlFragmentSupport::loadHtmlFragment(
             '<gallery-listing class="' . esc_attr(implode(' ', $classes)) . '" data-variant="' . esc_attr($variant) . '" data-navigation-mode="' . esc_attr($navigationMode) . '" data-items-per-page="' . esc_attr((string) $itemsPerPage) . '">' .
-                '<div class="blaze-container">' .
-                    '<div class="blaze-track-container">' .
-                        '<div class="images blaze-track"></div>' .
+                '<div' . ($containerClass !== '' ? ' class="' . esc_attr($containerClass) . '"' : '') . '>' .
+                    '<div' . ($trackContainerClass !== '' ? ' class="' . esc_attr($trackContainerClass) . '"' : '') . '>' .
+                        '<div class="' . esc_attr($trackClass) . '"></div>' .
                     '</div>' .
-                    ($isPagedGrid ? '' :
+                    ($usesBlaze ?
                         '<a href="javascript:void(0)" role="button" class="blaze-prev"><span>Previous!</span></a>' .
                         '<a href="javascript:void(0)" role="button" class="blaze-next"><span>Next!</span></a>' .
                         '<div class="blaze-pagination"></div>'
-                    ) .
+                    : '') .
                 '</div>' .
-                ($isPagedGrid
-                    ? '<nav class="gallery-pagination" aria-label="Gallery pagination" hidden></nav>'
-                    : '<nav class="blaze-slide-dots" aria-label="Slide navigation"></nav>') .
+                ($isPagedGrid ? '<nav class="gallery-pagination" aria-label="Gallery pagination" hidden></nav>' : '') .
+                ($usesBlaze ? '<nav class="blaze-slide-dots" aria-label="Slide navigation"></nav>' : '') .
             '</gallery-listing>'
         );
 
@@ -83,17 +83,29 @@ final class Gallery
 
         HtmlFragmentSupport::addClass($root, 'wp-block-abcnorio-gallery');
 
-        $track = (new \DOMXPath($dom))->query('.//*[contains(concat(" ", normalize-space(@class), " "), " images ") and contains(concat(" ", normalize-space(@class), " "), " blaze-track ")]', $root)->item(0);
+        $track = (new \DOMXPath($dom))->query('.//*[contains(concat(" ", normalize-space(@class), " "), " images ")]', $root)->item(0);
         if (! $track instanceof \DOMElement) {
             throw new \RuntimeException('Components System Error: gallery track missing.');
         }
 
-        self::appendGalleryItems($dom, $track, $content);
+        self::appendGalleryItems($dom, $track, $content, self::imageSizeFor($variant));
 
         return trim((string) $dom->saveHTML($root));
     }
 
-    private static function appendGalleryItems(\DOMDocument $dom, \DOMElement $track, string $content): void
+    private static function imageSizeFor(string $variant): string
+    {
+        $path = plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . 'resources/vendor/components/dist/gallery-image-sizes.json';
+        $sizes = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+
+        if (! isset($sizes[$variant])) {
+            throw new \RuntimeException("Gallery image size missing for variant '{$variant}' in gallery-image-sizes.json.");
+        }
+
+        return $sizes[$variant];
+    }
+
+    private static function appendGalleryItems(\DOMDocument $dom, \DOMElement $track, string $content, string $imageSize): void
     {
         if (trim($content) === '') {
             return;
@@ -116,9 +128,8 @@ final class Gallery
             if ($child instanceof \DOMElement && str_contains(' ' . ($child->getAttribute('class') ?? '') . ' ', ' gallery-item ')) {
                 $item = $dom->importNode($child, true);
                 if ($item instanceof \DOMElement) {
-                    self::applyPreferredSliderImageSize($dom, $item);
+                    self::applyImageSize($dom, $item, $imageSize);
                 }
-
                 $track->appendChild($item);
                 continue;
             }
@@ -126,28 +137,24 @@ final class Gallery
             $item = $dom->createElement('div');
             HtmlFragmentSupport::addClass($item, 'gallery-item');
             $item->appendChild($dom->importNode($child, true));
-            self::applyPreferredSliderImageSize($dom, $item);
+            self::applyImageSize($dom, $item, $imageSize);
             $track->appendChild($item);
         }
     }
 
-    private static function applyPreferredSliderImageSize(\DOMDocument $dom, \DOMElement $item): void
+    private static function applyImageSize(\DOMDocument $dom, \DOMElement $item, string $imageSize): void
     {
         $xpath = new \DOMXPath($dom);
         $images = $xpath->query('.//img', $item);
-
-        if (! $images instanceof \DOMNodeList || $images->length === 0) {
+        if (! $images instanceof \DOMNodeList) {
             return;
         }
 
-        $targets = [];
-        foreach ($images as $image) {
-            if ($image instanceof \DOMElement) {
-                $targets[] = $image;
+        foreach (iterator_to_array($images) as $image) {
+            if (! $image instanceof \DOMElement) {
+                continue;
             }
-        }
 
-        foreach ($targets as $image) {
             $attachmentId = self::extractAttachmentId($image);
             if ($attachmentId < 1) {
                 continue;
@@ -155,26 +162,20 @@ final class Gallery
 
             $className = trim((string) $image->getAttribute('class'));
             $attributes = $className === '' ? [] : ['class' => $className];
-
-            $preferredImage = wp_get_attachment_image($attachmentId, self::SLIDER_IMAGE_SIZE, false, $attributes);
+            $preferredImage = wp_get_attachment_image($attachmentId, $imageSize, false, $attributes);
             if ($preferredImage === '') {
                 continue;
             }
 
             $replacementDom = HtmlFragmentSupport::loadHtmlFragment('<wrapper>' . $preferredImage . '</wrapper>');
             $replacementImage = $replacementDom->getElementsByTagName('img')->item(0);
-            if (! $replacementImage instanceof \DOMElement) {
-                continue;
-            }
-
-            $imported = $dom->importNode($replacementImage, true);
             $parent = $image->parentNode;
-            if (! $parent instanceof \DOMNode) {
+            if (! $replacementImage instanceof \DOMElement || ! $parent instanceof \DOMNode) {
                 continue;
             }
 
-            $parent->replaceChild($imported, $image);
-            self::syncFigureSizeClass($parent);
+            $parent->replaceChild($dom->importNode($replacementImage, true), $image);
+            self::syncFigureSizeClass($parent, $imageSize);
         }
     }
 
@@ -185,42 +186,24 @@ final class Gallery
             return (int) $matches[1];
         }
 
-        $dataId = (int) $image->getAttribute('data-id');
-        if ($dataId > 0) {
-            return $dataId;
-        }
-
-        return 0;
+        return (int) $image->getAttribute('data-id');
     }
 
-    private static function syncFigureSizeClass(\DOMNode $node): void
+    private static function syncFigureSizeClass(\DOMNode $node, string $imageSize): void
     {
-        if (! $node instanceof \DOMElement) {
-            return;
-        }
-
-        $figure = $node;
-        if (strtolower($figure->tagName) !== 'figure') {
-            $figure = $node->parentNode instanceof \DOMElement ? $node->parentNode : $node;
-        }
-
+        $figure = $node instanceof \DOMElement && strtolower($node->tagName) === 'figure'
+            ? $node
+            : ($node->parentNode instanceof \DOMElement ? $node->parentNode : null);
         if (! $figure instanceof \DOMElement || strtolower($figure->tagName) !== 'figure') {
             return;
         }
 
         $className = (string) $figure->getAttribute('class');
-        if ($className === '') {
-            HtmlFragmentSupport::addClass($figure, 'size-' . self::SLIDER_IMAGE_SIZE);
-            return;
-        }
-
-        $updated = preg_replace('/\\bsize-[^\\s]+\\b/', 'size-' . self::SLIDER_IMAGE_SIZE, $className, 1);
+        $updated = preg_replace('/\\bsize-[^\\s]+\\b/', 'size-' . $imageSize, $className, 1);
         $updated = is_string($updated) ? trim($updated) : trim($className);
-
-        if ($updated === $className && ! str_contains(' ' . $className . ' ', ' size-' . self::SLIDER_IMAGE_SIZE . ' ')) {
-            $updated .= ' size-' . self::SLIDER_IMAGE_SIZE;
+        if (! str_contains(' ' . $updated . ' ', ' size-' . $imageSize . ' ')) {
+            $updated = trim($updated . ' size-' . $imageSize);
         }
-
-        $figure->setAttribute('class', trim($updated));
+        $figure->setAttribute('class', $updated);
     }
 }

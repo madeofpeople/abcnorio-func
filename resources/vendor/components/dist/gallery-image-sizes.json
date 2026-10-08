@@ -1,0 +1,6 @@
+{
+  "default": "galery-slider",
+  "slider": "galery-slider",
+  "paged-grid": "abcnorio-card",
+  "masonry": "abcnorio-card"
+}

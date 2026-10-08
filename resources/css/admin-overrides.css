@@ -170,7 +170,14 @@ padding: 0 2rem 2rem 2rem;
 
 /* --- Gallery editor parity --- */
 
-.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor > gallery-listing {
+
+/* Hide only the core Resolution selector while a gallery image is selected. */
+body.abcnorio-gallery-image-selected .block-editor-block-inspector .components-base-control:has(select option[value="galery-slider"]),
+body.abcnorio-gallery-image-selected .block-editor-block-inspector .components-base-control:has(select option[value="abcnorio-card"]) {
+	display: none;
+}
+
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor:not(.abcnorio-gallery--paged-grid):not(.abcnorio-gallery--masonry) > gallery-listing {
 	display: block;
 	margin-left: -2rem;
 	margin-right: -2rem;
@@ -193,7 +200,8 @@ padding: 0 2rem 2rem 2rem;
 
 .block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor:not(.abcnorio-gallery--paged-grid) > gallery-listing .blaze-track > .wp-block {
 	height: 400px;
-	min-width: fit-content;
+	width: auto;
+	/* min-width: fit-content; */
 	margin-block-start: 0;
 	margin-block-end: 0;
 }
@@ -300,30 +308,14 @@ padding: 0 2rem 2rem 2rem;
 	user-select: none;
 }
 
-/* Gallery editor parity: paged grid is a plain grid, no slider chrome */
-.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor.abcnorio-gallery--paged-grid > gallery-listing .blaze-track {
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 1rem;
-	padding: 0;
+/* Paged grid shim: editor-only wrapper quirks; grid and image rules come from gallery.scss */
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery--paged-grid gallery-listing .images > .wp-block {
+	margin-block: 0;
 }
 
-.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor.abcnorio-gallery--paged-grid > gallery-listing .blaze-track > .wp-block {
-	min-width: 0;
-	margin-block-start: 0;
-	margin-block-end: 0;
-}
-
-.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor.abcnorio-gallery--paged-grid > gallery-listing .blaze-track > .wp-block figure {
-	margin: 0;
-}
-
-.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery-editor.abcnorio-gallery--paged-grid > gallery-listing .blaze-track > .wp-block img {
-	display: block;
-	width: 100%;
+.block-editor-iframe__body.editor-styles-wrapper .wp-block-abcnorio-gallery.abcnorio-gallery--paged-grid gallery-listing .images > .block-list-appender {
+	grid-column: 1 / -1;
 	height: auto;
-	max-width: none;
-	object-fit: initial;
 }
 
 /* Hero editor: let clicks pass through wrapper padding to media placeholder */

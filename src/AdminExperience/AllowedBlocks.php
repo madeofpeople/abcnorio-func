@@ -71,7 +71,8 @@ final class AllowedBlocks
             'abcnorio/event-listing',
             'abcnorio/content-listing',
             'abcnorio/collective-listing',
-            'abcnorio/newsletter-signup'
+            'abcnorio/newsletter-signup',
+            'abcnorio/forms',
         ],
     ];
 

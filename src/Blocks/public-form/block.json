@@ -1,0 +1,20 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "abcnorio/forms",
+  "title": "ABC No Rio Forms",
+  "category": "widgets",
+  "icon": "feedback",
+  "description": "Embed a configured public form from an ACF field group.",
+  "attributes": {
+    "formSlug": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "align": false,
+    "html": false,
+    "customClassName": false
+  }
+}

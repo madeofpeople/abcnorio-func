@@ -10,6 +10,7 @@ import './heroBlock';
 import './galleryBlock';
 import './sidebarToutBlock';
 import './newsletterSignupBlock';
+import './publicFormBlock';
 
 const LINK_SELECTORS = [
     '.editor-post-preview',

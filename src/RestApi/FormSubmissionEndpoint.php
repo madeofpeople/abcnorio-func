@@ -337,7 +337,7 @@ final class FormSubmissionEndpoint
 
     /**
      * @param mixed $rawFields
-     * @return array<int, array{name: string, label: string, type: string, required: bool, placeholder: string, validation: string, min_length: int}>
+    * @return array<int, array{name: string, label: string, type: string, required: bool, placeholder: string, validation: string, min_length: int, options?: array<int, array{value: string, label: string}>, allow_null?: bool}>
      */
     private static function mapGroupFieldsToFormFields($rawFields): array
     {
@@ -358,13 +358,16 @@ final class FormSubmissionEndpoint
             }
 
             $type = (string) ($field['type'] ?? 'text');
-            if (! in_array($type, ['text', 'email', 'textarea'], true)) {
+            if (! in_array($type, ['text', 'email', 'textarea', 'select'], true)) {
+                continue;
+            }
+            if ($type === 'select' && ! empty($field['multiple'])) {
                 continue;
             }
 
             $minLength = isset($field['minlength']) ? (int) $field['minlength'] : 0;
 
-            $fields[] = [
+            $formField = [
                 'name' => $name,
                 'label' => (string) ($field['label'] ?? $name),
                 'type' => $type,
@@ -373,6 +376,25 @@ final class FormSubmissionEndpoint
                 'validation' => $type === 'email' ? 'email' : ($minLength > 0 ? 'min_length' : ''),
                 'min_length' => $minLength,
             ];
+
+            if ($type === 'select') {
+                $choices = is_array($field['choices'] ?? null) ? $field['choices'] : [];
+                $options = [];
+                foreach ($choices as $value => $label) {
+                    $value = (string) $value;
+                    if ($value === '') {
+                        continue;
+                    }
+                    $options[] = ['value' => $value, 'label' => (string) $label];
+                }
+                if ($options === []) {
+                    continue;
+                }
+                $formField['options'] = $options;
+                $formField['allow_null'] = ! empty($field['allow_null']);
+            }
+
+            $fields[] = $formField;
         }
 
         return $fields;
@@ -395,6 +417,22 @@ final class FormSubmissionEndpoint
 
             if ($required && self::isEmptyValue($value)) {
                 $errors[$name] = sprintf('%s is required.', $field['label'] ?? $name);
+                continue;
+            }
+
+            if ($type === 'select') {
+                if ($value === null || $value === '') {
+                    if (! $required && ! empty($field['allow_null'])) {
+                        continue;
+                    }
+                    $errors[$name] = sprintf('%s must be a valid selection.', $field['label'] ?? $name);
+                    continue;
+                }
+
+                $allowedValues = array_column($field['options'] ?? [], 'value');
+                if (! is_string($value) || ! in_array($value, $allowedValues, true)) {
+                    $errors[$name] = sprintf('%s must be a valid selection.', $field['label'] ?? $name);
+                }
                 continue;
             }
 

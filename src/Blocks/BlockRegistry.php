@@ -31,6 +31,9 @@ final class BlockRegistry
                 'renderClass' => NewsletterSignup::class,
                 'renderMethod' => 'render',
             ],
+            'abcnorio/forms' => [
+                'path' => 'src/Blocks/public-form',
+            ],
             'abcnorio/event-listing' => [
                 'path' => 'src/Blocks/event-listing-query',
                 'renderClass' => EventListingQuery::class,

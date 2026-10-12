@@ -1,6 +1,6 @@
 /* global abcnorioDeployment */
 (function () {
-    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, copyMediaNonce, pollCopyMediaNonce, pullFromStagingNonce, pollPullFromStagingNonce, copyMediaToStagingNonce, pollCopyMediaToStagingNonce, backupMediaDevNonce, pollBackupMediaDevNonce, backupMediaStagingNonce, pollBackupMediaStagingNonce, backupDatabaseStagingNonce, pollBackupDatabaseStagingNonce, listMediaBackupsNonce, deleteMediaBackupNonce, listDatabaseBackupsNonce, downloadDatabaseBackupNonce, deleteDatabaseBackupNonce, pullFromDevNonce, pollPullFromDevNonce, targets = {} } = abcnorioDeployment;
+    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, copyMediaNonce, pollCopyMediaNonce, pullFromStagingNonce, pollPullFromStagingNonce, copyMediaToStagingNonce, pollCopyMediaToStagingNonce, backupMediaDevNonce, pollBackupMediaDevNonce, backupMediaStagingNonce, pollBackupMediaStagingNonce, backupDatabaseDevNonce, pollBackupDatabaseDevNonce, backupDatabaseStagingNonce, pollBackupDatabaseStagingNonce, listMediaBackupsNonce, deleteMediaBackupNonce, listDatabaseBackupsNonce, downloadDatabaseBackupNonce, deleteDatabaseBackupNonce, pullFromDevNonce, pollPullFromDevNonce, targets = {} } = abcnorioDeployment;
 
     let pollTimer = null;
     let buildStartTime = null;
@@ -136,9 +136,9 @@
         }).join('');
     }
 
-    function renderDatabaseBackupList(backups) {
-        const list = document.querySelector('.js-database-backup-list');
-        const empty = document.querySelector('.js-database-backup-empty');
+    function renderDatabaseBackupList(env, backups) {
+        const list = document.querySelector('.js-database-backup-list[data-env="' + env + '"]');
+        const empty = document.querySelector('.js-database-backup-empty[data-env="' + env + '"]');
         if (!list || !empty) return;
 
         if (!Array.isArray(backups) || backups.length === 0) {
@@ -151,22 +151,24 @@
         list.innerHTML = backups.map((backup) => {
             const name = escapeHtml(backup.name || '');
             const href = ajaxUrl + '?action=abcnorio_download_database_backup&nonce='
-                + encodeURIComponent(downloadDatabaseBackupNonce) + '&file=' + encodeURIComponent(backup.name || '');
+                + encodeURIComponent(downloadDatabaseBackupNonce) + '&env=' + encodeURIComponent(env)
+                + '&file=' + encodeURIComponent(backup.name || '');
             return '<li class="backup-item">'
                 + '<span class="backup-item-name">' + name + '</span>'
                 + '<span style="margin-left: 0.5rem; display: inline-flex; gap: 0.5rem;">'
                 + '<a href="' + href + '" class="button button-secondary button-small">Download</a>'
-                + '<button class="button button-small js-delete-database-backup" data-file="' + name + '">Delete</button>'
+                + '<button class="button button-small js-delete-database-backup" data-env="' + escapeHtml(env) + '" data-file="' + name + '">Delete</button>'
                 + '</span></li>';
         }).join('');
     }
 
-    function refreshDatabaseBackupList() {
+    function refreshDatabaseBackupList(env) {
         return fetch(ajaxUrl, {
             method: 'POST',
             body: new URLSearchParams({
                 action: 'abcnorio_list_database_backups',
                 nonce: listDatabaseBackupsNonce,
+                env,
             }),
         })
             .then((r) => r.json())
@@ -174,7 +176,7 @@
                 if (!data.success) {
                     throw new Error(data.data && data.data.message ? data.data.message : 'Could not load database backups.');
                 }
-                renderDatabaseBackupList((data.data && data.data.backups) || []);
+                renderDatabaseBackupList(env, (data.data && data.data.backups) || []);
             });
     }
 
@@ -668,6 +670,22 @@
         },
     });
 
+    wireDevToolButton('.js-backup-database-dev', {
+        statusClass: '.js-backup-database-dev-status',
+        startingText: 'Backing up\u2026',
+        startAction: 'abcnorio_backup_database_dev',
+        startNonce: backupDatabaseDevNonce,
+        pollAction: 'abcnorio_poll_backup_database_dev_status',
+        pollNonce: pollBackupDatabaseDevNonce,
+        startErrPrefix: 'Could not start backup',
+        failPrefix: 'Backup failed',
+        onDone: () => {
+            refreshDatabaseBackupList('dev').catch((error) => {
+                showAdminNotice(error.message || 'Could not refresh database backups.', 'error');
+            });
+        },
+    });
+
     wireDevToolButton('.js-backup-database-staging', {
         statusClass: '.js-backup-database-staging-status',
         startingText: 'Backing up\u2026',
@@ -678,7 +696,7 @@
         startErrPrefix: 'Could not start backup',
         failPrefix: 'Backup failed',
         onDone: () => {
-            refreshDatabaseBackupList().catch((error) => {
+            refreshDatabaseBackupList('staging').catch((error) => {
                 showAdminNotice(error.message || 'Could not refresh database backups.', 'error');
             });
         },
@@ -726,8 +744,9 @@
         if (!btn) return;
 
         event.preventDefault();
+        const env = btn.dataset.env || '';
         const file = btn.dataset.file || '';
-        if (!file || !window.confirm('Delete this database backup archive?')) return;
+        if (!env || !file || !window.confirm('Delete this database backup archive?')) return;
 
         btn.disabled = true;
         fetch(ajaxUrl, {
@@ -735,6 +754,7 @@
             body: new URLSearchParams({
                 action: 'abcnorio_delete_database_backup',
                 nonce: deleteDatabaseBackupNonce,
+                env,
                 file,
             }),
         })
@@ -744,7 +764,7 @@
                     throw new Error(data.data && data.data.message ? data.data.message : 'Delete failed.');
                 }
                 showAdminNotice('Database backup deleted.', 'success');
-                return refreshDatabaseBackupList();
+                return refreshDatabaseBackupList(env);
             })
             .catch((error) => {
                 showAdminNotice(error.message || 'Delete failed.', 'error');

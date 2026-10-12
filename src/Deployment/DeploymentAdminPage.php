@@ -127,7 +127,7 @@ final class DeploymentAdminPage
 
         $view = self::deploymentTargets();
         $jsUrl = plugins_url('resources/js/deployment.js', ABCNORIO_CUSTOM_FUNC_FILE);
-        $scriptVersion = '1.0.6';
+        $scriptVersion = '1.0.7';
         wp_enqueue_script('abcnorio-deployment', $jsUrl, [], $scriptVersion, true);
         wp_localize_script('abcnorio-deployment', 'abcnorioDeployment', [
             'ajaxUrl'             => admin_url('admin-ajax.php'),
@@ -145,6 +145,8 @@ final class DeploymentAdminPage
             'pollBackupMediaDevNonce'              => wp_create_nonce('abcnorio_poll_backup_media_dev_status'),
             'backupMediaStagingNonce'              => wp_create_nonce('abcnorio_backup_media_staging'),
             'pollBackupMediaStagingNonce'          => wp_create_nonce('abcnorio_poll_backup_media_staging_status'),
+            'backupDatabaseDevNonce'               => wp_create_nonce('abcnorio_backup_database_dev'),
+            'pollBackupDatabaseDevNonce'           => wp_create_nonce('abcnorio_poll_backup_database_dev_status'),
             'backupDatabaseStagingNonce'           => wp_create_nonce('abcnorio_backup_database_staging'),
             'pollBackupDatabaseStagingNonce'       => wp_create_nonce('abcnorio_poll_backup_database_staging_status'),
             'listDatabaseBackupsNonce'             => wp_create_nonce('abcnorio_list_database_backups'),
@@ -291,6 +293,25 @@ final class DeploymentAdminPage
                     </p>
                     <ul class="js-media-backup-list" data-env="dev" style="margin-top: 0.5rem;"></ul>
                 </div>
+                <div style="margin-top: 1.5rem;">
+                    <span class="js-backup-database-dev-status" style="color: #666; display: block; margin-bottom: 0.5rem;"></span>
+                    <button
+                        class="button button-primary js-backup-database-dev"
+                        data-label="<?php esc_attr_e('Backup Dev Database', 'abcnorio-func'); ?>"
+                    >
+                        <?php esc_html_e('Backup Dev Database', 'abcnorio-func'); ?>
+                    </button>
+                    <p style="margin: 0.75rem 0 0; color: #666; font-size: 0.875em;">
+                        <em><?php esc_html_e('Creates a timestamped SQL archive of the Dev database with automatic retention.', 'abcnorio-func'); ?></em>
+                    </p>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <strong><?php esc_html_e('Recent Dev Database Backups', 'abcnorio-func'); ?></strong>
+                    <p class="js-database-backup-empty" data-env="dev" style="margin: 0.5rem 0 0; color: #666;">
+                        <?php esc_html_e('No database backups found yet.', 'abcnorio-func'); ?>
+                    </p>
+                    <ul class="js-database-backup-list" data-env="dev" style="margin-top: 0.5rem;"></ul>
+                </div>
                 <?php endif; ?>
                 <?php if ($env === 'staging') : ?>
                 <div style="margin-top: 1.5rem;">
@@ -350,10 +371,10 @@ final class DeploymentAdminPage
                 </div>
                 <div style="margin-top: 1rem;">
                     <strong><?php esc_html_e('Recent Staging Database Backups', 'abcnorio-func'); ?></strong>
-                    <p class="js-database-backup-empty" style="margin: 0.5rem 0 0; color: #666;">
+                    <p class="js-database-backup-empty" data-env="staging" style="margin: 0.5rem 0 0; color: #666;">
                         <?php esc_html_e('No database backups found yet.', 'abcnorio-func'); ?>
                     </p>
-                    <ul class="js-database-backup-list" style="margin-top: 0.5rem;"></ul>
+                    <ul class="js-database-backup-list" data-env="staging" style="margin-top: 0.5rem;"></ul>
                 </div>
                 <?php endif; ?>
             </div>
@@ -387,24 +408,24 @@ final class DeploymentAdminPage
                     </p>
 
                     <div style="margin: 0 0 1rem; padding: 0.75rem; background: #f6f7f7;">
-                        <strong><?php esc_html_e('Staging promotion source', 'abcnorio-func'); ?></strong>
+                        <strong><?php esc_html_e('Staging candidate for Production', 'abcnorio-func'); ?></strong>
                         <p style="margin: 0.5rem 0 0;">
-                            <?php esc_html_e('Current staging plugin:', 'abcnorio-func'); ?>
+                            <?php esc_html_e('Live plugin version in Staging:', 'abcnorio-func'); ?>
                             <code><?php echo esc_html($stagingPluginVersion !== '' ? $stagingPluginVersion : __('unavailable', 'abcnorio-func')); ?></code>
                         </p>
                         <p style="margin: 0.25rem 0 0;">
-                            <?php esc_html_e('Plugin version captured with tested frontend:', 'abcnorio-func'); ?>
+                            <?php esc_html_e('Plugin version tested with this Staging snapshot:', 'abcnorio-func'); ?>
                             <code><?php echo esc_html($testedPluginVersion !== '' ? $testedPluginVersion : __('not recorded', 'abcnorio-func')); ?></code>
                             <?php if ($testedPluginVersion !== '') : ?>
                                 <span><?php echo $stagingPluginMatchesTested ? esc_html__('(matches)', 'abcnorio-func') : esc_html__('(changed; redeploy and verify staging)', 'abcnorio-func'); ?></span>
                             <?php endif; ?>
                         </p>
                         <p style="margin: 0.25rem 0 0;">
-                            <?php esc_html_e('Frontend commit on staging:', 'abcnorio-func'); ?>
+                            <?php esc_html_e('Frontend commit in Staging:', 'abcnorio-func'); ?>
                             <code><?php echo esc_html($stagingSourceCommitSha !== '' ? $stagingSourceCommitSha : __('not recorded', 'abcnorio-func')); ?></code>
                         </p>
                         <p style="margin: 0.25rem 0 0;">
-                            <?php esc_html_e('Webcomponents commit tested on staging:', 'abcnorio-func'); ?>
+                            <?php esc_html_e('Webcomponents commit tested with this snapshot:', 'abcnorio-func'); ?>
                             <code><?php echo esc_html($stagingWebcomponentsSha !== '' ? $stagingWebcomponentsSha : __('not recorded', 'abcnorio-func')); ?></code>
                         </p>
                     </div>

@@ -60,9 +60,19 @@ final class DeploymentActions
         return $realFile;
     }
 
-    private static function resolveDatabaseBackupFile(string $requested): string
+    private static function validateDatabaseBackupEnv(string $env): string
     {
-        if (!preg_match('/^abcnorio-database-staging-[a-zA-Z0-9_-]+\.sql$/', $requested)) {
+        if (!in_array($env, ['dev', 'staging'], true)) {
+            wp_die(__('Invalid database backup environment.', 'abcnorio-func'), 400);
+        }
+
+        return $env;
+    }
+
+    private static function resolveDatabaseBackupFile(string $requested, string $env): string
+    {
+        $env = self::validateDatabaseBackupEnv($env);
+        if (!preg_match('/^abcnorio-database-' . preg_quote($env, '/') . '-[a-zA-Z0-9_-]+\.sql$/', $requested)) {
             wp_die(__('Invalid database backup file.', 'abcnorio-func'), 400);
         }
 
@@ -570,6 +580,16 @@ final class DeploymentActions
         self::devToolPost('abcnorio_backup_database_staging', '/dev-tools/backup-database-staging', 'backup');
     }
 
+    public static function backupDatabaseDev(): void
+    {
+        self::devToolPost('abcnorio_backup_database_dev', '/dev-tools/backup-database-dev', 'backup');
+    }
+
+    public static function pollBackupDatabaseDevStatus(): void
+    {
+        self::devToolPoll('abcnorio_poll_backup_database_dev_status', 'backupDatabaseDev');
+    }
+
     public static function pollBackupDatabaseStagingStatus(): void
     {
         self::devToolPoll('abcnorio_poll_backup_database_staging_status', 'backupDatabaseStaging');
@@ -583,7 +603,8 @@ final class DeploymentActions
             wp_send_json_error(['message' => 'Insufficient permissions'], 403);
         }
 
-        $response = wp_remote_get(Deployment::orchestratorBaseUrl() . '/dev-tools/database-backups', [
+        $env = self::validateDatabaseBackupEnv(sanitize_key((string) ($_POST['env'] ?? '')));
+        $response = wp_remote_get(Deployment::orchestratorBaseUrl() . '/dev-tools/database-backups?target=' . rawurlencode($env), [
             'headers' => ['Authorization' => 'Bearer ' . Deployment::orchestratorSecret()],
             'timeout' => 5,
         ]);
@@ -608,11 +629,12 @@ final class DeploymentActions
         }
 
         $file = sanitize_file_name((string) ($_GET['file'] ?? ''));
+        $env = self::validateDatabaseBackupEnv(sanitize_key((string) ($_GET['env'] ?? '')));
         if ($file === '') {
             wp_die(__('Missing database backup file.', 'abcnorio-func'), 400);
         }
 
-        $realFile = self::resolveDatabaseBackupFile($file);
+        $realFile = self::resolveDatabaseBackupFile($file, $env);
         nocache_headers();
         header('Content-Description: File Transfer');
         header('Content-Type: application/sql');
@@ -631,6 +653,7 @@ final class DeploymentActions
         }
 
         $file = sanitize_file_name((string) ($_POST['file'] ?? ''));
+        $env = self::validateDatabaseBackupEnv(sanitize_key((string) ($_POST['env'] ?? '')));
         if ($file === '') {
             wp_send_json_error(['message' => 'Missing database backup file'], 400);
         }
@@ -640,7 +663,7 @@ final class DeploymentActions
                 'Content-Type' => 'application/json',
                 'Authorization' => 'Bearer ' . Deployment::orchestratorSecret(),
             ],
-            'body' => wp_json_encode(['file' => $file]),
+            'body' => wp_json_encode(['target' => $env, 'file' => $file]),
             'timeout' => 10,
         ]);
 
@@ -658,7 +681,7 @@ final class DeploymentActions
             wp_send_json_error(['message' => $message], $code > 0 ? $code : 502);
         }
 
-        wp_send_json_success(['status' => 'deleted', 'file' => $file]);
+        wp_send_json_success(['status' => 'deleted', 'env' => $env, 'file' => $file]);
     }
 
     public static function pullFromDev(): void

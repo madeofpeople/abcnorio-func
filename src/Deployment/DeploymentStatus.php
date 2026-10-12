@@ -84,8 +84,7 @@ final class DeploymentStatus
 
     public static function deploymentStatusPath(): string
     {
-        $configured = trim((string) (getenv('ASTRO_DEPLOYMENT_STATUS_FILE') ?: ''));
-        return $configured !== '' ? $configured : self::baseArchiveDir() . '/deployment-status.json';
+        return self::baseArchiveDir() . '/deployment-status.json';
     }
 
     /**

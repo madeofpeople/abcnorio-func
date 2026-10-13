@@ -6,6 +6,7 @@ SRC_DIR="${ABCNORIO_COMPONENTS_DIST_SOURCE:-${ROOT_DIR}/node_modules/abcnorio-we
 DST_DIR="${ROOT_DIR}/resources/vendor/components/dist"
 REQUIRED_FILES=(
   "manifest.json"
+  "gallery-image-sizes.json"
 )
 
 if [[ ! -d "${SRC_DIR}" ]]; then

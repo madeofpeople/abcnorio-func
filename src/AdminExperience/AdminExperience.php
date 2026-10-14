@@ -18,6 +18,7 @@ final class AdminExperience
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminStyles']);
         add_action('enqueue_block_assets', [self::class, 'enqueueAdminStyles']);
         add_action('enqueue_block_editor_assets', [self::class, 'enqueueAdminStyles']);
+        add_action('acf/input/admin_enqueue_scripts', [self::class, 'enqueueAcfValidationScript']);
         add_action('admin_menu', [self::class, 'remove_default_post_type']);
         add_action('admin_bar_menu', [self::class, 'remove_default_post_type_menu_bar'], 999);
         add_action('wp_dashboard_setup', [self::class, 'remove_draft_widget'], 999);
@@ -142,6 +143,19 @@ final class AdminExperience
             $styleUrl,
             ['abcnorio-components-runtime'],
             (string) filemtime($absolutePath)
+        );
+    }
+
+    public static function enqueueAcfValidationScript(): void
+    {
+        $relativePath = 'resources/js/acf-validation-labels.js';
+
+        wp_enqueue_script(
+            'abcnorio-acf-validation-labels',
+            plugin_dir_url(ABCNORIO_CUSTOM_FUNC_FILE) . $relativePath,
+            ['acf-input'],
+            (string) filemtime(plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . $relativePath),
+            true
         );
     }
 

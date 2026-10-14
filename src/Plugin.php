@@ -11,6 +11,7 @@ use abcnorio\CustomFunc\Deployment\Deployment;
 use abcnorio\CustomFunc\ImageStyles\BlockImageAttributeEnricher;
 use abcnorio\CustomFunc\ImageStyles\ImageStyleRegistrar;
 use abcnorio\CustomFunc\Navigation\MenuRegistrar;
+use abcnorio\CustomFunc\Navigation\SocialLinks;
 use abcnorio\CustomFunc\RestApi\EventQueryFilters;
 use abcnorio\CustomFunc\RestApi\ArticleQueryFilters;
 use abcnorio\CustomFunc\RestApi\FeaturedImageField;
@@ -81,6 +82,7 @@ final class Plugin
         BlockImageAttributeEnricher::registerHooks();
         /* Registers our menus */
         MenuRegistrar::registerHooks();
+        SocialLinks::registerHooks();
 
         add_filter( 'block_type_metadata', [self::class, 'disableGutenbergLayoutPanel']);
 

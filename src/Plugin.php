@@ -24,6 +24,7 @@ use abcnorio\CustomFunc\RestApi\FormSubmissionEndpoint;
 use abcnorio\CustomFunc\RestApi\SidebarBlocksField;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
+use abcnorio\CustomFunc\Blocks\HeadingAnchorAttribute;
 use abcnorio\CustomFunc\Blocks\Patterns;
 use abcnorio\CustomFunc\Blocks\BlockRegistrar;
 use abcnorio\CustomFunc\Dashboard\Dashboard;
@@ -83,6 +84,7 @@ final class Plugin
         /* Registers our menus */
         MenuRegistrar::registerHooks();
         SocialLinks::registerHooks();
+        HeadingAnchorAttribute::registerHooks();
 
         add_filter( 'block_type_metadata', [self::class, 'disableGutenbergLayoutPanel']);
 

@@ -44,7 +44,7 @@ final class SocialLinks
             self::PAGE,
             [self::class, 'renderPage'],
             'dashicons-share',
-            4
+            NULL
         );
     }
 

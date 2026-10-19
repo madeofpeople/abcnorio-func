@@ -10,8 +10,11 @@ final class BlockImageAttributeEnricher
     private const IMAGE_BLOCK = 'core/image';
     private const COVER_BLOCK = 'core/cover';
     private const ABCNORIO_HERO_BLOCK = 'abcnorio/hero';
+    private const SYNCED_PATTERN_BLOCK = 'core/block';
+    private const SYNCED_PATTERN_POST_TYPE = 'wp_block';
     private const DEFAULT_SIZE_SLUG = 'full';
     private const REST_BLOCKS_FIELD = 'abcnorio_blocks';
+    private const MAX_PATTERN_EXPANSION_DEPTH = 20;
 
     /**
      * Register filters/actions used by both block and REST enrichments.
@@ -19,6 +22,7 @@ final class BlockImageAttributeEnricher
     public static function registerHooks(): void
     {
         add_filter('vip_block_data_api__sourced_block_result', [self::class, 'enrichCoreImageBlock'], 20, 4);
+        add_filter('vip_block_data_api__before_parse_post_content', [self::class, 'expandSyncedPatternsInContent'], 20, 2);
         add_filter('rest_prepare_attachment', [self::class, 'enrichAttachmentResponse'], 20, 3);
         add_action('rest_api_init', [self::class, 'registerParsedBlocksField']);
     }
@@ -72,7 +76,7 @@ final class BlockImageAttributeEnricher
             return [];
         }
 
-        $parsedBlocks = parse_blocks((string) $post->post_content);
+        $parsedBlocks = parse_blocks(self::expandSyncedPatternsInContent((string) $post->post_content, $postId));
 
         return self::mapParsedBlocks($parsedBlocks, $postId);
     }
@@ -113,6 +117,88 @@ final class BlockImageAttributeEnricher
         }
 
         return $mapped;
+    }
+
+    /**
+     * Expand synced pattern references before a block API parses content.
+     *
+     * @param int|null $postId
+     */
+    public static function expandSyncedPatternsInContent(string $content, ?int $postId = null): string
+    {
+        unset($postId);
+
+        return serialize_blocks(self::expandSyncedPatterns(parse_blocks($content)));
+    }
+
+    /**
+     * @param array<int, mixed> $parsedBlocks
+     * @param array<int, int> $activePatternIds
+     *
+     * @return array<int, mixed>
+     */
+    private static function expandSyncedPatterns(array $parsedBlocks, array $activePatternIds = []): array
+    {
+        $expandedBlocks = [];
+
+        foreach ($parsedBlocks as $parsedBlock) {
+            if (! is_array($parsedBlock)) {
+                continue;
+            }
+
+            $blockName = isset($parsedBlock['blockName']) && is_string($parsedBlock['blockName'])
+                ? $parsedBlock['blockName']
+                : null;
+            $attributes = is_array($parsedBlock['attrs'] ?? null) ? $parsedBlock['attrs'] : [];
+
+            if ($blockName === self::SYNCED_PATTERN_BLOCK) {
+                $patternBlocks = self::syncedPatternBlocks($attributes, $activePatternIds);
+                if ($patternBlocks !== null) {
+                    array_push($expandedBlocks, ...$patternBlocks);
+                    continue;
+                }
+            }
+
+            $innerBlocks = is_array($parsedBlock['innerBlocks'] ?? null)
+                ? $parsedBlock['innerBlocks']
+                : [];
+            $parsedBlock['innerBlocks'] = self::expandSyncedPatterns($innerBlocks, $activePatternIds);
+
+            $expandedBlocks[] = $parsedBlock;
+        }
+
+        return $expandedBlocks;
+    }
+
+    /**
+     * @param array<string, mixed> $attributes
+     * @param array<int, int> $activePatternIds
+     *
+     * @return array<int, mixed>|null
+     */
+    private static function syncedPatternBlocks(array $attributes, array $activePatternIds): ?array
+    {
+        $patternId = isset($attributes['ref']) ? (int) $attributes['ref'] : 0;
+        if (
+            $patternId <= 0
+            || in_array($patternId, $activePatternIds, true)
+            || count($activePatternIds) >= self::MAX_PATTERN_EXPANSION_DEPTH
+        ) {
+            return null;
+        }
+
+        $pattern = get_post($patternId);
+        if (
+            ! $pattern instanceof \WP_Post
+            || $pattern->post_type !== self::SYNCED_PATTERN_POST_TYPE
+            || $pattern->post_status !== 'publish'
+        ) {
+            return null;
+        }
+
+        $activePatternIds[] = $patternId;
+
+        return self::expandSyncedPatterns(parse_blocks((string) $pattern->post_content), $activePatternIds);
     }
 
     /**

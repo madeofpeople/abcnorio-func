@@ -61,8 +61,7 @@
   },
   "supports": {
     "align": false,
-    "html": false,
-    "customClassName": false
+    "html": false
   },
   "editorStyle": "file:./editor.css"
 }

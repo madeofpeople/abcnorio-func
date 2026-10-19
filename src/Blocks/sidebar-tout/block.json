@@ -35,7 +35,6 @@
   },
   "supports": {
     "align": false,
-    "html": false,
-    "customClassName": false
+    "html": false
   }
 }

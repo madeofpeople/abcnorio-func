@@ -6,25 +6,6 @@ use abcnorio\CustomFunc\Components\ComponentIngestor;
 
 final class SidebarTout
 {
-    public static function registerHooks(): void
-    {
-        add_action('init', [self::class, 'registerBlock']);
-    }
-
-    public static function registerBlock(): void
-    {
-        if (\WP_Block_Type_Registry::get_instance()->is_registered('abcnorio/sidebar-tout')) {
-            return;
-        }
-
-        register_block_type(
-            plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . 'src/Blocks/sidebar-tout',
-            [
-                'render_callback' => [self::class, 'render'],
-            ]
-        );
-    }
-
     public static function render(array $attributes = [], string $content = '', $block = null): string
     {
         unset($content, $block);

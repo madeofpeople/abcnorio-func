@@ -8,10 +8,6 @@
   "description": "Newsletter signup placement block rendered by Astro.",
   "keywords": ["newsletter", "mailchimp", "signup", "abcnorio"],
   "attributes": {
-    "listId": {
-      "type": "string",
-      "default": ""
-    },
     "header": {
       "type": "string",
       "default": ""
@@ -31,14 +27,6 @@
     "requiredIndicatorText": {
       "type": "string",
       "default": "* = required field"
-    },
-    "doubleOptIn": {
-      "type": "boolean",
-      "default": true
-    },
-    "updateExistingSubscribers": {
-      "type": "boolean",
-      "default": true
     },
     "template": {
       "type": "string",

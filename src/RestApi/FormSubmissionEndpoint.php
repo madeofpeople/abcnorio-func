@@ -339,7 +339,7 @@ final class FormSubmissionEndpoint
      * @param mixed $rawFields
     * @return array<int, array{name: string, label: string, type: string, required: bool, placeholder: string, validation: string, min_length: int, options?: array<int, array{value: string, label: string}>, allow_null?: bool}>
      */
-    private static function mapGroupFieldsToFormFields($rawFields): array
+    private static function mapGroupFieldsToFormFields($rawFields, string $group = ''): array
     {
         $fields = [];
 
@@ -349,6 +349,12 @@ final class FormSubmissionEndpoint
 
         foreach ($rawFields as $field) {
             if (! is_array($field)) {
+                continue;
+            }
+
+            if (($field['type'] ?? '') === 'group') {
+                $label = (string) ($field['label'] ?? '');
+                $fields = array_merge($fields, self::mapGroupFieldsToFormFields($field['sub_fields'] ?? [], $label));
                 continue;
             }
 
@@ -376,6 +382,10 @@ final class FormSubmissionEndpoint
                 'validation' => $type === 'email' ? 'email' : ($minLength > 0 ? 'min_length' : ''),
                 'min_length' => $minLength,
             ];
+
+            if ($group !== '') {
+                $formField['group'] = $group;
+            }
 
             if ($type === 'select') {
                 $choices = is_array($field['choices'] ?? null) ? $field['choices'] : [];

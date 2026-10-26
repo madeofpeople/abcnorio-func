@@ -67,7 +67,7 @@ final class AllowedBlocks
             'core/html',
             'abcnorio/announcement-tout',
             'abcnorio/sidebar-tout',
-            'abcnorio/sidebar-tout',
+            'abcnorio/press-item',
             'abcnorio/event-listing',
             'abcnorio/content-listing',
             'abcnorio/collective-listing',

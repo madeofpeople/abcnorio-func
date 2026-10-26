@@ -8,7 +8,6 @@ final class PublicFormGroups
     private const META_SLUG = '_abcnorio_public_form_slug';
     private const META_CIVI_ENDPOINT_URL = '_abcnorio_public_form_civi_endpoint_url';
     private const META_TO_EMAIL = '_abcnorio_public_form_to_email';
-    private const LEGACY_META_RECIPIENT_EMAIL = '_abcnorio_public_form_recipient_email';
     private const NONCE_ACTION = 'abcnorio_public_form_group';
     private const NONCE_NAME = 'abcnorio_public_form_group_nonce';
 
@@ -109,8 +108,6 @@ final class PublicFormGroups
             update_post_meta($postId, self::META_TO_EMAIL, $toEmail);
         }
 
-        delete_post_meta($postId, self::LEGACY_META_RECIPIENT_EMAIL);
-
         if ($slug === '') {
             delete_post_meta($postId, self::META_SLUG);
             return;
@@ -171,10 +168,6 @@ final class PublicFormGroups
     public static function toEmail(int $postId): string
     {
         $email = (string) get_post_meta($postId, self::META_TO_EMAIL, true);
-        if (! is_email($email)) {
-            $email = (string) get_post_meta($postId, self::LEGACY_META_RECIPIENT_EMAIL, true);
-        }
-
         return is_email($email) ? $email : '';
     }
 

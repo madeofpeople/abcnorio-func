@@ -2,6 +2,7 @@
 
 namespace abcnorio\CustomFunc;
 use abcnorio\CustomFunc\ContentModel\ACFFieldGroups;
+use abcnorio\CustomFunc\ContentModel\InstagramMentionLinker;
 use abcnorio\CustomFunc\ContentModel\PublicFormGroups;
 use abcnorio\CustomFunc\ContentModel\PostTypeRegistrar;
 use abcnorio\CustomFunc\ContentModel\TaxonomyRegistrar;
@@ -22,6 +23,7 @@ use abcnorio\CustomFunc\RestApi\ICalEndpoint;
 use abcnorio\CustomFunc\RestApi\MailchimpEndpoint;
 use abcnorio\CustomFunc\RestApi\FormSubmissionEndpoint;
 use abcnorio\CustomFunc\RestApi\SidebarBlocksField;
+use abcnorio\CustomFunc\Settings\NewsletterSettings;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
 use abcnorio\CustomFunc\Blocks\HeadingAnchorAttribute;
@@ -72,6 +74,8 @@ final class Plugin
         /*  ACF Field Groups — custom post type fields */
         ACFFieldGroups::registerHooks();
         PublicFormGroups::registerHooks();
+        /*  Expands @mentions to Instagram links in event content on save */
+        InstagramMentionLinker::registerHooks();
         /*  Provides sidebar blocks to associated pages, and makes them accessible to REST API */
         SidebarBlocksField::registerHooks();
         /*  Keeps us from assigning multiple sidebars to a single post
@@ -84,6 +88,7 @@ final class Plugin
         /* Registers our menus */
         MenuRegistrar::registerHooks();
         SocialLinks::registerHooks();
+        NewsletterSettings::registerHooks();
         HeadingAnchorAttribute::registerHooks();
 
         add_filter( 'block_type_metadata', [self::class, 'disableGutenbergLayoutPanel']);
@@ -96,119 +101,15 @@ final class Plugin
         add_action('admin_init', [CapabilityManager::class, 'maybeMigrateCapabilities'], 1);
         add_action('init', [self::class, 'registerContentModels']);
         add_action('init', [self::class, 'disableComments'], 15);
-        add_action('init', [self::class, 'ingestAstroComponentLibrary'], 40);
         // remove_action( 'enqueue_block_editor_assets', [self::class, 'wp_enqueue_editor_block_directory_assets'], 999);
     }
 
-    public static function ingestAstroComponentLibrary(): void
-    {
-        try {
-            $manifest = ComponentIngestor::load();
-            $components = $manifest['components'] ?? [];
-
-            if (!is_array($components)) {
-                throw new \RuntimeException('Components System Error: manifest.components must be an object.');
-            }
-            
-            // Automate asset handling based on compiled artifacts
-            foreach (array_keys($components) as $component_name) {
-                $block_name = "abcnorio/{$component_name}";
-
-                if (\WP_Block_Type_Registry::get_instance()->is_registered($block_name)) {
-                    continue;
-                }
-
-                ComponentIngestor::register_block_assets($component_name);
-                
-                // Dynamically create the Gutenberg block type registration hook
-                register_block_type($block_name, [
-                    'render_callback' => function($attributes, $content) use ($component_name) {
-                        return ComponentIngestor::render($component_name, $content);
-                    }
-                ]);
-            }
-        } catch (\Throwable $e) {
-            self::handleComponentSystemFailure($e, 'component ingestion');
-        }
-    }
-    
     public static function registerContentModels(): void
     {
         $postTypes = require __DIR__ . '/ContentModel/post-types.php';
         $taxonomies = require __DIR__ . '/ContentModel/taxonomies.php';
         PostTypeRegistrar::registerMany($postTypes);
         TaxonomyRegistrar::registerMany($taxonomies);
-    }
-
-    public static function ensureVolunteerFormPost(): void
-    {
-        if (! function_exists('get_posts')) {
-            return;
-        }
-
-        $existing = get_posts([
-            'post_type' => 'form',
-            'name' => 'volunteer',
-            'post_status' => 'publish',
-            'posts_per_page' => 1,
-            'ignore_sticky_posts' => true,
-            'fields' => 'ids',
-        ]);
-
-        $postId = ! empty($existing) ? (int) $existing[0] : 0;
-
-        if ($postId <= 0) {
-            $postId = wp_insert_post([
-                'post_type' => 'form',
-                'post_status' => 'publish',
-                'post_title' => 'Volunteer',
-                'post_name' => 'volunteer',
-            ], true);
-        }
-
-        if (! $postId || $postId <= 0) {
-            return;
-        }
-
-        if (! function_exists('get_field') || ! function_exists('update_field')) {
-            return;
-        }
-
-        $existingFields = get_field('form_fields', $postId);
-        if (! empty($existingFields)) {
-            return;
-        }
-
-        update_field('form_success_message', 'Thanks for reaching out! We\'ll be in touch.', $postId);
-        update_field('form_error_message', 'Something went wrong. Please try again.', $postId);
-        update_field('form_submit_label', 'Send', $postId);
-        update_field('form_recipient_email', get_option('admin_email', ''), $postId);
-        update_field('form_fields', [
-            [
-                'field_name' => 'name',
-                'field_label' => 'Name',
-                'field_type' => 'text',
-                'field_required' => true,
-                'field_placeholder' => '',
-                'field_validation' => 'required',
-            ],
-            [
-                'field_name' => 'email',
-                'field_label' => 'Email',
-                'field_type' => 'email',
-                'field_required' => true,
-                'field_placeholder' => '',
-                'field_validation' => 'email',
-            ],
-            [
-                'field_name' => 'message',
-                'field_label' => 'Message',
-                'field_type' => 'textarea',
-                'field_required' => true,
-                'field_placeholder' => '',
-                'field_validation' => 'min_length',
-            ],
-        ], $postId);
     }
 
     public static function enableFeaturedImages(): void

@@ -151,61 +151,6 @@ class ComponentIngestor {
         return $meta['deps'];
     }
 
-    private static function primaryFixtureMeta(string $component_name): array {
-        $manifest = self::load();
-        $component_meta = self::componentMeta($component_name);
-        $fixture_ids = $component_meta['fixtures'];
-
-        if (empty($fixture_ids) || !is_string($fixture_ids[0])) {
-            throw new \RuntimeException("Components System Error: Component '{$component_name}' has no renderable fixtures.");
-        }
-
-        $fixture_id = $fixture_ids[0];
-        $fixtures = $manifest['fixtures'] ?? null;
-
-        if (!is_array($fixtures) || !isset($fixtures[$fixture_id]) || !is_array($fixtures[$fixture_id])) {
-            throw new \RuntimeException("Components System Error: Fixture '{$fixture_id}' missing for component '{$component_name}'.");
-        }
-
-        $fixture = $fixtures[$fixture_id];
-        if (!isset($fixture['html']) || !is_string($fixture['html'])) {
-            throw new \RuntimeException("Components System Error: Fixture '{$fixture_id}' html payload is invalid.");
-        }
-
-        return $fixture;
-    }
-
-    private static function registerAssetsByType(string $component_name, array $paths, string $type): void {
-        $base_url = self::distUrl();
-        $base_path = self::distDir();
-        $component_slug = self::sanitizeComponentHandle($component_name);
-
-        foreach ($paths as $index => $relative_path) {
-            if (!is_string($relative_path) || $relative_path === '') {
-                throw new \RuntimeException("Components System Error: Invalid {$type} path for component '{$component_name}'.");
-            }
-
-            $absolute_path = $base_path . '/' . ltrim($relative_path, '/');
-            if (!file_exists($absolute_path)) {
-                throw new \RuntimeException("Components System Error: Missing {$type} asset '{$absolute_path}' for component '{$component_name}'.");
-            }
-
-            $handle = "abc-{$type}-{$component_slug}-{$index}";
-            $asset_url = esc_url($base_url . ltrim($relative_path, '/'));
-
-            if ($type === 'script') {
-                if (!wp_script_is($handle, 'registered')) {
-                    wp_register_script($handle, $asset_url, [], null, true);
-                }
-                continue;
-            }
-
-            if (!wp_style_is($handle, 'registered')) {
-                wp_register_style($handle, $asset_url, [], null);
-            }
-        }
-    }
-
     private static function depAssetType(string $relative_path): string {
         $extension = strtolower((string) pathinfo($relative_path, PATHINFO_EXTENSION));
 
@@ -255,20 +200,6 @@ class ComponentIngestor {
         }
     }
 
-    private static function enqueueAssetsByType(string $component_name, array $paths, string $type): void {
-        $component_slug = self::sanitizeComponentHandle($component_name);
-
-        foreach ($paths as $index => $relative_path) {
-            $handle = "abc-{$type}-{$component_slug}-{$index}";
-            if ($type === 'script') {
-                wp_enqueue_script($handle);
-                continue;
-            }
-
-            wp_enqueue_style($handle);
-        }
-    }
-
     public static function register_component_deps(string $component_name): void {
         $deps = self::componentDeps($component_name);
 
@@ -301,37 +232,5 @@ class ComponentIngestor {
 
             wp_enqueue_style($handle);
         }
-    }
-
-    /**
-     * Register component assets from plugin-local dist URLs.
-     */
-    public static function register_block_assets(string $component_name): void {
-        $meta = self::componentMeta($component_name);
-
-        self::registerAssetsByType($component_name, $meta['js'], 'script');
-        self::registerAssetsByType($component_name, $meta['css'], 'style');
-    }
-
-    /**
-     * Render prebuilt fixture HTML and enqueue only required component assets.
-     */
-    public static function render(string $component_name, string $content = ''): string {
-        $meta = self::componentMeta($component_name);
-        $fixture = self::primaryFixtureMeta($component_name);
-        $raw_html = $fixture['html'];
-
-        self::enqueueRuntimeStyles();
-        self::register_block_assets($component_name);
-        self::enqueue_component_deps($component_name);
-        self::enqueueAssetsByType($component_name, $meta['js'], 'script');
-        self::enqueueAssetsByType($component_name, $meta['css'], 'style');
-
-        // If the component contains an inner slot placeholder, swap it natively
-        if (!empty($content)) {
-            return str_replace('<slot name="card-body" />', $content, $raw_html);
-        }
-
-        return $raw_html;
     }
 }

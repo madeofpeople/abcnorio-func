@@ -40,25 +40,6 @@ return [
 
 
     ],
-    'form' => [
-        'name' => 'Forms',
-        'singular_name' => 'Form',
-        'rest_base' => 'forms',
-        'show_in_rest' => true,
-        'show_in_menu' => false,
-        'menu_position' => 25,
-        'supports' => [
-            'title',
-            'editor',
-            'custom-fields',
-        ],
-        'menu_icon' => 'dashicons-feedback',
-        'capability_type' => [
-            'form',
-            'forms',
-        ],
-        'map_meta_cap' => true,
-    ],
     'facility' => [
         'name' => 'Facilities',
         'singular_name' => 'Facility',

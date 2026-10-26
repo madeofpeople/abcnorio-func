@@ -8,6 +8,22 @@ final class ACFFieldGroups
     {
         add_action('acf/init', [self::class, 'register']);
         add_filter('acf/validate_value', [self::class, 'validateFieldMessage'], 10, 4);
+        add_filter('acf/validate_value/key=field_event_end', [self::class, 'validateEventEnd'], 10, 4);
+    }
+
+    public static function validateEventEnd($valid, $value, array $field, string $input)
+    {
+        if ($valid !== true || empty($value)) {
+            return $valid;
+        }
+
+        $start = $_POST['acf']['field_event_start'] ?? '';
+
+        if ($start !== '' && $value <= $start) {
+            return __('End must be after start.', 'abcnorio-func');
+        }
+
+        return $valid;
     }
 
     public static function register(): void

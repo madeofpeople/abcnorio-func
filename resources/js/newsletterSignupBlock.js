@@ -2,7 +2,6 @@ import { registerBlockType } from '@wordpress/blocks';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import {
     PanelBody,
-    SelectControl,
     TextControl,
     ToggleControl,
     CheckboxControl,
@@ -29,29 +28,12 @@ registerBlockType('abcnorio/newsletter-signup', {
         const [error, setError] = useState('');
         const [listData, setListData] = useState({ merge_fields: [], interest_groups: [] });
 
-        const pluginData = window.mailchimp_sf_block_data || {};
-        const lists = Array.isArray(pluginData.lists) ? pluginData.lists : [];
-        const listOptions = [
-            { label: 'Select a list', value: '' },
-            ...lists.map((list) => ({
-                label: String(list?.name || ''),
-                value: String(list?.id || ''),
-            })),
-        ];
-
-        const selectedListId = String(attributes.listId || pluginData.list_id || '').trim();
-
         useEffect(() => {
-            if (!selectedListId) {
-                setListData({ merge_fields: [], interest_groups: [] });
-                return;
-            }
-
             let isMounted = true;
             setIsLoading(true);
             setError('');
 
-            apiFetch({ path: `/abcnorio/v1/mailchimp/list-data/${selectedListId}` })
+            apiFetch({ path: '/abcnorio/v1/mailchimp/list-data' })
                 .then((payload) => {
                     if (!isMounted) {
                         return;
@@ -107,7 +89,7 @@ registerBlockType('abcnorio/newsletter-signup', {
             return () => {
                 isMounted = false;
             };
-        }, [selectedListId]);
+        }, []);
 
         const requiredTagSet = useMemo(() => {
             const requiredTags = (listData.merge_fields || [])
@@ -153,12 +135,7 @@ registerBlockType('abcnorio/newsletter-signup', {
             <div {...blockProps}>
                 <InspectorControls>
                     <PanelBody title="Newsletter Signup" initialOpen={true}>
-                        <SelectControl
-                            label="Mailchimp List"
-                            value={selectedListId}
-                            options={listOptions}
-                            onChange={(value) => setAttributes({ listId: value })}
-                        />
+                        <p>List, double opt-in and existing-subscriber handling are set under Settings &gt; Newsletter Signup.</p>
                         <TextControl
                             label="Header"
                             value={attributes.header || ''}
@@ -183,16 +160,6 @@ registerBlockType('abcnorio/newsletter-signup', {
                             label="Show Required Indicator"
                             checked={attributes.showRequiredIndicator !== false}
                             onChange={(value) => setAttributes({ showRequiredIndicator: value })}
-                        />
-                        <ToggleControl
-                            label="Double Opt In"
-                            checked={attributes.doubleOptIn !== false}
-                            onChange={(value) => setAttributes({ doubleOptIn: value })}
-                        />
-                        <ToggleControl
-                            label="Update Existing Subscribers"
-                            checked={attributes.updateExistingSubscribers !== false}
-                            onChange={(value) => setAttributes({ updateExistingSubscribers: value })}
                         />
                     </PanelBody>
 

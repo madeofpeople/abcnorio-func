@@ -2,6 +2,8 @@
 
 namespace abcnorio\CustomFunc\RestApi;
 
+use abcnorio\CustomFunc\Settings\NewsletterSettings;
+
 final class MailchimpEndpoint
 {
     public static function registerHooks(): void
@@ -11,7 +13,7 @@ final class MailchimpEndpoint
 
     public static function registerRoute(): void
     {
-        register_rest_route('abcnorio/v1', '/mailchimp/list-data/(?P<list_id>[a-zA-Z0-9]+)', [
+        register_rest_route('abcnorio/v1', '/mailchimp/list-data', [
             'methods'             => 'GET',
             'callback'            => [self::class, 'serveListData'],
             'permission_callback' => '__return_true',
@@ -26,7 +28,7 @@ final class MailchimpEndpoint
 
     public static function serveListData(\WP_REST_Request $request)
     {
-        $listId = sanitize_text_field((string) $request->get_param('list_id'));
+        $listId = (string) get_option(NewsletterSettings::LIST_ID, '');
         if ($listId === '') {
             return self::errorResponse('Missing list ID.', 400);
         }
@@ -47,10 +49,18 @@ final class MailchimpEndpoint
     public static function serveSubmit(\WP_REST_Request $request)
     {
         $params = $request->get_params();
-        $listId = sanitize_text_field((string) ($params['mailchimp_list_id'] ?? $params['list_id'] ?? ''));
+        if (($params['newsletter_signup_website'] ?? '') !== '') {
+            return rest_ensure_response([
+                'success' => true,
+                'message' => 'Thank you for subscribing.',
+                'field_errors' => (object) [],
+                'form_error' => '',
+            ]);
+        }
 
+        $listId = (string) get_option(NewsletterSettings::LIST_ID, '');
         if ($listId === '') {
-            return self::errorResponse('Missing list ID.', 400, ['mc_mv_EMAIL' => 'Please enter your email address.']);
+            return self::errorResponse('Missing list ID.', 400);
         }
 
         $data = self::fetchListData($listId);
@@ -128,8 +138,8 @@ final class MailchimpEndpoint
 
     private static function buildSubmissionPostData(array $params, string $listId, array $mergeFields, array $visibleTags, string $template): array
     {
-        $updateExisting = self::toBool($params['mailchimp_update_existing_subscribers'] ?? true);
-        $doubleOptIn = self::toBool($params['mailchimp_double_opt_in'] ?? true);
+        $updateExisting = (bool) get_option(NewsletterSettings::UPDATE_EXISTING, 1);
+        $doubleOptIn = (bool) get_option(NewsletterSettings::DOUBLE_OPT_IN, 1);
         $skipMergeValidation = self::shouldSkipMergeValidation($template, $mergeFields, $visibleTags);
 
         $postData = [
@@ -281,16 +291,6 @@ final class MailchimpEndpoint
         }
 
         return trim((string) $value) === '';
-    }
-
-    private static function toBool($value): bool
-    {
-        if (is_bool($value)) {
-            return $value;
-        }
-
-        $normalized = strtolower(trim((string) $value));
-        return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
     }
 
     private static function errorResponse(string $message, int $status, array $fieldErrors = []): \WP_REST_Response

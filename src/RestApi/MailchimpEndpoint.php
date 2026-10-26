@@ -81,6 +81,10 @@ final class MailchimpEndpoint
             return self::errorResponse('Mailchimp plugin is not available.', 500);
         }
 
+        if (! mailchimp_sf_get_api()) {
+            return self::errorResponse('Mailchimp is not connected.', 503);
+        }
+
         $postData = self::buildSubmissionPostData($params, $listId, $mergeFields, $visibleTags, $template);
 
         $originalPost = $_POST;
@@ -109,6 +113,10 @@ final class MailchimpEndpoint
     {
         if (! class_exists('Mailchimp_List_Subscribe_Form_Blocks')) {
             return new \WP_Error('mailchimp_missing', 'Mailchimp plugin is not available.');
+        }
+
+        if (! mailchimp_sf_get_api()) {
+            return new \WP_Error('mailchimp_not_connected', 'Mailchimp is not connected.');
         }
 
         $service = new \Mailchimp_List_Subscribe_Form_Blocks();

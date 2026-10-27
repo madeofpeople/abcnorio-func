@@ -1,10 +1,10 @@
 {
-  "_breakpoints-C89McZIt.js": {
-    "file": "chunks/breakpoints-C89McZIt.js",
+  "_breakpoints-DcHPuBNd.js": {
+    "file": "chunks/breakpoints-DcHPuBNd.js",
     "name": "breakpoints"
   },
-  "_drawer-DxFq_Taj.js": {
-    "file": "chunks/drawer-DxFq_Taj.js",
+  "_drawer-BWAQbeb7.js": {
+    "file": "chunks/drawer-BWAQbeb7.js",
     "name": "drawer"
   },
   "src/components/add-to-calendar/add-to-calendar.js": {
@@ -13,7 +13,7 @@
     "src": "src/components/add-to-calendar/add-to-calendar.js",
     "isEntry": true,
     "imports": [
-      "_drawer-DxFq_Taj.js"
+      "_drawer-BWAQbeb7.js"
     ]
   },
   "src/components/article-listing/article-listing.js": {
@@ -46,7 +46,7 @@
     "src": "src/components/content-listing/content-listing.js",
     "isEntry": true,
     "imports": [
-      "_breakpoints-C89McZIt.js"
+      "_breakpoints-DcHPuBNd.js"
     ]
   },
   "src/components/event-listing/event-listing.js": {
@@ -55,7 +55,7 @@
     "src": "src/components/event-listing/event-listing.js",
     "isEntry": true,
     "imports": [
-      "_breakpoints-C89McZIt.js"
+      "_breakpoints-DcHPuBNd.js"
     ]
   },
   "src/components/event-teaser/event-teaser.js": {
@@ -76,7 +76,7 @@
     "src": "src/components/social-share/social-share.js",
     "isEntry": true,
     "imports": [
-      "_drawer-DxFq_Taj.js"
+      "_drawer-BWAQbeb7.js"
     ]
   },
   "src/components/taxonomy-links/taxonomy-links.js": {

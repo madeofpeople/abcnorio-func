@@ -54,7 +54,7 @@ final class ImageStyleRegistrar
 
     public static function setWebPQuality(int $quality, string $mime): int
     {
-        return $mime === 'image/webp' ? 80 : $quality;
+        return $mime === 'image/webp' ? 75 : $quality;
     }
 
     public static function registerImageSizes(): void

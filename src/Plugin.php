@@ -17,6 +17,7 @@ use abcnorio\CustomFunc\RestApi\EventQueryFilters;
 use abcnorio\CustomFunc\RestApi\ArticleQueryFilters;
 use abcnorio\CustomFunc\RestApi\FeaturedImageField;
 use abcnorio\CustomFunc\RestApi\DeploymentVersionEndpoint;
+use abcnorio\CustomFunc\RestApi\ContentChangeEndpoint;
 use abcnorio\CustomFunc\RestApi\ContentListingEndpoint;
 use abcnorio\CustomFunc\RestApi\DatePayloadNormalizer;
 use abcnorio\CustomFunc\RestApi\ICalEndpoint;
@@ -61,6 +62,8 @@ final class Plugin
         /*  Makes featured image accessible from REST API */
         FeaturedImageField::registerHooks();
         DeploymentVersionEndpoint::registerHooks();
+        /*  Last-change timestamp polled by staging/dev frontends to auto-reload */
+        ContentChangeEndpoint::registerHooks();
         /*  Joing the different post types that get listed in ContentListing */        
         ContentListingEndpoint::registerHooks();
         /*  Outputs all events as an ics for subscribing to from cals */

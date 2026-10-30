@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "ingest:components": "bash scripts/ingest-components-dist.sh",
-    "build": "npm run ingest:components && wp-scripts build resources/js/index.js --output-path=build",
+    "copy:calendar": "mkdir -p build/calendar && cp node_modules/fullcalendar/index.global.min.js build/calendar/fullcalendar.min.js && cp node_modules/@fullcalendar/icalendar/index.global.min.js build/calendar/icalendar.min.js && cp node_modules/ical.js/build/ical.min.js build/calendar/ical.min.js",
+    "build": "npm run ingest:components && wp-scripts build resources/js/index.js --output-path=build && npm run copy:calendar",
     "start": "wp-scripts start resources/js/index.js --output-path=build"
   },
   "devDependencies": {

@@ -149,7 +149,7 @@ final class ICalEndpoint
         return $out;
     }
 
-    private static function hasStartDateClause(): array
+    public static function hasStartDateClause(): array
     {
         return [
             'relation' => 'AND',
@@ -158,7 +158,7 @@ final class ICalEndpoint
         ];
     }
 
-    private static function effectiveEndClause(string $compare, string $value): array
+    public static function effectiveEndClause(string $compare, string $value): array
     {
         return [
             'relation' => 'OR',

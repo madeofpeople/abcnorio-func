@@ -21,10 +21,12 @@ use abcnorio\CustomFunc\RestApi\ContentChangeEndpoint;
 use abcnorio\CustomFunc\RestApi\ContentListingEndpoint;
 use abcnorio\CustomFunc\RestApi\DatePayloadNormalizer;
 use abcnorio\CustomFunc\RestApi\ExcerptBreakSpacing;
+use abcnorio\CustomFunc\RestApi\CalendarEndpoint;
 use abcnorio\CustomFunc\RestApi\ICalEndpoint;
 use abcnorio\CustomFunc\RestApi\MailchimpEndpoint;
 use abcnorio\CustomFunc\RestApi\FormSubmissionEndpoint;
 use abcnorio\CustomFunc\RestApi\SidebarBlocksField;
+use abcnorio\CustomFunc\Events\CalendarPage;
 use abcnorio\CustomFunc\Events\VenueOverlapNotice;
 use abcnorio\CustomFunc\Settings\BackupRetentionSettings;
 use abcnorio\CustomFunc\Settings\EventScheduleSettings;
@@ -102,6 +104,8 @@ final class Plugin
         BackupRetentionSettings::registerHooks();
         SettingsPage::registerHooks();
         VenueOverlapNotice::registerHooks();
+        CalendarEndpoint::registerHooks();
+        CalendarPage::registerHooks();
         HeadingAnchorAttribute::registerHooks();
 
         add_filter( 'block_type_metadata', [self::class, 'disableGutenbergLayoutPanel']);

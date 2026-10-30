@@ -70,7 +70,7 @@ final class CalendarEndpoint
 
             $status   = $post->post_status;
             $venue_id = (int) get_field('event_venue_id', $post->ID);
-            $title    = get_the_title($post);
+            $title    = html_entity_decode(get_the_title($post), ENT_QUOTES, 'UTF-8');
 
             $items[] = [
                 'id'            => (string) $post->ID,
@@ -79,7 +79,7 @@ final class CalendarEndpoint
                 'end'           => $end->format('c'),
                 'url'           => get_edit_post_link($post->ID, 'raw'),
                 'classNames'    => $status === 'publish' ? [] : ['abcnorio-cal-unpublished'],
-                'extendedProps' => ['venue_id' => $venue_id],
+                'extendedProps' => ['venue_id' => $venue_id, 'status' => $status],
             ];
         }
 

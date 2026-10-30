@@ -2,6 +2,8 @@
 
 namespace abcnorio\CustomFunc\Deployment;
 
+use abcnorio\CustomFunc\Settings\BackupRetentionSettings;
+
 final class DeploymentStatus
 {
     public static function baseArchiveDir(): string
@@ -50,7 +52,7 @@ final class DeploymentStatus
         }
 
         usort($out, static fn(array $a, array $b): int => $b['mtime'] <=> $a['mtime']);
-        $limit = max(1, (int) (getenv('MAX_BACKUPS') ?: 12));
+        $limit = BackupRetentionSettings::productionArchives();
         return array_slice($out, 0, $limit);
     }
 
@@ -217,7 +219,7 @@ final class DeploymentStatus
         }
 
         usort($out, static fn(array $a, array $b): int => $b['mtime'] <=> $a['mtime']);
-        $limit = max(1, (int) (getenv('MAX_BACKUPS') ?: 12));
+        $limit = BackupRetentionSettings::mediaBackups();
         return array_slice($out, 0, $limit);
     }
 

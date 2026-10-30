@@ -26,6 +26,7 @@ use abcnorio\CustomFunc\RestApi\MailchimpEndpoint;
 use abcnorio\CustomFunc\RestApi\FormSubmissionEndpoint;
 use abcnorio\CustomFunc\RestApi\SidebarBlocksField;
 use abcnorio\CustomFunc\Events\VenueOverlapNotice;
+use abcnorio\CustomFunc\Settings\BackupRetentionSettings;
 use abcnorio\CustomFunc\Settings\EventScheduleSettings;
 use abcnorio\CustomFunc\Settings\NewsletterSettings;
 use abcnorio\CustomFunc\Settings\SettingsPage;
@@ -98,6 +99,7 @@ final class Plugin
         SocialLinks::registerHooks();
         NewsletterSettings::registerHooks();
         EventScheduleSettings::registerHooks();
+        BackupRetentionSettings::registerHooks();
         SettingsPage::registerHooks();
         VenueOverlapNotice::registerHooks();
         HeadingAnchorAttribute::registerHooks();

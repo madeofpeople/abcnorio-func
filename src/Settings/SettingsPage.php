@@ -32,6 +32,7 @@ final class SettingsPage
             <h1><?php esc_html_e('ABC No Rio', 'abcnorio-func'); ?></h1>
             <?php
             EventScheduleSettings::renderSection();
+            BackupRetentionSettings::renderSection();
             NewsletterSettings::renderSection();
             SocialLinks::renderSection();
             ?>

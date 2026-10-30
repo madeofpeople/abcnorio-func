@@ -73,10 +73,10 @@ final class EventScheduleSettings
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><label for="<?php echo esc_attr(self::MAX_PER_DAY); ?>"><?php esc_html_e('Max events per venue per day', 'abcnorio-func'); ?></label></th>
+                        <th scope="row"><label for="<?php echo esc_attr(self::MAX_PER_DAY); ?>"><?php esc_html_e('Max events per day', 'abcnorio-func'); ?></label></th>
                         <td>
                             <input type="number" min="-1" id="<?php echo esc_attr(self::MAX_PER_DAY); ?>" name="<?php echo esc_attr(self::MAX_PER_DAY); ?>" value="<?php echo esc_attr(self::maxPerDay()); ?>" class="small-text">
-                            <p class="description"><?php esc_html_e('-1 turns this warning off.', 'abcnorio-func'); ?></p>
+                            <p class="description"><?php esc_html_e('Total across all venues, to guard against too much concurrency. -1 turns this warning off.', 'abcnorio-func'); ?></p>
                         </td>
                     </tr>
                 </table>

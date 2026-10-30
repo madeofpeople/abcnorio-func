@@ -77,7 +77,8 @@ final class CalendarPage
         wp_enqueue_script('abcnorio-ical', $build . 'ical.min.js', [], null, true);
         wp_enqueue_script('abcnorio-fullcalendar', $build . 'fullcalendar.min.js', [], null, true);
         wp_enqueue_script('abcnorio-fullcalendar-ical', $build . 'icalendar.min.js', ['abcnorio-fullcalendar', 'abcnorio-ical'], null, true);
-        wp_enqueue_script('abcnorio-scheduling', $scripts . 'scheduling-calendar.js', ['abcnorio-fullcalendar-ical', 'postbox'], (string) filemtime(plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . 'resources/js/scheduling-calendar.js'), true);
+        wp_enqueue_style('wp-components');
+        wp_enqueue_script('abcnorio-scheduling', $scripts . 'scheduling-calendar.js', ['abcnorio-fullcalendar-ical', 'postbox', 'wp-element', 'wp-components'], (string) filemtime(plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . 'resources/js/scheduling-calendar.js'), true);
 
         $nonce = wp_create_nonce('wp_rest');
         $feeds = [];
@@ -134,8 +135,14 @@ final class CalendarPage
             #abcnorio-cal-detail[hidden], #abcnorio-detail-edit[hidden] { display: none; }
             #abcnorio-cal-detail dt { font-weight: 600; }
             #abcnorio-cal-detail dd { margin: 0 0 8px; }
-            #abcnorio-feed-dialog { max-width: 360px; width: 100%; }
-            #abcnorio-feed-dialog::backdrop { background: rgba(0, 0, 0, .5); }
+            #abcnorio-cal-detail form label { display: block; margin-top: 4px; }
+            #abcnorio-cal-detail form input, #abcnorio-cal-detail form button { margin-bottom: 4px; }
+            .abcnorio-cal-mode { display: flex; }
+            .abcnorio-cal-mode.is-edit [role="radiogroup"]::before { background: #b32d2e; }
+            #abcnorio-feed-dialog, #abcnorio-reschedule-dialog { max-width: 360px; width: 100%; }
+            #abcnorio-feed-dialog::backdrop, #abcnorio-reschedule-dialog::backdrop { background: rgba(0, 0, 0, .5); }
+            #abcnorio-reschedule-dialog dt { font-weight: 600; }
+            #abcnorio-reschedule-dialog dd { margin: 0 0 8px; }
         ');
     }
 
@@ -152,6 +159,10 @@ final class CalendarPage
                     </div>
                     <div id="postbox-container-1" class="postbox-container">
                         <div id="side-sortables" class="meta-box-sortables">
+                            <?php self::openBox('abcnorio-cal-mode-box', __('Mode', 'abcnorio-func')); ?>
+                                <div id="abcnorio-cal-mode" class="abcnorio-cal-mode"></div>
+                            <?php self::closeBox(); ?>
+
                             <?php self::openBox('abcnorio-cal-detail', __('Event', 'abcnorio-func'), true); ?>
                                 <dl id="abcnorio-detail-fields"></dl>
                                 <p>
@@ -197,6 +208,7 @@ final class CalendarPage
                 </div>
             </div>
             <?php self::renderAddDialog(); ?>
+            <?php self::renderRescheduleDialog(); ?>
         </div>
         <?php
     }
@@ -226,6 +238,28 @@ final class CalendarPage
     private static function closeBox(): void
     {
         echo '</div></div>';
+    }
+
+    private static function renderRescheduleDialog(): void
+    {
+        ?>
+        <dialog id="abcnorio-reschedule-dialog" aria-labelledby="abcnorio-reschedule-heading">
+            <form method="dialog">
+                <h2 id="abcnorio-reschedule-heading"><?php esc_html_e('Save the new date?', 'abcnorio-func'); ?></h2>
+                <p><strong id="abcnorio-reschedule-title"></strong></p>
+                <dl>
+                    <dt><?php esc_html_e('From', 'abcnorio-func'); ?></dt>
+                    <dd id="abcnorio-reschedule-from"></dd>
+                    <dt><?php esc_html_e('To', 'abcnorio-func'); ?></dt>
+                    <dd id="abcnorio-reschedule-to"></dd>
+                </dl>
+                <p>
+                    <button type="submit" class="button button-primary" value="save"><?php esc_html_e('Save', 'abcnorio-func'); ?></button>
+                    <button type="submit" class="button" value="cancel"><?php esc_html_e('Cancel', 'abcnorio-func'); ?></button>
+                </p>
+            </form>
+        </dialog>
+        <?php
     }
 
     private static function renderAddDialog(): void

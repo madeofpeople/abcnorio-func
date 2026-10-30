@@ -64,7 +64,66 @@
         feedNames[feed.id] = feed.name;
     });
 
+    let currentEvent = null;
+
+    function toLocalInput(date) {
+        return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate())
+            + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+    }
+
+    function addDateInput(form, text, id, date) {
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        label.htmlFor = id;
+        label.textContent = text;
+        input.type = 'datetime-local';
+        input.id = id;
+        input.required = true;
+        input.value = toLocalInput(date);
+        form.append(label, input);
+        return input;
+    }
+
+    function buildDateForm(event) {
+        const form = document.createElement('form');
+        const start = addDateInput(form, 'Start', 'abcnorio-detail-start', event.start);
+        const end = addDateInput(form, 'End', 'abcnorio-detail-end', event.end);
+        const save = document.createElement('button');
+        save.type = 'submit';
+        save.className = 'button';
+        save.textContent = 'Save dates';
+        form.append(save);
+
+        form.addEventListener('submit', function (submitEvent) {
+            submitEvent.preventDefault();
+            const newStart = new Date(start.value);
+            const newEnd = new Date(end.value);
+            if (newEnd <= newStart) {
+                end.setCustomValidity('End must be after start.');
+                end.reportValidity();
+                end.addEventListener('input', function () {
+                    end.setCustomValidity('');
+                }, { once: true });
+                return;
+            }
+            postDates(event.id, newStart, newEnd)
+                .then(function (result) {
+                    event.setDates(newStart, newEnd);
+                    showDetail(event);
+                    result.warnings.forEach(function (warning) {
+                        showMessage(event.title + ': ' + warning);
+                    });
+                })
+                .catch(function () {
+                    showMessage('Could not reschedule: ' + event.title);
+                });
+        });
+
+        return form;
+    }
+
     function showDetail(event) {
+        currentEvent = event;
         const isInternal = event.extendedProps.status !== undefined;
         const fields = {};
         fields.When = event.allDay
@@ -89,7 +148,11 @@
             const dt = document.createElement('dt');
             const dd = document.createElement('dd');
             dt.textContent = label;
-            dd.textContent = value;
+            if (label === 'When' && isInternal && calendar.getOption('editable')) {
+                dd.append(buildDateForm(event));
+            } else {
+                dd.textContent = value;
+            }
             list.append(dt, dd);
         });
 
@@ -114,18 +177,44 @@
         notice.hidden = false;
     }
 
-    function saveDates(info) {
-        fetch(config.eventsUrl + '/' + info.event.id, {
+    const editKey = 'abcnorioSchedulingEdit';
+    const confirmDialog = document.getElementById('abcnorio-reschedule-dialog');
+
+    function formatRange(event) {
+        return event.start.toLocaleString() + ' – ' + event.end.toLocaleString();
+    }
+
+    function confirmDates(info) {
+        document.getElementById('abcnorio-reschedule-title').textContent = info.event.title;
+        document.getElementById('abcnorio-reschedule-from').textContent = formatRange(info.oldEvent);
+        document.getElementById('abcnorio-reschedule-to').textContent = formatRange(info.event);
+
+        confirmDialog.returnValue = '';
+        confirmDialog.addEventListener('close', function () {
+            if (confirmDialog.returnValue === 'save') {
+                saveDates(info);
+            } else {
+                info.revert();
+            }
+        }, { once: true });
+        confirmDialog.showModal();
+    }
+
+    function postDates(id, start, end) {
+        return fetch(config.eventsUrl + '/' + id, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
-            body: JSON.stringify({ start: info.event.start.toISOString(), end: info.event.end.toISOString() }),
-        })
-            .then(function (response) {
-                if (!response.ok) {
-                    throw new Error(response.status);
-                }
-                return response.json();
-            })
+            body: JSON.stringify({ start: start.toISOString(), end: end.toISOString() }),
+        }).then(function (response) {
+            if (!response.ok) {
+                throw new Error(response.status);
+            }
+            return response.json();
+        });
+    }
+
+    function saveDates(info) {
+        postDates(info.event.id, info.event.start, info.event.end)
             .then(function (result) {
                 result.warnings.forEach(function (warning) {
                     showMessage(info.event.title + ': ' + warning);
@@ -152,16 +241,16 @@
             history.replaceState(null, '', url);
         },
         headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listMonth' },
+        editable: localStorage.getItem(editKey) === '1',
         height: 'auto',
         eventClick: function (info) {
             info.jsEvent.preventDefault();
             showDetail(info.event);
         },
-        eventDrop: saveDates,
-        eventResize: saveDates,
+        eventDrop: confirmDates,
+        eventResize: confirmDates,
         eventSources: [{
             id: 'events',
-            editable: true,
             url: config.eventsUrl,
             extraParams: { _wpnonce: config.nonce },
             failure: function () {
@@ -179,6 +268,35 @@
         }],
     });
 
+    const modeEl = document.getElementById('abcnorio-cal-mode');
+    const { createElement, createRoot } = wp.element;
+    const ToggleGroupControl = wp.components.__experimentalToggleGroupControl;
+    const ToggleGroupControlOption = wp.components.__experimentalToggleGroupControlOption;
+    const modeRoot = createRoot(modeEl);
+
+    function renderMode(mode) {
+        modeEl.classList.toggle('is-edit', mode === 'edit');
+        modeRoot.render(createElement(ToggleGroupControl, {
+            label: 'Calendar mode',
+            hideLabelFromVision: true,
+            isAdaptiveWidth: true,
+            value: mode,
+            onChange: function (value) {
+                const on = value === 'edit';
+                calendar.setOption('editable', on);
+                localStorage.setItem(editKey, on ? '1' : '0');
+                renderMode(value);
+                if (currentEvent && !detail.hidden) {
+                    showDetail(currentEvent);
+                }
+            },
+        },
+        createElement(ToggleGroupControlOption, { value: 'view', label: 'View' }),
+        createElement(ToggleGroupControlOption, { value: 'edit', label: 'Edit' })));
+    }
+
+    renderMode(calendar.getOption('editable') ? 'edit' : 'view');
+
     config.feeds.forEach(function (feed) {
         feed.source = {
             id: feed.id,
@@ -186,6 +304,7 @@
             format: 'ics',
             color: feed.color,
             textColor: feed.textColor,
+            editable: false,
             failure: function () {
                 warnFailed(feed.name);
             },

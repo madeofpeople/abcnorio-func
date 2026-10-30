@@ -1,6 +1,6 @@
 /* global abcnorioDeployment */
 (function () {
-    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, copyMediaNonce, pollCopyMediaNonce, pullFromStagingNonce, pollPullFromStagingNonce, copyMediaToStagingNonce, pollCopyMediaToStagingNonce, backupMediaDevNonce, pollBackupMediaDevNonce, backupMediaStagingNonce, pollBackupMediaStagingNonce, backupDatabaseDevNonce, pollBackupDatabaseDevNonce, backupDatabaseStagingNonce, pollBackupDatabaseStagingNonce, listMediaBackupsNonce, downloadMediaBackupNonce, deleteMediaBackupNonce, listDatabaseBackupsNonce, downloadDatabaseBackupNonce, deleteDatabaseBackupNonce, pullFromDevNonce, pollPullFromDevNonce, targets = {} } = abcnorioDeployment;
+    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, copyMediaNonce, pollCopyMediaNonce, pullFromStagingNonce, pollPullFromStagingNonce, copyMediaToStagingNonce, pollCopyMediaToStagingNonce, backupMediaDevNonce, pollBackupMediaDevNonce, backupMediaStagingNonce, pollBackupMediaStagingNonce, backupDatabaseDevNonce, pollBackupDatabaseDevNonce, backupDatabaseStagingNonce, pollBackupDatabaseStagingNonce, listMediaBackupsNonce, downloadMediaBackupNonce, deleteMediaBackupNonce, listDatabaseBackupsNonce, listProductionBackupsNonce, downloadDatabaseBackupNonce, deleteDatabaseBackupNonce, pullFromDevNonce, pollPullFromDevNonce, targets = {} } = abcnorioDeployment;
 
     let pollTimer = null;
     let buildStartTime = null;
@@ -17,6 +17,10 @@
         document.querySelectorAll('.deployment-tab').forEach((panel) => {
             panel.classList.toggle('hidden', panel.id !== 'tab-' + target);
         });
+
+        if (target === 'production') {
+            refreshProductionBackups().catch(() => {});
+        }
     }
 
     document.querySelectorAll('#deployment-tabs .nav-tab').forEach((tab) => {
@@ -198,6 +202,32 @@
                 renderDatabaseBackupList(env, (data.data && data.data.backups) || []);
             });
     }
+
+    function refreshProductionBackups() {
+        const container = document.querySelector('.js-production-backups');
+        if (!container) return Promise.resolve();
+
+        return fetch(ajaxUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+                action: 'abcnorio_list_production_backups',
+                nonce: listProductionBackupsNonce,
+            }),
+        })
+            .then((r) => r.json())
+            .then((data) => {
+                if (data.success) {
+                    container.innerHTML = data.data.html;
+                }
+            });
+    }
+
+    // Picks up deploys started from the CLI while the dashboard is open.
+    setInterval(() => {
+        const panel = document.getElementById('tab-production');
+        if (document.hidden || !panel || panel.classList.contains('hidden')) return;
+        refreshProductionBackups().catch(() => {});
+    }, 30000);
 
     function refreshMediaBackupList(env) {
         return fetch(ajaxUrl, {

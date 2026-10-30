@@ -43,6 +43,11 @@ final class BackupRetentionSettings
         return self::value(self::PRODUCTION_ARCHIVES);
     }
 
+    public static function rollbackSnapshots(): int
+    {
+        return self::value(self::ROLLBACK_SNAPSHOTS);
+    }
+
     public static function mediaBackups(): int
     {
         return self::value(self::MEDIA_BACKUPS);

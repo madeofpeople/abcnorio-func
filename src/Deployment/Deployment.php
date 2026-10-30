@@ -57,6 +57,8 @@ final class Deployment
         add_action('wp_ajax_abcnorio_delete_media_backup', [DeploymentActions::class, 'deleteMediaBackup']);
         add_action('wp_ajax_abcnorio_download_media_backup', [DeploymentActions::class, 'downloadMediaBackup']);
         add_action('wp_ajax_abcnorio_download_backup', [DeploymentActions::class, 'downloadBackup']);
+        add_action('wp_ajax_abcnorio_download_rollback_snapshot', [DeploymentActions::class, 'downloadRollbackSnapshot']);
+        add_action('wp_ajax_abcnorio_list_production_backups', [DeploymentActions::class, 'listProductionBackups']);
         add_action('wp_ajax_abcnorio_restore_backup', [DeploymentActions::class, 'restoreBackup']);
     }
 }

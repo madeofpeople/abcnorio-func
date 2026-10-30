@@ -20,40 +20,56 @@ final class DeploymentStatus
     /**
      * @return array<int, array{name: string, mtime: int}>
      */
-    private static function listProductionBackupsFromArchiveDir(): array
+    private static function listArchives(string $dir, string $pattern, int $limit): array
     {
-        $archiveDir = self::backupArchiveDir();
-        if (!is_dir($archiveDir) || !is_readable($archiveDir)) {
-            return [];
-        }
-
-        $entries = scandir($archiveDir);
-        if (!is_array($entries)) {
+        if (!is_dir($dir) || !is_readable($dir)) {
             return [];
         }
 
         $out = [];
-        foreach ($entries as $name) {
-            if (!is_string($name) || $name === '' || $name === '.' || $name === '..') {
+        foreach (scandir($dir) as $name) {
+            if (!preg_match($pattern, $name) || !is_file($dir . '/' . $name)) {
                 continue;
             }
 
-            if (!preg_match('/^abcnorio-astro-production-(?!candidate-).+\\.zip$/', $name)) {
-                continue;
-            }
-
-            $fullPath = $archiveDir . '/' . $name;
-            if (!is_file($fullPath)) {
-                continue;
-            }
-
-            $mtime = filemtime($fullPath);
-            $out[] = ['name' => $name, 'mtime' => is_int($mtime) ? $mtime : 0];
+            $out[] = ['name' => $name, 'mtime' => (int) filemtime($dir . '/' . $name)];
         }
 
         usort($out, static fn(array $a, array $b): int => $b['mtime'] <=> $a['mtime']);
-        $limit = BackupRetentionSettings::productionArchives();
         return array_slice($out, 0, $limit);
+    }
+
+    /**
+     * @return array<int, array{name: string, mtime: int}>
+     */
+    private static function listProductionBackupsFromArchiveDir(): array
+    {
+        return self::listArchives(
+            self::backupArchiveDir(),
+            '/^abcnorio-astro-production-(?!candidate-).+\\.zip$/',
+            BackupRetentionSettings::productionArchives()
+        );
+    }
+
+    /**
+     * @return array<int, array{name: string, mtime: int}>
+     */
+    public static function listRollbackSnapshots(): array
+    {
+        return self::listArchives(
+            self::rollbackArchiveDir(),
+            '/^abcnorio-rollback-production-.+\\.zip$/',
+            BackupRetentionSettings::rollbackSnapshots()
+        );
+    }
+
+    public static function rollbackArchiveDir(): string
+    {
+        if (is_dir('/app/backups/rollback-snapshots')) {
+            return '/app/backups/rollback-snapshots';
+        }
+
+        return self::baseArchiveDir() . '/rollback-snapshots';
     }
 
     public static function backupArchiveDir(): string

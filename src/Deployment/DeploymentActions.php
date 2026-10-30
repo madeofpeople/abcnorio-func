@@ -223,6 +223,50 @@ final class DeploymentActions
         exit;
     }
 
+    public static function downloadRollbackSnapshot(): void
+    {
+        $nonce = sanitize_text_field((string) ($_GET['nonce'] ?? ''));
+        if (!wp_verify_nonce($nonce, 'abcnorio_download_backup')) {
+            wp_die(__('Invalid request.', 'abcnorio-func'), 403);
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Insufficient permissions.', 'abcnorio-func'), 403);
+        }
+
+        $requested = sanitize_file_name((string) ($_GET['file'] ?? ''));
+        $names = array_column(DeploymentStatus::listRollbackSnapshots(), 'name');
+        if (!in_array($requested, $names, true)) {
+            wp_die(__('Backup file not found.', 'abcnorio-func'), 404);
+        }
+
+        $realFile = DeploymentStatus::rollbackArchiveDir() . '/' . $requested;
+
+        nocache_headers();
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . $requested . '"');
+        header('Content-Length: ' . (string) filesize($realFile));
+        readfile($realFile);
+        exit;
+    }
+
+    public static function listProductionBackups(): void
+    {
+        check_ajax_referer('abcnorio_list_production_backups', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Insufficient permissions'], 403);
+        }
+
+        $status = DeploymentStatus::read();
+        $envStatus = $status['ok'] ? ($status['status']['envs']['production'] ?? []) : [];
+
+        ob_start();
+        DeploymentAdminPage::renderProductionBackups(DeploymentStatus::normalizeProductionBackups('production', $envStatus), $status['ok']);
+        wp_send_json_success(['html' => ob_get_clean()]);
+    }
+
     public static function restoreBackup(): void
     {
         $nonce = sanitize_text_field((string) ($_GET['nonce'] ?? ''));

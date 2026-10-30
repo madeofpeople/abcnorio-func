@@ -99,6 +99,87 @@ final class DeploymentAdminPage
         ];
     }
 
+    /**
+     * @param array<int, array{name: string, mtime: int}> $backups
+     */
+    public static function renderProductionBackups(array $backups, bool $statusOk): void
+    {
+        $downloadNonce = wp_create_nonce('abcnorio_download_backup');
+        $restoreNonce = wp_create_nonce('abcnorio_restore_backup');
+        $snapshots = DeploymentStatus::listRollbackSnapshots();
+        ?>
+        <strong><?php esc_html_e('Recent Production Backups', 'abcnorio-func'); ?></strong>
+        <?php if ($backups === []) : ?>
+            <p style="margin: 0.5rem 0 0; color: #666;">
+                <?php esc_html_e('No backup archives found yet.', 'abcnorio-func'); ?>
+            </p>
+        <?php else : ?>
+            <ul class="js-backup-list">
+                <?php foreach ($backups as $backup) : ?>
+                    <li class="backup-item">
+                        <span class="backup-item-name"><?php echo esc_html($backup['name']); ?></span>
+                        <span style="margin-left: 0.5rem; display: inline-flex; gap: 0.5rem;">
+                        <a
+                            href="<?php echo esc_url(add_query_arg([
+                                'action' => 'abcnorio_download_backup',
+                                'env' => 'production',
+                                'nonce' => $downloadNonce,
+                                'file' => rawurlencode($backup['name']),
+                            ], admin_url('admin-ajax.php'))); ?>"
+                            class="button button-secondary button-small"
+                        >
+                            <?php esc_html_e('Download', 'abcnorio-func'); ?>
+                        </a>
+                        <a
+                            href="<?php echo esc_url(add_query_arg([
+                                'action' => 'abcnorio_restore_backup',
+                                'env' => 'production',
+                                'nonce' => $restoreNonce,
+                                'file' => rawurlencode($backup['name']),
+                            ], admin_url('admin-ajax.php'))); ?>"
+                            class="button button-small<?php echo !$statusOk ? ' disabled' : ''; ?>"
+                            <?php if (!$statusOk) : ?>aria-disabled="true" onclick="return false;"<?php else : ?>
+                            onclick="return confirm('<?php echo esc_js(__('Restore this backup to production? This replaces current production files.', 'abcnorio-func')); ?>');"
+                            <?php endif; ?>
+                        >
+                            <?php esc_html_e('Restore', 'abcnorio-func'); ?>
+                        </a>
+                        </span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+
+        <p style="margin: 1.5rem 0 0;"><strong><?php esc_html_e('Pre-deploy Rollback Snapshots', 'abcnorio-func'); ?></strong></p>
+        <p class="description"><?php esc_html_e('Copy of the live site taken just before each production deploy. Download only.', 'abcnorio-func'); ?></p>
+        <?php if ($snapshots === []) : ?>
+            <p style="margin: 0.5rem 0 0; color: #666;">
+                <?php esc_html_e('No rollback snapshots found yet.', 'abcnorio-func'); ?>
+            </p>
+        <?php else : ?>
+            <ul>
+                <?php foreach ($snapshots as $snapshot) : ?>
+                    <li class="backup-item">
+                        <span class="backup-item-name"><?php echo esc_html($snapshot['name']); ?></span>
+                        <span style="margin-left: 0.5rem;">
+                        <a
+                            href="<?php echo esc_url(add_query_arg([
+                                'action' => 'abcnorio_download_rollback_snapshot',
+                                'nonce' => $downloadNonce,
+                                'file' => rawurlencode($snapshot['name']),
+                            ], admin_url('admin-ajax.php'))); ?>"
+                            class="button button-secondary button-small"
+                        >
+                            <?php esc_html_e('Download', 'abcnorio-func'); ?>
+                        </a>
+                        </span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+        <?php
+    }
+
     private static function stagingPluginVersion(): string
     {
         $url = trim((string) (getenv('STAGING_PLUGIN_VERSION_URL') ?: ''));
@@ -150,6 +231,7 @@ final class DeploymentAdminPage
             'backupDatabaseStagingNonce'           => wp_create_nonce('abcnorio_backup_database_staging'),
             'pollBackupDatabaseStagingNonce'       => wp_create_nonce('abcnorio_poll_backup_database_staging_status'),
             'listDatabaseBackupsNonce'             => wp_create_nonce('abcnorio_list_database_backups'),
+            'listProductionBackupsNonce'           => wp_create_nonce('abcnorio_list_production_backups'),
             'downloadDatabaseBackupNonce'          => wp_create_nonce('abcnorio_download_database_backup'),
             'deleteDatabaseBackupNonce'            => wp_create_nonce('abcnorio_delete_database_backup'),
             'listMediaBackupsNonce'                => wp_create_nonce('abcnorio_list_media_backups'),
@@ -191,8 +273,6 @@ final class DeploymentAdminPage
             $activeTab = 'staging';
         }
 
-        $backupRestoreNonce = wp_create_nonce('abcnorio_restore_backup');
-        $backupDownloadNonce = wp_create_nonce('abcnorio_download_backup');
         ?>
         <div class="wrap">
             <h1><?php esc_html_e('Deployment', 'abcnorio-func'); ?></h1>
@@ -451,48 +531,8 @@ final class DeploymentAdminPage
                         </a>
                     </div>
 
-                    <div style="margin-top: 1rem; padding-top: 2rem;">
-                        <strong><?php esc_html_e('Recent Production Backups', 'abcnorio-func'); ?></strong>
-                        <?php if ($targets['production']['backups'] === []) : ?>
-                            <p style="margin: 0.5rem 0 0; color: #666;">
-                                <?php esc_html_e('No backup archives found yet.', 'abcnorio-func'); ?>
-                            </p>
-                        <?php else : ?>
-                            <ul class="js-backup-list">
-                                <?php foreach ($targets['production']['backups'] as $backup) : ?>
-                                    <li class="backup-item">
-                                        <span class="backup-item-name"><?php echo esc_html($backup['name']); ?></span>
-                                        <span style="margin-left: 0.5rem; display: inline-flex; gap: 0.5rem;">
-                                        <a
-                                            href="<?php echo esc_url(add_query_arg([
-                                                'action' => 'abcnorio_download_backup',
-                                                'env' => 'production',
-                                                'nonce' => $backupDownloadNonce,
-                                                'file' => rawurlencode($backup['name']),
-                                            ], admin_url('admin-ajax.php'))); ?>"
-                                            class="button button-secondary button-small"
-                                        >
-                                            <?php esc_html_e('Download', 'abcnorio-func'); ?>
-                                        </a>
-                                        <a
-                                            href="<?php echo esc_url(add_query_arg([
-                                                'action' => 'abcnorio_restore_backup',
-                                                'env' => 'production',
-                                                'nonce' => $backupRestoreNonce,
-                                                'file' => rawurlencode($backup['name']),
-                                            ], admin_url('admin-ajax.php'))); ?>"
-                                            class="button button-small<?php echo !$statusOk ? ' disabled' : ''; ?>"
-                                            <?php if (!$statusOk) : ?>aria-disabled="true" onclick="return false;"<?php else : ?>
-                                            onclick="return confirm('<?php echo esc_js(__('Restore this backup to production? This replaces current production files.', 'abcnorio-func')); ?>');"
-                                            <?php endif; ?>
-                                        >
-                                            <?php esc_html_e('Restore', 'abcnorio-func'); ?>
-                                        </a>
-                                        </span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        <?php endif; ?>
+                    <div class="js-production-backups" style="margin-top: 1rem; padding-top: 2rem;">
+                        <?php self::renderProductionBackups($targets['production']['backups'], $statusOk); ?>
                     </div>
                 </div>
             </div>

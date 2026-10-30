@@ -1,6 +1,6 @@
 /* global abcnorioDeployment */
 (function () {
-    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, copyMediaNonce, pollCopyMediaNonce, pullFromStagingNonce, pollPullFromStagingNonce, copyMediaToStagingNonce, pollCopyMediaToStagingNonce, backupMediaDevNonce, pollBackupMediaDevNonce, backupMediaStagingNonce, pollBackupMediaStagingNonce, backupDatabaseDevNonce, pollBackupDatabaseDevNonce, backupDatabaseStagingNonce, pollBackupDatabaseStagingNonce, listMediaBackupsNonce, deleteMediaBackupNonce, listDatabaseBackupsNonce, downloadDatabaseBackupNonce, deleteDatabaseBackupNonce, pullFromDevNonce, pollPullFromDevNonce, targets = {} } = abcnorioDeployment;
+    const { ajaxUrl, triggerNonce, pollNonce, pushToStagingNonce, pollPushNonce, copyMediaNonce, pollCopyMediaNonce, pullFromStagingNonce, pollPullFromStagingNonce, copyMediaToStagingNonce, pollCopyMediaToStagingNonce, backupMediaDevNonce, pollBackupMediaDevNonce, backupMediaStagingNonce, pollBackupMediaStagingNonce, backupDatabaseDevNonce, pollBackupDatabaseDevNonce, backupDatabaseStagingNonce, pollBackupDatabaseStagingNonce, listMediaBackupsNonce, downloadMediaBackupNonce, deleteMediaBackupNonce, listDatabaseBackupsNonce, downloadDatabaseBackupNonce, deleteDatabaseBackupNonce, pullFromDevNonce, pollPullFromDevNonce, targets = {} } = abcnorioDeployment;
 
     let pollTimer = null;
     let buildStartTime = null;
@@ -9,19 +9,36 @@
     const NOTICE_TIMEOUT_MS = 4000;
 
     // --- Tab switching ---
+    function showTab(target) {
+        document.querySelectorAll('#deployment-tabs .nav-tab').forEach((t) => {
+            t.classList.toggle('nav-tab-active', t.dataset.tab === target);
+        });
+
+        document.querySelectorAll('.deployment-tab').forEach((panel) => {
+            panel.classList.toggle('hidden', panel.id !== 'tab-' + target);
+        });
+    }
+
     document.querySelectorAll('#deployment-tabs .nav-tab').forEach((tab) => {
         tab.addEventListener('click', (e) => {
             e.preventDefault();
             const target = tab.dataset.tab;
+            const url = new URL(window.location.href);
 
-            document.querySelectorAll('#deployment-tabs .nav-tab').forEach((t) => {
-                t.classList.toggle('nav-tab-active', t.dataset.tab === target);
-            });
-
-            document.querySelectorAll('.deployment-tab').forEach((panel) => {
-                panel.classList.toggle('hidden', panel.id !== 'tab-' + target);
-            });
+            if (url.searchParams.get('tab') !== target) {
+                url.searchParams.set('tab', target);
+                window.history.pushState(null, '', url);
+            }
+            showTab(target);
         });
+    });
+
+    window.addEventListener('popstate', () => {
+        const defaultTab = document.querySelector('#deployment-tabs .nav-tab').dataset.tab;
+        const target = new URL(window.location.href).searchParams.get('tab') || defaultTab;
+        if (document.querySelector('#deployment-tabs .nav-tab[data-tab="' + target + '"]')) {
+            showTab(target);
+        }
     });
 
     // --- Spinner ---
@@ -108,7 +125,9 @@
     }
 
     function mediaDownloadUrl(env, file) {
-        return '/app/backups/media/' + encodeURIComponent(file);
+        return ajaxUrl + '?action=abcnorio_download_media_backup&nonce='
+            + encodeURIComponent(downloadMediaBackupNonce) + '&env=' + encodeURIComponent(env)
+            + '&file=' + encodeURIComponent(file);
     }
 
     function renderMediaBackupList(env, backups) {
@@ -776,6 +795,7 @@
 
     refreshMediaBackupList('dev').catch(() => {});
     refreshMediaBackupList('staging').catch(() => {});
-    refreshDatabaseBackupList().catch(() => {});
+    refreshDatabaseBackupList('dev').catch(() => {});
+    refreshDatabaseBackupList('staging').catch(() => {});
 
 }());

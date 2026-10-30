@@ -164,7 +164,7 @@ final class DeploymentAdminPage
 
     public static function renderPage(): void
     {
-        $activeTab = sanitize_key((string) ($_GET['tab'] ?? 'staging'));
+        $activeTab = sanitize_key((string) ($_GET['tab'] ?? 'dev'));
         if (!Deployment::isValidEnv($activeTab)) {
             $activeTab = 'dev';
         }
@@ -192,6 +192,7 @@ final class DeploymentAdminPage
         }
 
         $backupRestoreNonce = wp_create_nonce('abcnorio_restore_backup');
+        $backupDownloadNonce = wp_create_nonce('abcnorio_download_backup');
         ?>
         <div class="wrap">
             <h1><?php esc_html_e('Deployment', 'abcnorio-func'); ?></h1>
@@ -463,7 +464,12 @@ final class DeploymentAdminPage
                                         <span class="backup-item-name"><?php echo esc_html($backup['name']); ?></span>
                                         <span style="margin-left: 0.5rem; display: inline-flex; gap: 0.5rem;">
                                         <a
-                                            href="<?php echo esc_url('/app/backups/static-backup/' . rawurlencode($backup['name'])); ?>"
+                                            href="<?php echo esc_url(add_query_arg([
+                                                'action' => 'abcnorio_download_backup',
+                                                'env' => 'production',
+                                                'nonce' => $backupDownloadNonce,
+                                                'file' => rawurlencode($backup['name']),
+                                            ], admin_url('admin-ajax.php'))); ?>"
                                             class="button button-secondary button-small"
                                         >
                                             <?php esc_html_e('Download', 'abcnorio-func'); ?>

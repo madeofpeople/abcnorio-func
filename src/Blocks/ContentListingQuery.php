@@ -8,8 +8,6 @@ use abcnorio\CustomFunc\RestApi\ContentListingEndpoint;
 final class ContentListingQuery
 {
     private const ALLOWED_POST_TYPES = ['event', 'article'];
-    private const MIN_ITEM_COUNT = 1;
-    private const MAX_ITEM_COUNT = 12;
 
     public static function registerHooks(): void
     {
@@ -36,30 +34,16 @@ final class ContentListingQuery
 
         self::enqueueComponentAssets();
 
-        $showCount = ! empty($attributes['showCount']);
-        $title = sanitize_text_field((string) ($attributes['title'] ?? ''));
-        $hasCta = ! empty($attributes['hasCta']);
-        $ctaLabel = sanitize_text_field((string) ($attributes['ctaLabel'] ?? ''));
-        $ctaUrl = esc_url_raw((string) ($attributes['ctaUrl'] ?? ''));
-
         $postTypes = self::normalizePostTypes($attributes['listingPostTypes'] ?? []);
-        $count = max(
-            self::MIN_ITEM_COUNT,
-            min(self::MAX_ITEM_COUNT, (int) ($attributes['listingCount'] ?? 5))
-        );
-        $orderMode = strtolower(sanitize_key((string) ($attributes['order'] ?? 'desc')));
-        $order = $orderMode === 'asc' ? 'asc' : 'desc';
-        $isManualOrder = $orderMode === 'manual';
+        $count = max(1, min(50, (int) ($attributes['listingCount'] ?? 5)));
+        $order = strtolower(sanitize_key((string) ($attributes['order'] ?? 'desc'))) === 'asc' ? 'asc' : 'desc';
         $tags = self::normalizeTags($attributes['listingTagFilter'] ?? []);
-        $orderIds = $isManualOrder ? self::normalizeOrderPostIds($attributes['sortOrderPostIds'] ?? []) : [];
-        $isSlider = strtolower(sanitize_key((string) ($attributes['variant'] ?? 'grid'))) === 'slider';
 
         $request = new \WP_REST_Request('GET', '/abcnorio/v1/content-listing');
         $request->set_param('post_types', $postTypes);
         $request->set_param('tags', $tags);
         $request->set_param('count', $count);
         $request->set_param('order', $order);
-        $request->set_param('orderIds', $orderIds);
 
         $response = ContentListingEndpoint::serve($request);
 
@@ -89,13 +73,12 @@ final class ContentListingQuery
             }
         }
 
-        return self::renderListingFromDist(count($items), $itemsHtml, $showCount, $isSlider, $title, $hasCta, $ctaLabel, $ctaUrl);
+        return self::renderListingFromDist(count($items), $itemsHtml);
     }
 
-    private static function renderListingFromDist(int $totalItems, string $itemsHtml, bool $showCount, bool $isSlider, string $title, bool $hasCta, string $ctaLabel, string $ctaUrl): string
+    private static function renderListingFromDist(int $totalItems, string $itemsHtml): string
     {
-        $fixturePath = $isSlider ? 'content-listing/slider.html' : 'content-listing.html';
-        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml($fixturePath));
+        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('content-listing.html'));
         $xpath = new \DOMXPath($dom);
 
         $listing = $dom->getElementsByTagName('content-listing')->item(0);
@@ -105,39 +88,22 @@ final class ContentListingQuery
 
         HtmlFragmentSupport::addClass($listing, 'wp-block-abcnorio-content-listing');
 
-        $titleNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__title ")]')->item(0);
-        if ($title !== '') {
-            if (! $titleNode instanceof \DOMElement) {
-                $titleNode = $dom->createElement('h2');
-                $titleNode->setAttribute('class', 'content-listing__title');
-                $listing->insertBefore($titleNode, $listing->firstChild);
-            }
-
-            $titleNode->nodeValue = $title;
-        } elseif ($titleNode instanceof \DOMElement) {
-            $titleNode->parentNode?->removeChild($titleNode);
-        }
-
         $countNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__count ")]')->item(0);
-        if ($showCount) {
-            if (! $countNode instanceof \DOMElement) {
-                $countNode = $dom->createElement('p');
-                $countNode->setAttribute('class', 'content-listing__count');
-                $listing->insertBefore($countNode, $listing->firstChild);
-            }
-
-            $countNode->nodeValue = sprintf(
-                'Displaying %d %s.',
-                $totalItems,
-                $totalItems === 1 ? 'item' : 'items'
-            );
-        } elseif ($countNode instanceof \DOMElement) {
-            $countNode->parentNode?->removeChild($countNode);
+        if (! $countNode instanceof \DOMElement) {
+            $countNode = $dom->createElement('p');
+            $countNode->setAttribute('class', 'content-listing__count');
+            $listing->insertBefore($countNode, $listing->firstChild);
         }
 
-        $itemsNode = $dom->getElementById('teaser-list');
+        $countNode->nodeValue = sprintf(
+            'Displaying %d %s.',
+            $totalItems,
+            $totalItems === 1 ? 'item' : 'items'
+        );
+
+        $itemsNode = $dom->getElementById('content-listing-list');
         if (! $itemsNode instanceof \DOMElement) {
-            $itemsNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " teaser-list ")]')->item(0);
+            $itemsNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__items ")]')->item(0);
         }
 
         if (! $itemsNode instanceof \DOMElement) {
@@ -149,37 +115,6 @@ final class ContentListingQuery
         }
 
         HtmlFragmentSupport::appendHtmlFragment($dom, $itemsNode, $itemsHtml, 'content listing');
-
-        $actionsNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " actions ")]')->item(0);
-        $hasRenderableCta = $hasCta && $ctaLabel !== '' && $ctaUrl !== '';
-
-        if ($hasRenderableCta) {
-            if (! $actionsNode instanceof \DOMElement) {
-                $actionsNode = $dom->createElement('div');
-                $actionsNode->setAttribute('class', 'actions');
-                $listing->appendChild($actionsNode);
-            }
-
-            $existingCta = $xpath->query('.//a[contains(concat(" ", normalize-space(@class), " "), " content-listing__cta ")]', $actionsNode);
-            if ($existingCta !== false) {
-                foreach ($existingCta as $node) {
-                    $node->parentNode?->removeChild($node);
-                }
-            }
-
-            $ctaNode = $dom->createElement('a');
-            $ctaNode->setAttribute('class', 'button content-listing__cta');
-            $ctaNode->setAttribute('href', esc_url($ctaUrl));
-            $ctaNode->appendChild($dom->createTextNode($ctaLabel));
-            $actionsNode->appendChild($ctaNode);
-        } elseif ($actionsNode instanceof \DOMElement) {
-            $existingCta = $xpath->query('.//a[contains(concat(" ", normalize-space(@class), " "), " content-listing__cta ")]', $actionsNode);
-            if ($existingCta !== false) {
-                foreach ($existingCta as $node) {
-                    $node->parentNode?->removeChild($node);
-                }
-            }
-        }
 
         return trim((string) $dom->saveHTML($listing));
     }
@@ -214,17 +149,15 @@ final class ContentListingQuery
                     $timeLabel = wp_date('g:i A', $timestamp);
 
                     $time->setAttribute('datetime', $dateTime);
-                    while ($time->firstChild) {
-                        $time->removeChild($time->firstChild);
+                    $span = $time->getElementsByTagName('span')->item(0);
+                    if ($span instanceof \DOMElement) {
+                        while ($span->firstChild) {
+                            $span->removeChild($span->firstChild);
+                        }
+                        $span->appendChild($dom->createTextNode($dateLabel));
+                        $span->appendChild($dom->createElement('br'));
+                        $span->appendChild($dom->createTextNode('@ ' . $timeLabel));
                     }
-
-                    $dateSpan = $dom->createElement('span');
-                    $dateSpan->appendChild($dom->createTextNode(' ' . $dateLabel . ' '));
-                    $time->appendChild($dateSpan);
-
-                    $timeSpan = $dom->createElement('span');
-                    $timeSpan->appendChild($dom->createTextNode(' @ ' . $timeLabel));
-                    $time->appendChild($timeSpan);
                 }
             } else {
                 $time->parentNode?->removeChild($time);
@@ -263,7 +196,7 @@ final class ContentListingQuery
         $link->setAttribute('href', esc_url(self::resolveItemHref($item, '/articles')));
         $title->nodeValue = wp_strip_all_tags((string) ($item['title']['rendered'] ?? 'Untitled article'));
 
-        $rawDate = (string) ($item['acf']['article_date'] ?? $item['date'] ?? '');
+        $rawDate = (string) ($item['acf']['item_date'] ?? $item['date'] ?? '');
         $time = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " article-teaser__date ")]')->item(0);
         if ($time instanceof \DOMElement) {
             if ($rawDate === '') {
@@ -322,28 +255,6 @@ final class ContentListingQuery
         $allowed = array_values(array_filter($postTypes, static fn (string $postType): bool => in_array($postType, self::ALLOWED_POST_TYPES, true)));
 
         return $allowed === [] ? self::ALLOWED_POST_TYPES : $allowed;
-    }
-
-    private static function normalizeOrderPostIds($rawOrderPostIds): array
-    {
-        if (! is_array($rawOrderPostIds)) {
-            return [];
-        }
-
-        $normalized = [];
-        $seen = [];
-
-        foreach ($rawOrderPostIds as $value) {
-            $id = absint($value);
-            if ($id < 1 || isset($seen[$id])) {
-                continue;
-            }
-
-            $seen[$id] = true;
-            $normalized[] = $id;
-        }
-
-        return $normalized;
     }
 
     private static function enqueueComponentAssets(): void

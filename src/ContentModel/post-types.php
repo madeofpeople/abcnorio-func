@@ -40,6 +40,23 @@ return [
 
 
     ],
+    'venue' => [
+        'name' => 'Venues',
+        'singular_name' => 'Venue',
+        'public' => false,
+        'supports' => [
+            'title',
+        ],
+        'menu_icon' => 'dashicons-location',
+        'taxonomies' => [
+            'collective_association',
+        ],
+        'capability_type' => [
+            'venue',
+            'venues'
+        ],
+        'map_meta_cap' => true,
+    ],
     'facility' => [
         'name' => 'Facilities',
         'singular_name' => 'Facility',

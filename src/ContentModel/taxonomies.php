@@ -53,7 +53,7 @@ return [
     'collective_association' => [
         'name' => 'Collective Associations',
         'singular_name' => 'Collective Association',
-        'object_types' => ['event', 'facility', 'article', 'page'],
+        'object_types' => ['event', 'facility', 'article', 'page', 'venue'],
         'public' => false,
         'show_ui' => true,
         'show_in_rest' => true,

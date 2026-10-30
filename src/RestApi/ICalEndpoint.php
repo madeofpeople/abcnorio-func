@@ -68,8 +68,9 @@ final class ICalEndpoint
             $start_raw = get_field('event_start_date', $post->ID);
             $end_raw   = get_field('event_end_date', $post->ID);
             $tz_id     = get_field('event_timezone', $post->ID) ?: $site_tz;
-            $venue     = get_field('event_venue_name', $post->ID) ?: '';
-            $address   = get_field('event_venue_address', $post->ID) ?: '';
+            $venueId   = (int) get_field('event_venue_id', $post->ID);
+            $venue     = $venueId ? get_the_title($venueId) : '';
+            $address   = $venueId ? (get_field('venue_details', $venueId) ?: '') : '';
             $tickets   = get_field('event_tickets_url', $post->ID);
 
             $tz      = new \DateTimeZone($tz_id);

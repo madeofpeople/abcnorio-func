@@ -29,6 +29,7 @@ final class ACFFieldGroups
     public static function register(): void
     {
         self::registerEventFields();
+        self::registerVenueFields();
         self::registerArticleFields();
         self::registerCollectiveFields();
         self::registerPressItemFields();
@@ -81,18 +82,24 @@ final class ACFFieldGroups
                     'first_day'       => 1,
                 ],
                 [
-                    'key'           => 'field_event_location',
-                    'name'          => 'event_venue_name',
-                    'label'         => __('Venue / Location', 'abcnorio-func'),
-                    'type'          => 'text',
-                    'default_value' => 'ABC No Rio',
+                    'key'           => 'field_event_venue_id',
+                    'name'          => 'event_venue_id',
+                    'label'         => __('Venue', 'abcnorio-func'),
+                    'type'          => 'post_object',
+                    'post_type'     => ['venue'],
+                    'post_status'   => ['publish'],
+                    'allow_null'    => 1,
+                    'multiple'      => 0,
+                    'ui'            => 0,
+                    'return_format' => 'id',
                 ],
                 [
-                    'key'           => 'field_event_venue_address',
-                    'name'          => 'event_venue_address',
-                    'label'         => __('Venue Details', 'abcnorio-func'),
-                    'type'          => 'text',
-                    'default_value' => '156 Rivington Street, New York, NY 10002',
+                    'key'           => 'field_event_venue_add',
+                    'label'         => '',
+                    'type'          => 'message',
+                    'esc_html'      => 0,
+                    'message'       => '<a href="' . esc_url(admin_url('post-new.php?post_type=venue')) . '" target="_blank" rel="noopener">'
+                        . esc_html__('Add venue (opens in new tab)', 'abcnorio-func') . '</a>',
                 ],
                 [
                     'key'           => 'field_event_tags',
@@ -120,6 +127,40 @@ final class ACFFieldGroups
                     'label'         => __('Tickets CTA', 'abcnorio-func'),
                     'type'          => 'text',
                     'default_value' => 'Get tickets',
+                ],
+            ],
+        ]);
+    }
+
+    private static function registerVenueFields(): void
+    {
+        acf_add_local_field_group([
+            'key'      => 'group_venue_details',
+            'title'    => 'Venue Details',
+            'show_in_rest' => true,
+            'position' => 'normal',
+            'location' => [
+                [
+                    [
+                        'param'    => 'post_type',
+                        'operator' => '==',
+                        'value'    => 'venue',
+                    ],
+                ],
+            ],
+            'fields' => [
+                [
+                    'key'   => 'field_venue_details',
+                    'name'  => 'venue_details',
+                    'label' => __('Venue Details', 'abcnorio-func'),
+                    'type'  => 'text',
+                ],
+                [
+                    'key'   => 'field_venue_additional_details',
+                    'name'  => 'venue_additional_details',
+                    'label' => __('Additional Details', 'abcnorio-func'),
+                    'type'  => 'textarea',
+                    'rows'  => 4,
                 ],
             ],
         ]);

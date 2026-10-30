@@ -20,6 +20,7 @@ use abcnorio\CustomFunc\RestApi\DeploymentVersionEndpoint;
 use abcnorio\CustomFunc\RestApi\ContentChangeEndpoint;
 use abcnorio\CustomFunc\RestApi\ContentListingEndpoint;
 use abcnorio\CustomFunc\RestApi\DatePayloadNormalizer;
+use abcnorio\CustomFunc\RestApi\ExcerptBreakSpacing;
 use abcnorio\CustomFunc\RestApi\ICalEndpoint;
 use abcnorio\CustomFunc\RestApi\MailchimpEndpoint;
 use abcnorio\CustomFunc\RestApi\FormSubmissionEndpoint;
@@ -59,6 +60,7 @@ final class Plugin
         ArticleQueryFilters::registerHooks();
         /*  Normalize article/event custom date payloads in REST responses */
         DatePayloadNormalizer::registerHooks();
+        ExcerptBreakSpacing::registerHooks();
         /*  Makes featured image accessible from REST API */
         FeaturedImageField::registerHooks();
         DeploymentVersionEndpoint::registerHooks();

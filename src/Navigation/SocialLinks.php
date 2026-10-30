@@ -2,15 +2,15 @@
 
 namespace abcnorio\CustomFunc\Navigation;
 
+use abcnorio\CustomFunc\Settings\SettingsPage;
+
 final class SocialLinks
 {
     private const OPTION = 'abcnorio_social_links';
-    private const PAGE = 'abcnorio-social-links';
     private const ACTION = 'abcnorio_save_social_links';
 
     public static function registerHooks(): void
     {
-        add_action('admin_menu', [self::class, 'addMenuPage']);
         add_action('admin_post_' . self::ACTION, [self::class, 'handleSave']);
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAssets']);
         add_action('rest_api_init', [self::class, 'registerRestRoutes']);
@@ -35,22 +35,9 @@ final class SocialLinks
         return $data;
     }
 
-    public static function addMenuPage(): void
-    {
-        add_menu_page(
-            __('Social Links', 'abcnorio-func'),
-            __('Social Links', 'abcnorio-func'),
-            'manage_options',
-            self::PAGE,
-            [self::class, 'renderPage'],
-            'dashicons-share',
-            NULL
-        );
-    }
-
     public static function enqueueAssets(string $hook): void
     {
-        if ($hook !== 'toplevel_page_' . self::PAGE) {
+        if ($hook !== SettingsPage::HOOK) {
             return;
         }
         wp_enqueue_media();
@@ -89,17 +76,17 @@ final class SocialLinks
         }
 
         update_option(self::OPTION, $links);
-        wp_safe_redirect(add_query_arg(['page' => self::PAGE, 'updated' => 1], admin_url('admin.php')));
+        wp_safe_redirect(add_query_arg(['page' => SettingsPage::SLUG, 'social-links-updated' => 1], admin_url('options-general.php')));
         exit;
     }
 
-    public static function renderPage(): void
+    public static function renderSection(): void
     {
         $links = get_option(self::OPTION, []);
         ?>
-        <div class="wrap">
-            <h1><?php esc_html_e('Social Links', 'abcnorio-func'); ?></h1>
-            <?php if (isset($_GET['updated'])) : ?>
+        <section>
+            <h2><?php esc_html_e('Social Links', 'abcnorio-func'); ?></h2>
+            <?php if (isset($_GET['social-links-updated'])) : ?>
                 <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Saved.', 'abcnorio-func'); ?></p></div>
             <?php endif; ?>
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
@@ -119,7 +106,7 @@ final class SocialLinks
             <template id="social-links-template">
                 <?php self::renderRow(['name' => '', 'icon_id' => 0, 'url' => '']); ?>
             </template>
-        </div>
+        </section>
         <?php
     }
 

@@ -102,18 +102,6 @@ final class ACFFieldGroups
                         . esc_html__('Add venue (opens in new tab)', 'abcnorio-func') . '</a>',
                 ],
                 [
-                    'key'           => 'field_event_tags',
-                    'name'          => 'event_tags',
-                    'label'         => __('Tags', 'abcnorio-func'),
-                    'type'          => 'taxonomy',
-                    'taxonomy'      => 'post_tag',
-                    'field_type'    => 'multi_select',
-                    'add_term'      => 1,
-                    'save_terms'    => 1,
-                    'load_terms'    => 1,
-                    'return_format' => 'id',
-                ],
-                [
                     'key'           => 'field_event_tickets_url',
                     'name'          => 'event_tickets_url',
                     'label'         => __('Tickets URL', 'abcnorio-func'),

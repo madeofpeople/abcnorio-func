@@ -8,13 +8,11 @@ final class NewsletterSettings
     public const DOUBLE_OPT_IN = 'abcnorio_newsletter_double_opt_in';
     public const UPDATE_EXISTING = 'abcnorio_newsletter_update_existing';
 
-    private const PAGE = 'abcnorio-newsletter';
     private const GROUP = 'abcnorio_newsletter';
 
     public static function registerHooks(): void
     {
         add_action('admin_init', [self::class, 'registerSettings']);
-        add_action('admin_menu', [self::class, 'addPage']);
     }
 
     public static function registerSettings(): void
@@ -36,24 +34,13 @@ final class NewsletterSettings
         ]);
     }
 
-    public static function addPage(): void
-    {
-        add_options_page(
-            __('Newsletter Signup', 'abcnorio-func'),
-            __('Newsletter Signup', 'abcnorio-func'),
-            'manage_options',
-            self::PAGE,
-            [self::class, 'renderPage']
-        );
-    }
-
-    public static function renderPage(): void
+    public static function renderSection(): void
     {
         $lists = (array) get_option('mailchimp_sf_lists', []);
         $listId = (string) get_option(self::LIST_ID, '');
         ?>
-        <div class="wrap">
-            <h1><?php esc_html_e('Newsletter Signup', 'abcnorio-func'); ?></h1>
+        <section>
+            <h2><?php esc_html_e('Newsletter Signup', 'abcnorio-func'); ?></h2>
             <p class="description"><?php esc_html_e('Applies to every Newsletter Signup block.', 'abcnorio-func'); ?></p>
             <form method="post" action="options.php">
                 <?php settings_fields(self::GROUP); ?>
@@ -86,7 +73,7 @@ final class NewsletterSettings
                 </table>
                 <?php submit_button(); ?>
             </form>
-        </div>
+        </section>
         <?php
     }
 }

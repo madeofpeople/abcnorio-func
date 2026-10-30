@@ -25,7 +25,10 @@ use abcnorio\CustomFunc\RestApi\ICalEndpoint;
 use abcnorio\CustomFunc\RestApi\MailchimpEndpoint;
 use abcnorio\CustomFunc\RestApi\FormSubmissionEndpoint;
 use abcnorio\CustomFunc\RestApi\SidebarBlocksField;
+use abcnorio\CustomFunc\Events\VenueOverlapNotice;
+use abcnorio\CustomFunc\Settings\EventScheduleSettings;
 use abcnorio\CustomFunc\Settings\NewsletterSettings;
+use abcnorio\CustomFunc\Settings\SettingsPage;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
 use abcnorio\CustomFunc\Blocks\HeadingAnchorAttribute;
@@ -94,6 +97,9 @@ final class Plugin
         MenuRegistrar::registerHooks();
         SocialLinks::registerHooks();
         NewsletterSettings::registerHooks();
+        EventScheduleSettings::registerHooks();
+        SettingsPage::registerHooks();
+        VenueOverlapNotice::registerHooks();
         HeadingAnchorAttribute::registerHooks();
 
         add_filter( 'block_type_metadata', [self::class, 'disableGutenbergLayoutPanel']);

@@ -19,6 +19,7 @@ final class CalendarPage
         add_action('admin_menu', [self::class, 'addMenu']);
         add_action('admin_post_abcnorio_feed_add', [self::class, 'addFeed']);
         add_action('admin_post_abcnorio_feed_delete', [self::class, 'deleteFeed']);
+        add_action('wp_dashboard_setup', [self::class, 'addDashboardWidget']);
     }
 
     public static function addMenu(): void
@@ -33,6 +34,39 @@ final class CalendarPage
         );
 
         add_action('admin_print_scripts-' . $hook, [self::class, 'enqueueAssets']);
+    }
+
+    public static function addDashboardWidget(): void
+    {
+        if (!current_user_can('edit_events')) {
+            return;
+        }
+
+        wp_add_dashboard_widget('abcnorio_scheduling', __('Scheduling', 'abcnorio-func'), [self::class, 'renderDashboardWidget']);
+    }
+
+    public static function renderDashboardWidget(): void
+    {
+        ?>
+        <p>
+            <a class="button button-primary" href="<?php echo esc_url(admin_url('edit.php?post_type=event&page=' . self::SLUG)); ?>">
+                <?php esc_html_e('Open scheduling calendar', 'abcnorio-func'); ?>
+            </a>
+        </p>
+        <?php
+    }
+
+    // Pick black or white text, whichever has the higher WCAG contrast against the background (always >= 4.5:1 AA).
+    private static function textColor(string $hex): string
+    {
+        $channels = array_map(function ($value) {
+            $value = hexdec($value) / 255;
+            return $value <= 0.03928 ? $value / 12.92 : (($value + 0.055) / 1.055) ** 2.4;
+        }, str_split(ltrim($hex, '#'), 2));
+
+        $luminance = 0.2126 * $channels[0] + 0.7152 * $channels[1] + 0.0722 * $channels[2];
+
+        return $luminance > 0.179 ? '#000000' : '#ffffff';
     }
 
     public static function enqueueAssets(): void
@@ -52,19 +86,30 @@ final class CalendarPage
                 'id'    => $feed['id'],
                 'name'  => $feed['name'],
                 'color' => $feed['color'],
+                'textColor' => self::textColor($feed['color']),
                 'url'   => add_query_arg('_wpnonce', $nonce, rest_url('abcnorio/v1/calendar/feed/' . $feed['id'])),
             ];
         }
 
         $venues = [];
         foreach (self::venues() as $index => $venue) {
+            $color    = self::PALETTE[$index % count(self::PALETTE)];
             $venues[] = [
-                'id'    => $venue->ID,
-                'name'  => preg_replace('/^ABC No Rio\s*-\s*/', '', $venue->post_title),
-                'color' => self::PALETTE[$index % count(self::PALETTE)],
-                'list'  => str_starts_with($venue->post_title, 'ABC No Rio') ? 'abcnorio-cal-venues-abc' : 'abcnorio-cal-venues-other',
+                'id'        => $venue->ID,
+                'name'      => preg_replace('/^ABC No Rio\s*-\s*/', '', $venue->post_title),
+                'color'     => $color,
+                'textColor' => self::textColor($color),
+                'list'      => str_starts_with($venue->post_title, 'ABC No Rio') ? 'abcnorio-cal-venues-abc' : 'abcnorio-cal-venues-other',
             ];
         }
+
+        $venues[] = [
+            'id'        => 0,
+            'name'      => __('No venue', 'abcnorio-func'),
+            'color'     => '#5b6770',
+            'textColor' => self::textColor('#5b6770'),
+            'list'      => 'abcnorio-cal-venues-other',
+        ];
 
         wp_add_inline_script(
             'abcnorio-scheduling',
@@ -85,7 +130,7 @@ final class CalendarPage
             .abcnorio-cal-box li { margin: 0; padding: 2px 0; }
             .abcnorio-cal-box label { display: block; }
             .abcnorio-cal-swatch { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: middle; }
-            .abcnorio-cal-unpublished { opacity: .6; border-style: dashed !important; }
+            .abcnorio-cal-unpublished { border-style: dashed !important; }
             #abcnorio-cal-detail[hidden], #abcnorio-detail-edit[hidden] { display: none; }
             #abcnorio-cal-detail dt { font-weight: 600; }
             #abcnorio-cal-detail dd { margin: 0 0 8px; }
@@ -102,6 +147,7 @@ final class CalendarPage
             <div id="poststuff">
                 <div id="post-body" class="metabox-holder columns-2">
                     <div id="post-body-content">
+                        <div id="abcnorio-cal-notice" class="notice notice-warning inline" role="alert" hidden></div>
                         <div id="abcnorio-cal"></div>
                     </div>
                     <div id="postbox-container-1" class="postbox-container">

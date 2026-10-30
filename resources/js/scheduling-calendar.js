@@ -34,10 +34,24 @@
         container.append(item);
     }
 
-    const venueColors = {};
+    const venueStyles = {};
     config.venues.forEach(function (venue) {
-        venueColors[venue.id] = venue.color;
+        venueStyles[venue.id] = venue;
     });
+
+    const notice = document.getElementById('abcnorio-cal-notice');
+    const failed = new Set();
+
+    function warnFailed(name) {
+        if (failed.has(name)) {
+            return;
+        }
+        failed.add(name);
+        const message = document.createElement('p');
+        message.textContent = 'Could not load: ' + name;
+        notice.append(message);
+        notice.hidden = false;
+    }
 
     const detail = document.getElementById('abcnorio-cal-detail');
     const venueNames = {};
@@ -93,6 +107,36 @@
 
     const params = new URLSearchParams(window.location.search);
 
+    function showMessage(text) {
+        const message = document.createElement('p');
+        message.textContent = text;
+        notice.append(message);
+        notice.hidden = false;
+    }
+
+    function saveDates(info) {
+        fetch(config.eventsUrl + '/' + info.event.id, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
+            body: JSON.stringify({ start: info.event.start.toISOString(), end: info.event.end.toISOString() }),
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error(response.status);
+                }
+                return response.json();
+            })
+            .then(function (result) {
+                result.warnings.forEach(function (warning) {
+                    showMessage(info.event.title + ': ' + warning);
+                });
+            })
+            .catch(function () {
+                info.revert();
+                showMessage('Could not reschedule: ' + info.event.title);
+            });
+    }
+
     function pad(number) {
         return String(number).padStart(2, '0');
     }
@@ -113,15 +157,20 @@
             info.jsEvent.preventDefault();
             showDetail(info.event);
         },
+        eventDrop: saveDates,
+        eventResize: saveDates,
         eventSources: [{
             id: 'events',
+            editable: true,
             url: config.eventsUrl,
             extraParams: { _wpnonce: config.nonce },
+            failure: function () {
+                warnFailed('events');
+            },
             eventDataTransform: function (event) {
-                const color = venueColors[event.extendedProps.venue_id];
-                if (color) {
-                    event.color = color;
-                }
+                const venue = venueStyles[event.extendedProps.venue_id] || venueStyles[0];
+                event.color = venue.color;
+                event.textColor = venue.textColor;
                 if (hidden.has('venue:' + event.extendedProps.venue_id)) {
                     event.display = 'none';
                 }
@@ -131,7 +180,16 @@
     });
 
     config.feeds.forEach(function (feed) {
-        feed.source = { id: feed.id, url: feed.url, format: 'ics', color: feed.color };
+        feed.source = {
+            id: feed.id,
+            url: feed.url,
+            format: 'ics',
+            color: feed.color,
+            textColor: feed.textColor,
+            failure: function () {
+                warnFailed(feed.name);
+            },
+        };
         if (!hidden.has('feed:' + feed.id)) {
             calendar.addEventSource(feed.source);
         }

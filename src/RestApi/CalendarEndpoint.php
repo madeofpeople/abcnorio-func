@@ -2,6 +2,8 @@
 
 namespace abcnorio\CustomFunc\RestApi;
 
+use abcnorio\CustomFunc\Events\VenueOverlapNotice;
+
 final class CalendarEndpoint
 {
     public const FEEDS_OPTION = 'abcnorio_external_feeds';
@@ -18,6 +20,12 @@ final class CalendarEndpoint
         register_rest_route('abcnorio/v1', '/calendar/events', [
             'methods'             => 'GET',
             'callback'            => [self::class, 'events'],
+            'permission_callback' => [self::class, 'canView'],
+        ]);
+
+        register_rest_route('abcnorio/v1', '/calendar/events/(?P<id>\d+)', [
+            'methods'             => 'POST',
+            'callback'            => [self::class, 'reschedule'],
             'permission_callback' => [self::class, 'canView'],
         ]);
 
@@ -84,6 +92,27 @@ final class CalendarEndpoint
         }
 
         return new \WP_REST_Response($items);
+    }
+
+    public static function reschedule(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $id = (int) $request->get_param('id');
+
+        if (get_post_type($id) !== 'event' || !current_user_can('edit_post', $id)) {
+            return new \WP_REST_Response(['message' => 'Not allowed.'], 403);
+        }
+
+        $tz    = new \DateTimeZone(get_field('event_timezone', $id) ?: (get_option('timezone_string') ?: 'UTC'));
+        $start = (new \DateTime((string) $request->get_param('start')))->setTimezone($tz);
+        $end   = (new \DateTime((string) $request->get_param('end')))->setTimezone($tz);
+
+        update_field('event_start_date', $start->format('Y-m-d H:i:s'), $id);
+        update_field('event_end_date', $end->format('Y-m-d H:i:s'), $id);
+
+        // update_field does not fire save_post, which SaveTrigger needs to queue the Astro rebuild.
+        wp_update_post(['ID' => $id]);
+
+        return new \WP_REST_Response(['warnings' => VenueOverlapNotice::warnings($id)]);
     }
 
     public static function feed(\WP_REST_Request $request): void

@@ -34,6 +34,7 @@ use abcnorio\CustomFunc\Settings\NewsletterSettings;
 use abcnorio\CustomFunc\Settings\SettingsPage;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
+use abcnorio\CustomFunc\Security\TermPolicy;
 use abcnorio\CustomFunc\Blocks\HeadingAnchorAttribute;
 use abcnorio\CustomFunc\Blocks\Patterns;
 use abcnorio\CustomFunc\Blocks\BlockRegistrar;
@@ -106,6 +107,7 @@ final class Plugin
         VenueOverlapNotice::registerHooks();
         CalendarEndpoint::registerHooks();
         CalendarPage::registerHooks();
+        TermPolicy::registerHooks();
         HeadingAnchorAttribute::registerHooks();
 
         add_filter( 'block_type_metadata', [self::class, 'disableGutenbergLayoutPanel']);

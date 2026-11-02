@@ -9,11 +9,23 @@ $editorCapabilities = [];
 $administratorExtraCapabilities = [];
 
 /**
- * @return array{editor: array<int, string>, admin: array<int, string>}
+ * @return array{editor: array<int, editstring>, admin: array<int, string>}
  */
 $buildPostTypeCapabilities = static function (string $singular, string $plural): array {
+    // Venues stay admin-managed; every other CPT is fully editor-managed.
+    $editorManagesOthers = $singular !== 'venue';
+
+    $others = [
+        "edit_others_{$plural}",
+        "delete_{$plural}",
+        "delete_private_{$plural}",
+        "delete_published_{$plural}",
+        "delete_others_{$plural}",
+        "edit_private_{$plural}",
+    ];
+
     return [
-        'editor' => [
+        'editor' => array_merge($editorManagesOthers ? $others : [], [
             "edit_{$singular}",
             "read_{$singular}",
             "delete_{$singular}",
@@ -22,16 +34,10 @@ $buildPostTypeCapabilities = static function (string $singular, string $plural):
             "read_private_{$plural}",
             "edit_published_{$plural}",
             "edit_posts",
-        ],
-        'admin' => [
-            "edit_others_{$plural}",
-            "delete_{$plural}",
-            "delete_private_{$plural}",
-            "delete_published_{$plural}",
-            "delete_others_{$plural}",
-            "edit_private_{$plural}",
+        ]),
+        'admin' => array_merge($editorManagesOthers ? [] : $others, [
             "manage_options",
-        ],
+        ]),
     ];
 };
 
@@ -54,6 +60,9 @@ foreach ($postTypeDefinitions as $definition) {
     $editorCapabilities = array_merge($editorCapabilities, $generated['editor']);
     $administratorExtraCapabilities = array_merge($administratorExtraCapabilities, $generated['admin']);
 }
+
+// Core category/post_tag term management; see Security/TermPolicy.php.
+$administratorExtraCapabilities[] = 'manage_core_terms';
 
 foreach ($taxonomyDefinitions as $definition) {
     $taxonomyCapabilities = $definition['capabilities'] ?? null;

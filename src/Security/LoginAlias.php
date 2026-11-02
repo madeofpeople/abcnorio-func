@@ -11,6 +11,12 @@ final class LoginAlias
     {
         add_action('init', [self::class, 'blockDirectAdminAccess'], 0);
         add_filter('login_url', [self::class, 'filterLoginUrl'], 10, 3);
+        add_filter('web357_login_as_user_login_redirect', [self::class, 'loginAsUserRedirect']);
+    }
+
+    public static function loginAsUserRedirect(): string
+    {
+        return admin_url();
     }
 
     public static function blockDirectAdminAccess(): void

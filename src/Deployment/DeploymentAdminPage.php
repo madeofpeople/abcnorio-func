@@ -180,6 +180,21 @@ final class DeploymentAdminPage
         <?php
     }
 
+    private static function devAvailable(): bool
+    {
+        $response = wp_remote_get(Deployment::orchestratorBaseUrl() . '/dev-tools/availability', [
+            'headers' => ['Authorization' => 'Bearer ' . Deployment::orchestratorSecret()],
+            'timeout' => 4,
+        ]);
+        if (is_wp_error($response)) {
+            return false;
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        return !empty($body['data']['available']);
+    }
+
     private static function stagingPluginVersion(): string
     {
         $url = trim((string) (getenv('STAGING_PLUGIN_VERSION_URL') ?: ''));
@@ -266,7 +281,7 @@ final class DeploymentAdminPage
         $stagingPromotionReady = $stagingPluginMatchesTested
             && preg_match('/^[a-f0-9]{40}$/i', $stagingSourceCommitSha) === 1
             && preg_match('/^[a-f0-9]{40}$/i', $stagingWebcomponentsSha) === 1;
-        $showDevTab = !empty($targets['dev']['previewUrl']);
+        $showDevTab = !empty($targets['dev']['previewUrl']) && self::devAvailable();
         $lowerTabs = $showDevTab ? ['dev', 'staging'] : ['staging'];
 
         if (!$showDevTab && $activeTab === 'dev') {

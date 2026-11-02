@@ -1,6 +1,7 @@
 import { registerPlugin } from '@wordpress/plugins';
-import { useEffect } from '@wordpress/element';
-import { subscribe, select, dispatch } from '@wordpress/data';
+import { useEffect, useRef, useState } from '@wordpress/element';
+import { addFilter } from '@wordpress/hooks';
+import { subscribe, select, dispatch, useSelect } from '@wordpress/data';
 import './contentListingBlock';
 import './eventListingBlock';
 import './collectiveListingBlock';
@@ -221,3 +222,24 @@ function SidebarScopeSingleSelectGuard() {
 }
 
 registerPlugin( 'abcnorio-sidebar-scope-single-select', { render: SidebarScopeSingleSelectGuard } );
+
+// Core keeps a rejected new term as a chip after the create fails. Remount the
+// selector on an error notice so it reloads the post's saved terms.
+addFilter( 'editor.PostTaxonomyType', 'abcnorio/remount-term-selector-on-error', ( TermSelector ) => ( props ) => {
+    const [ resetKey, setResetKey ] = useState( 0 );
+    const seenIds = useRef( new Set() );
+    const errorNotices = useSelect(
+        ( select ) => select( 'core/notices' ).getNotices().filter( ( notice ) => notice.status === 'error' ),
+        []
+    );
+
+    useEffect( () => {
+        const hasNewError = errorNotices.some( ( notice ) => ! seenIds.current.has( notice.id ) );
+        errorNotices.forEach( ( notice ) => seenIds.current.add( notice.id ) );
+        if ( hasNewError ) {
+            setResetKey( ( key ) => key + 1 );
+        }
+    }, [ errorNotices ] );
+
+    return <TermSelector key={ resetKey } { ...props } />;
+} );

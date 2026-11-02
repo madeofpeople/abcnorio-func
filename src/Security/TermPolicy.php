@@ -36,7 +36,7 @@ final class TermPolicy
         $taxonomyObject = get_taxonomy($taxonomy);
 
         if ($taxonomyObject && !current_user_can($taxonomyObject->cap->edit_terms)) {
-            return new \WP_Error('term_creation_restricted', __('Only administrators can add new terms.', 'abcnorio-func'));
+            return new \WP_Error('term_creation_restricted', __('Only administrators can add new terms.', 'abcnorio-func'), ['status' => 403]);
         }
 
         return $term;

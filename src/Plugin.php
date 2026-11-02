@@ -35,6 +35,7 @@ use abcnorio\CustomFunc\Settings\SettingsPage;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
 use abcnorio\CustomFunc\Security\TermPolicy;
+use abcnorio\CustomFunc\Security\UserEnumeration;
 use abcnorio\CustomFunc\Blocks\HeadingAnchorAttribute;
 use abcnorio\CustomFunc\Blocks\Patterns;
 use abcnorio\CustomFunc\Blocks\BlockRegistrar;
@@ -83,6 +84,8 @@ final class Plugin
         FormSubmissionEndpoint::registerHooks();
         /*  Login redirection */
         LoginAlias::registerHooks();
+        /*  Hides user slugs from logged-out REST and author archive requests */
+        UserEnumeration::registerHooks();
         /*  ACF Field Groups — custom post type fields */
         ACFFieldGroups::registerHooks();
         PublicFormGroups::registerHooks();

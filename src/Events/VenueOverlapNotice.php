@@ -113,7 +113,7 @@ final class VenueOverlapNotice
             return null;
         }
 
-        $zone = new \DateTimeZone((string) get_post_meta($eventId, 'event_timezone', true));
+        $zone = wp_timezone();
         $start = (new \DateTimeImmutable($startValue, $zone))->getTimestamp();
 
         $endValue = (string) get_post_meta($eventId, 'event_end_date', true);

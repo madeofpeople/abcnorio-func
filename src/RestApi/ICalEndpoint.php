@@ -48,7 +48,8 @@ final class ICalEndpoint
             'meta_query'     => $meta_query,
         ]);
 
-        $site_tz  = get_option('timezone_string') ?: 'UTC';
+        $tz       = wp_timezone();
+        $tz_id    = $tz->getName();
         $prod_id  = '-//ABC No Rio//Events//EN';
         $cal_name = get_bloginfo('name') . ' Events';
 
@@ -60,20 +61,18 @@ final class ICalEndpoint
         echo "VERSION:2.0\r\n";
         echo "PRODID:" . self::escapeText($prod_id) . "\r\n";
         echo "X-WR-CALNAME:" . self::escapeText($cal_name) . "\r\n";
-        echo "X-WR-TIMEZONE:" . self::escapeText($site_tz) . "\r\n";
+        echo "X-WR-TIMEZONE:" . self::escapeText($tz_id) . "\r\n";
         echo "CALSCALE:GREGORIAN\r\n";
         echo "METHOD:PUBLISH\r\n";
 
         foreach ($query->posts as $post) {
             $start_raw = get_field('event_start_date', $post->ID);
             $end_raw   = get_field('event_end_date', $post->ID);
-            $tz_id     = get_field('event_timezone', $post->ID) ?: $site_tz;
             $venueId   = (int) get_field('event_venue_id', $post->ID);
             $venue     = $venueId ? get_the_title($venueId) : '';
             $address   = $venueId ? (get_field('venue_details', $venueId) ?: '') : '';
             $tickets   = get_field('event_tickets_url', $post->ID);
 
-            $tz      = new \DateTimeZone($tz_id);
             $dtstart = \DateTime::createFromFormat('Y-m-d H:i:s', $start_raw, $tz);
             $dtstamp = new \DateTime($post->post_modified, new \DateTimeZone('UTC'));
 

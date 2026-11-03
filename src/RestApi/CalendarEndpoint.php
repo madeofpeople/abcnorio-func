@@ -64,13 +64,12 @@ final class CalendarEndpoint
             ],
         ]);
 
-        $site_tz = get_option('timezone_string') ?: 'UTC';
-        $items   = [];
+        $tz    = wp_timezone();
+        $items = [];
 
         foreach ($query->posts as $post) {
             $start_raw = get_field('event_start_date', $post->ID);
             $end_raw   = get_field('event_end_date', $post->ID);
-            $tz        = new \DateTimeZone(get_field('event_timezone', $post->ID) ?: $site_tz);
             $start     = \DateTime::createFromFormat('Y-m-d H:i:s', $start_raw, $tz);
             $end       = $end_raw
                 ? \DateTime::createFromFormat('Y-m-d H:i:s', $end_raw, $tz)
@@ -102,7 +101,7 @@ final class CalendarEndpoint
             return new \WP_REST_Response(['message' => 'Not allowed.'], 403);
         }
 
-        $tz    = new \DateTimeZone(get_field('event_timezone', $id) ?: (get_option('timezone_string') ?: 'UTC'));
+        $tz    = wp_timezone();
         $start = (new \DateTime((string) $request->get_param('start')))->setTimezone($tz);
         $end   = (new \DateTime((string) $request->get_param('end')))->setTimezone($tz);
 

@@ -53,19 +53,10 @@ final class ACFFieldGroups
             ],
             'fields' => [
                 [
-                    'key'           => 'field_event_timezone',
-                    'name'          => 'event_timezone',
-                    'label'         => __('Time Zone', 'abcnorio-func'),
-                    'type'          => 'select',
-                    'choices'       => self::timezones(),
-                    'default_value' => 'America/New_York',
-                    'allow_null'    => 0,
-                    'return_format' => 'value',
-                ],
-                [
                     'key'             => 'field_event_start',
                     'name'            => 'event_start_date',
                     'label'           => __('Start', 'abcnorio-func'),
+                    'instructions'    => sprintf(__('Times are in the site timezone (%s).', 'abcnorio-func'), wp_timezone_string()),
                     'type'            => 'date_time_picker',
                     'display_format'  => 'd/m/Y g:i a',
                     'return_format'   => 'Y-m-d H:i:s',
@@ -280,16 +271,6 @@ final class ACFFieldGroups
                 ],
             ],
         ]);
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function timezones(): array
-    {
-        $identifiers = \DateTimeZone::listIdentifiers();
-
-        return array_combine($identifiers, $identifiers);
     }
 
     /**

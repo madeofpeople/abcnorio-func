@@ -248,6 +248,15 @@ final class BlockImageAttributeEnricher
         $attributes = is_array($sourcedBlock['attributes'] ?? null) ? $sourcedBlock['attributes'] : [];
         $attributes = self::enrichImageCapableAttributes($blockName, $attributes, $postId);
 
+        // Block Data API drops the figure > a link sourced from saved markup.
+        if ($blockName === self::IMAGE_BLOCK && preg_match('/<figure[^>]*>\s*<a\s([^>]*)>/i', (string) ($parsedBlock['innerHTML'] ?? ''), $match)) {
+            foreach (['href' => 'href', 'target' => 'linkTarget', 'rel' => 'rel'] as $htmlName => $name) {
+                if (preg_match('/\b' . $htmlName . '="([^"]*)"/i', $match[1], $value)) {
+                    $attributes[$name] = html_entity_decode(trim($value[1]));
+                }
+            }
+        }
+
         $sourcedBlock['attributes'] = $attributes;
 
         return $sourcedBlock;

@@ -19,7 +19,6 @@ final class CalendarPage
         add_action('admin_menu', [self::class, 'addMenu']);
         add_action('admin_post_abcnorio_feed_add', [self::class, 'addFeed']);
         add_action('admin_post_abcnorio_feed_delete', [self::class, 'deleteFeed']);
-        add_action('wp_dashboard_setup', [self::class, 'addDashboardWidget']);
     }
 
     public static function addMenu(): void
@@ -34,26 +33,6 @@ final class CalendarPage
         );
 
         add_action('admin_print_scripts-' . $hook, [self::class, 'enqueueAssets']);
-    }
-
-    public static function addDashboardWidget(): void
-    {
-        if (!current_user_can('edit_events')) {
-            return;
-        }
-
-        wp_add_dashboard_widget('abcnorio_scheduling', __('Scheduling', 'abcnorio-func'), [self::class, 'renderDashboardWidget']);
-    }
-
-    public static function renderDashboardWidget(): void
-    {
-        ?>
-        <p>
-            <a class="button button-primary" href="<?php echo esc_url(admin_url('edit.php?post_type=event&page=' . self::SLUG)); ?>">
-                <?php esc_html_e('Open scheduling calendar', 'abcnorio-func'); ?>
-            </a>
-        </p>
-        <?php
     }
 
     // Pick black or white text, whichever has the higher WCAG contrast against the background (always >= 4.5:1 AA).

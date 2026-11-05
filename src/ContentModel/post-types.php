@@ -12,6 +12,7 @@ return [
             'custom-fields'
         ],
         'has_archive' => true,
+        'rewrite_slug' => 'events',
         'menu_icon' => 'dashicons-calendar-alt',
         'taxonomies' => [
             'event_type',

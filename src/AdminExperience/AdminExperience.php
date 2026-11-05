@@ -183,7 +183,7 @@ final class AdminExperience
         $port = isset($targetParts['port']) ? ':' . (string) $targetParts['port'] : '';
 
         $targetBasePath = isset($targetParts['path']) ? rtrim($targetParts['path'], '/') : '';
-        $sourcePath = self::normalizeFrontendPath($sourceParts['path'] ?? '/');
+        $sourcePath = $sourceParts['path'] ?? '/';
 
         if (! self::isFrontendPathSupported($sourcePath)) {
             return $url;
@@ -199,15 +199,6 @@ final class AdminExperience
         $fragment = isset($sourceParts['fragment']) ? '#' . $sourceParts['fragment'] : '';
 
         return $scheme . '://' . $host . $port . $finalPath . $query . $fragment;
-    }
-
-    private static function normalizeFrontendPath(string $path): string
-    {
-        if (str_starts_with($path, '/event/')) {
-            return '/events/' . ltrim(substr($path, strlen('/event/')), '/');
-        }
-
-        return $path;
     }
 
     private static function isFrontendPathSupported(string $path): bool

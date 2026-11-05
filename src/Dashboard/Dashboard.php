@@ -8,6 +8,7 @@ final class Dashboard
     {
         add_filter('default_hidden_meta_boxes', [self::class, 'setDefaultHiddenWidgets'], 10, 2);
         add_action('wp_dashboard_setup', [self::class, 'addRecentContentWidgets']);
+        NeedsAttention::registerHooks();
     }
 
     public static function addRecentContentWidgets(): void

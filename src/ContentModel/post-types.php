@@ -6,7 +6,7 @@ return [
         'singular_name' => 'Event',
         'supports' => [
             'title',
-            'editor',
+            'editor' => ['notes' => true],
             'excerpt',
             'thumbnail',
             'custom-fields'
@@ -91,7 +91,7 @@ return [
         'rewrite_slug' => 'articles',
         'supports' => [
             'title',
-            'editor',
+            'editor' => ['notes' => true],
             'excerpt',
             'thumbnail',
             'custom-fields'

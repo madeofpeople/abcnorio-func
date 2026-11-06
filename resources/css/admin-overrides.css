@@ -410,3 +410,8 @@ body.abcnorio-gallery-image-selected .block-editor-block-inspector .components-b
 	color: var(--color-page-bg);
 	padding: 0.5rem 1rem;
 }
+
+/* Gallery: Override Blaze overflow in editor context */
+.block-editor-iframe__body .wp-block-abcnorio-gallery .blaze-track-container {
+	overflow: visible;
+}

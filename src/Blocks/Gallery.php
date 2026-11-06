@@ -29,6 +29,7 @@ final class Gallery
     {
         unset($block);
 
+        ComponentIngestor::enqueueRuntimeStyles();
         ComponentIngestor::enqueue_component_deps('gallery');
 
         $navigationMode = strtolower(sanitize_key((string) ($attributes['navigationMode'] ?? 'item')));

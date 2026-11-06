@@ -529,7 +529,7 @@
                 });
         });
     });    // --- Dev tools ---
-    function wireDevToolButton(selector, { statusClass, startingText, startAction, startNonce, pollAction, pollNonce: pollNonceVal, startErrPrefix, failPrefix, onDone }) {
+    function wireDevToolButton(selector, { statusClass, startingText, startAction, startNonce, pollAction, pollNonce: pollNonceVal, pollTicket: usePollTicket = false, startErrPrefix, failPrefix, onDone }) {
         const btn = document.querySelector(selector);
         if (!btn) return;
         let devPollTimer = null;
@@ -559,9 +559,19 @@
                         return;
                     }
 
+                    const pollTicket = data.data && data.data.pollTicket ? data.data.pollTicket : '';
+                    if (usePollTicket && !pollTicket) {
+                        setButtonIdle(btn);
+                        if (statusEl) statusEl.textContent = 'Status check failed.';
+                        showAdminNotice(failPrefix + ': Missing status ticket.', 'error');
+                        return;
+                    }
+
                     stopDevPolling();
                     devPollTimer = setInterval(() => {
-                        fetch(ajaxUrl, { method: 'POST', body: new URLSearchParams({ action: pollAction, nonce: pollNonceVal }) })
+                        const pollBody = { action: pollAction, nonce: pollNonceVal };
+                        if (usePollTicket) pollBody.pollTicket = pollTicket;
+                        fetch(ajaxUrl, { method: 'POST', body: new URLSearchParams(pollBody) })
                             .then((r) => r.json())
                             .then((pollData) => {
                                 if (!pollData || !pollData.success) {
@@ -661,6 +671,7 @@
         startNonce: pullFromStagingNonce,
         pollAction: 'abcnorio_poll_pull_from_staging_status',
         pollNonce: pollPullFromStagingNonce,
+        pollTicket: true,
         startErrPrefix: 'Could not start push',
         failPrefix: 'Push failed',
     });

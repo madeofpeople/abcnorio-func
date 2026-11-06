@@ -21,6 +21,7 @@ final class AdminExperience
         add_action('acf/input/admin_enqueue_scripts', [self::class, 'enqueueAcfValidationScript']);
         add_action('admin_menu', [self::class, 'remove_default_post_type']);
         add_action('admin_bar_menu', [self::class, 'remove_default_post_type_menu_bar'], 999);
+        add_action('admin_bar_menu', [self::class, 'site_name_menu_bar_to_frontend'], 999);
         add_action('wp_dashboard_setup', [self::class, 'remove_draft_widget'], 999);
         add_filter('post_link', [self::class, 'rewriteLinkToFrontend'], 10, 2);
         add_filter('page_link', [self::class, 'rewriteLinkToFrontend'], 10, 2);
@@ -43,6 +44,14 @@ final class AdminExperience
     {
         $wp_admin_bar->remove_node( 'new-post' );
         $wp_admin_bar->remove_node( 'new-content' );
+    }
+
+    public static function site_name_menu_bar_to_frontend( \WP_Admin_Bar $wp_admin_bar ): void
+    {
+        $wp_admin_bar->add_node([
+            'id' => 'site-name',
+            'href' => self::rewriteToFrontend(home_url('/')),
+        ]);
     }
 
     public static function remove_default_post_type(): void

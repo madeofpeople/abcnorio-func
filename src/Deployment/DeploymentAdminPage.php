@@ -223,7 +223,7 @@ final class DeploymentAdminPage
 
         $view = self::deploymentTargets();
         $jsUrl = plugins_url('resources/js/deployment.js', ABCNORIO_CUSTOM_FUNC_FILE);
-        $scriptVersion = '1.0.7';
+        $scriptVersion = '1.0.8';
         wp_enqueue_script('abcnorio-deployment', $jsUrl, [], $scriptVersion, true);
         wp_localize_script('abcnorio-deployment', 'abcnorioDeployment', [
             'ajaxUrl'             => admin_url('admin-ajax.php'),

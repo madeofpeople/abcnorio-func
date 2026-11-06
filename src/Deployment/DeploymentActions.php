@@ -4,6 +4,8 @@ namespace abcnorio\CustomFunc\Deployment;
 
 final class DeploymentActions
 {
+    private const PULL_STAGING_POLL_TICKET_TTL = 3600;
+
     /**
      * @return array<string, mixed>
      */
@@ -470,15 +472,26 @@ final class DeploymentActions
             wp_send_json_error(['message' => $errorMessage], $code);
         }
 
+        if ($endpoint === '/dev-tools/pull-from-staging' && is_array($body)) {
+            $body['pollTicket'] = self::createPullStagingPollTicket();
+        }
+
         wp_send_json_success($body);
     }
 
     private static function devToolPoll(string $nonce, string $statusKey): void
     {
-        check_ajax_referer($nonce, 'nonce');
+        if ($statusKey === 'pullFromStagingToDev' && !is_user_logged_in()) {
+            $pollTicket = sanitize_text_field((string) ($_POST['pollTicket'] ?? ''));
+            if (!self::isValidPullStagingPollTicket($pollTicket)) {
+                wp_send_json_error(['message' => 'Invalid or expired status ticket'], 403);
+            }
+        } else {
+            check_ajax_referer($nonce, 'nonce');
 
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'Insufficient permissions'], 403);
+            if (!current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Insufficient permissions'], 403);
+            }
         }
 
         $response = wp_remote_get(Deployment::orchestratorBaseUrl() . '/dev-tools/status', [
@@ -499,6 +512,30 @@ final class DeploymentActions
         }
 
         wp_send_json_success($statusBody[$statusKey]);
+    }
+
+    private static function createPullStagingPollTicket(): string
+    {
+        $expires = time() + self::PULL_STAGING_POLL_TICKET_TTL;
+        $signature = hash_hmac('sha256', 'pullFromStagingToDev:' . $expires, wp_salt('auth'));
+
+        return $expires . '.' . $signature;
+    }
+
+    private static function isValidPullStagingPollTicket(string $ticket): bool
+    {
+        if (!preg_match('/^(\d+)\.([a-f0-9]{64})$/D', $ticket, $matches)) {
+            return false;
+        }
+
+        $expires = (int) $matches[1];
+        if ($expires < time() || $expires > time() + self::PULL_STAGING_POLL_TICKET_TTL) {
+            return false;
+        }
+
+        $expected = hash_hmac('sha256', 'pullFromStagingToDev:' . $expires, wp_salt('auth'));
+
+        return hash_equals($expected, $matches[2]);
     }
 
     /**

@@ -38,6 +38,7 @@ final class Deployment
         add_action('wp_ajax_abcnorio_poll_copy_media_status', [DeploymentActions::class, 'pollCopyMediaStatus']);
         add_action('wp_ajax_abcnorio_pull_from_staging', [DeploymentActions::class, 'pullFromStaging']);
         add_action('wp_ajax_abcnorio_poll_pull_from_staging_status', [DeploymentActions::class, 'pollPullFromStagingStatus']);
+        add_action('wp_ajax_nopriv_abcnorio_poll_pull_from_staging_status', [DeploymentActions::class, 'pollPullFromStagingStatus']);
         add_action('wp_ajax_abcnorio_copy_media_to_staging', [DeploymentActions::class, 'copyMediaToStaging']);
         add_action('wp_ajax_abcnorio_poll_copy_media_to_staging_status', [DeploymentActions::class, 'pollCopyMediaToStagingStatus']);
         add_action('wp_ajax_abcnorio_backup_media_dev', [DeploymentActions::class, 'backupMediaDev']);

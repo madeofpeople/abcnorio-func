@@ -2,6 +2,8 @@
 
 namespace abcnorio\CustomFunc\Blocks;
 
+use abcnorio\CustomFunc\Components\ComponentIngestor;
+
 final class Gallery
 {
     public static function registerHooks(): void

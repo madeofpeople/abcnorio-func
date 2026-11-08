@@ -27,6 +27,20 @@ const POST_TYPE_OPTIONS = [
     { label: 'Articles', value: 'article' },
 ];
 
+const SLIDE_BREAKPOINTS = [
+    { key: 'slidesPerPage', label: 'Base (under 450px)', defaultValue: 1 },
+    { key: 'slidesPerPageXs', label: 'XS (450px and up)', defaultValue: 2 },
+    { key: 'slidesPerPageSm', label: 'SM (720px and up)', defaultValue: 3 },
+    { key: 'slidesPerPageMd', label: 'MD (1024px and up)', defaultValue: 3 },
+    { key: 'slidesPerPageLg', label: 'LG (1250px and up)', defaultValue: 4 },
+];
+
+function normalizeSlidesPerPage(value, fallback) {
+    const parsed = Number.parseFloat(value);
+    const count = Number.isFinite(parsed) ? parsed : fallback;
+    return Math.max(1, Math.min(6, count));
+}
+
 function togglePostType(postTypes, value) {
     const current = Array.isArray(postTypes) ? postTypes : [];
     if (current.includes(value)) {
@@ -80,6 +94,12 @@ registerBlockType('abcnorio/content-listing', {
         const listingCount = Math.max(
             QUERY_BLOCK_MIN_ITEM_COUNT,
             Math.min(QUERY_BLOCK_MAX_ITEM_COUNT, Number.parseInt(attributes.listingCount, 10) || 5)
+        );
+        const slidesPerPage = Object.fromEntries(
+            SLIDE_BREAKPOINTS.map(({ key, defaultValue }) => [
+                key,
+                normalizeSlidesPerPage(attributes[key], defaultValue),
+            ])
         );
 
         const candidateRecords = useSelect(
@@ -156,6 +176,20 @@ registerBlockType('abcnorio/content-listing', {
                             options={VARIANT_OPTIONS}
                             onChange={(value) => setAttributes({ variant: value })}
                         />
+                        {attributes.variant === 'slider' && SLIDE_BREAKPOINTS.map(({ key, label }) => (
+                            <SelectControl
+                                key={key}
+                                label={`Items per page — ${label}`}
+                                value={String(slidesPerPage[key])}
+                                options={Array.from({ length: 6 }, (_, index) => {
+                                    const count = index + 1;
+                                    return { label: String(count), value: String(count) };
+                                })}
+                                onChange={(value) => setAttributes({
+                                    [key]: normalizeSlidesPerPage(value, slidesPerPage[key]),
+                                })}
+                            />
+                        ))}
                         <TextControl
                             label="Title"
                             value={attributes.title || ''}
@@ -180,18 +214,21 @@ registerBlockType('abcnorio/content-listing', {
                                 />
                             </>
                         )}
-                        {POST_TYPE_OPTIONS.map((option) => (
-                            <CheckboxControl
-                                key={option.value}
-                                label={option.label}
-                                checked={selectedPostTypes.includes(option.value)}
-                                onChange={() =>
-                                    setAttributes({
-                                        listingPostTypes: togglePostType(selectedPostTypes, option.value),
-                                    })
-                                }
-                            />
-                        ))}
+                        <fieldset style={{ display: 'flex', gap: '1rem', flexWrap: 'nowrap' }}>
+                            <legend>Show…</legend>
+                            {POST_TYPE_OPTIONS.map((option) => (
+                                <CheckboxControl
+                                    key={option.value}
+                                    label={option.label}
+                                    checked={selectedPostTypes.includes(option.value)}
+                                    onChange={() =>
+                                        setAttributes({
+                                            listingPostTypes: togglePostType(selectedPostTypes, option.value),
+                                        })
+                                    }
+                                />
+                            ))}
+                        </fieldset>
                         <TextControl
                             label="Tag Slugs (comma separated)"
                             value={(Array.isArray(attributes.listingTagFilter) ? attributes.listingTagFilter : []).join(', ')}

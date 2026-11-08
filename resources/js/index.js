@@ -9,6 +9,7 @@ import './announcementToutBlock';
 import './pressItemBlock';
 import './heroBlock';
 import './galleryBlock';
+import './groupLayout';
 import './sidebarToutBlock';
 import './newsletterSignupBlock';
 import './publicFormBlock';

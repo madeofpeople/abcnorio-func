@@ -220,12 +220,12 @@ registerBlockType('abcnorio/newsletter-signup', {
                     </Notice>
                 )}
 
-                <div className="abcnorio-newsletter-signup__preview">
-                    <h3 className="abcnorio-newsletter-signup__preview-title">
+                <div className="abcnorio-newsletter-signup abcnorio-newsletter-signup__preview">
+                    <h3 className="abcnorio-newsletter-signup__header">
                         {attributes.header || 'Newsletter Signup'}
                     </h3>
                     {attributes.subHeader && (
-                        <p className="abcnorio-newsletter-signup__preview-subtitle">{attributes.subHeader}</p>
+                        <p className="abcnorio-newsletter-signup__sub-header">{attributes.subHeader}</p>
                     )}
 
                     {previewFields.map((field) => {
@@ -234,11 +234,11 @@ registerBlockType('abcnorio/newsletter-signup', {
                         const required = Boolean(field?.required);
 
                         return (
-                            <div key={tag} className="abcnorio-newsletter-signup__preview-field">
-                                <label className="abcnorio-newsletter-signup__preview-label">
+                            <div key={tag} className="abcnorio-newsletter-signup__field">
+                                <span className="abcnorio-newsletter-signup__preview-label">
                                     {label}
                                     {required && attributes.showRequiredIndicator !== false ? ' *' : ''}
-                                </label>
+                                </span>
                                 <div className="abcnorio-newsletter-signup__preview-input" />
                             </div>
                         );

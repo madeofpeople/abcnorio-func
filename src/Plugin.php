@@ -32,6 +32,7 @@ use abcnorio\CustomFunc\Events\VenueOverlapNotice;
 use abcnorio\CustomFunc\Settings\BackupRetentionSettings;
 use abcnorio\CustomFunc\Settings\EventScheduleSettings;
 use abcnorio\CustomFunc\Settings\NewsletterSettings;
+use abcnorio\CustomFunc\Settings\PublicFormSettings;
 use abcnorio\CustomFunc\Settings\SettingsPage;
 use abcnorio\CustomFunc\Security\CapabilityManager;
 use abcnorio\CustomFunc\Security\LoginAlias;
@@ -107,6 +108,7 @@ final class Plugin
         MenuRegistrar::registerHooks();
         SocialLinks::registerHooks();
         NewsletterSettings::registerHooks();
+        PublicFormSettings::registerHooks();
         EventScheduleSettings::registerHooks();
         BackupRetentionSettings::registerHooks();
         SettingsPage::registerHooks();

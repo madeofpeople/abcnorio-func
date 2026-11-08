@@ -50,6 +50,26 @@
       "type": "string",
       "default": "grid"
     },
+    "slidesPerPage": {
+      "type": "number",
+      "default": 1
+    },
+    "slidesPerPageXs": {
+      "type": "number",
+      "default": 2
+    },
+    "slidesPerPageSm": {
+      "type": "number",
+      "default": 3
+    },
+    "slidesPerPageMd": {
+      "type": "number",
+      "default": 3
+    },
+    "slidesPerPageLg": {
+      "type": "number",
+      "default": 4
+    },
     "showCount": {
       "type": "boolean",
       "default": false

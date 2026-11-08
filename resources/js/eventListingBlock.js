@@ -2,6 +2,7 @@ import { registerBlockType } from '@wordpress/blocks';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { CheckboxControl, PanelBody, RangeControl, SelectControl, TextControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
+import { useMemo } from '@wordpress/element';
 import ServerSideRender from '@wordpress/server-side-render';
 import { QUERY_BLOCK_MAX_ITEM_COUNT, QUERY_BLOCK_MIN_ITEM_COUNT } from './blockHelpers';
 
@@ -22,30 +23,38 @@ const VARIANT_OPTIONS = [
     { label: 'Paged Grid', value: 'paged-grid' },
 ];
 
+const SLIDE_BREAKPOINTS = [
+    { key: 'slidesPerPage', label: 'Base (under 450px)', defaultValue: 1 },
+    { key: 'slidesPerPageXs', label: 'XS (450px and up)', defaultValue: 2 },
+    { key: 'slidesPerPageSm', label: 'SM (720px and up)', defaultValue: 3 },
+    { key: 'slidesPerPageMd', label: 'MD (1024px and up)', defaultValue: 4 },
+    { key: 'slidesPerPageLg', label: 'LG (1250px and up)', defaultValue: 3.5 },
+];
+
+function normalizeSlidesPerPage(value, fallback) {
+    const parsed = Number.parseFloat(value);
+    const count = Number.isFinite(parsed) ? parsed : fallback;
+    return Math.max(1, Math.min(6, count));
+}
+
 function useTaxonomyOptions( taxonomy ) {
-    return useSelect(
-        ( select ) => {
-            const coreStore = select( 'core' );
-            if ( ! coreStore ) return [ { label: 'All', value: '' } ];
-
-            const terms =
-                coreStore.getEntityRecords( 'taxonomy', taxonomy, {
-                    per_page: -1,
-                    hide_empty: false,
-                    orderby: 'name',
-                    order: 'asc',
-                } ) || [];
-
-            return [
-                { label: 'All', value: '' },
-                ...terms.map( ( term ) => ( {
-                    label: term?.name || '',
-                    value: term?.slug || '',
-                } ) ),
-            ];
-        },
+    const terms = useSelect(
+        ( select ) => select( 'core' ).getEntityRecords( 'taxonomy', taxonomy, {
+            per_page: -1,
+            hide_empty: false,
+            orderby: 'name',
+            order: 'asc',
+        } ),
         [ taxonomy ]
     );
+
+    return useMemo( () => [
+        { label: 'All', value: '' },
+        ...( terms || [] ).map( ( term ) => ( {
+            label: term?.name || '',
+            value: term?.slug || '',
+        } ) ),
+    ], [ terms ] );
 }
 
     registerBlockType( 'abcnorio/event-listing', {
@@ -64,6 +73,12 @@ function useTaxonomyOptions( taxonomy ) {
             QUERY_BLOCK_MIN_ITEM_COUNT,
             Math.min( QUERY_BLOCK_MAX_ITEM_COUNT, Number.parseInt( attributes.itemCount, 10 ) || 6 )
         );
+        const slidesPerPage = Object.fromEntries(
+            SLIDE_BREAKPOINTS.map(({ key, defaultValue }) => [
+                key,
+                normalizeSlidesPerPage(attributes[key], defaultValue),
+            ])
+        );
 
         return (
             <div { ...blockProps }>
@@ -75,6 +90,26 @@ function useTaxonomyOptions( taxonomy ) {
                             options={ VARIANT_OPTIONS }
                             onChange={ ( value ) => setAttributes( { variant: value } ) }
                         />
+                        {variant === 'slider' && SLIDE_BREAKPOINTS.map(({ key, label, defaultValue }) => (
+                            <SelectControl
+                                key={key}
+                                label={`Items per page — ${label}`}
+                                value={String(slidesPerPage[key])}
+                                options={[
+                                    ...Array.from({ length: 6 }, (_, index) => {
+                                        const count = index + 1;
+                                        return { label: String(count), value: String(count) };
+                                    }),
+                                    ...(defaultValue % 1 === 0 ? [] : [{
+                                        label: `${defaultValue} (peek)`,
+                                        value: String(defaultValue),
+                                    }]),
+                                ]}
+                                onChange={(value) => setAttributes({
+                                    [key]: normalizeSlidesPerPage(value, slidesPerPage[key]),
+                                })}
+                            />
+                        ))}
                         <TextControl
                             label="Title"
                             value={ attributes.title || '' }

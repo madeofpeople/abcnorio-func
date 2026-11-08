@@ -22,11 +22,11 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 
 ### Component dep enqueue
 
-- `manifest.components[name].deps` is a flat array of relative dist paths for transitive CSS/JS deps declared in fixture metadata.
+- `manifest.components[name].deps` is a flat array of relative dist paths explicitly declared in fixture metadata for WordPress, including direct assets when needed.
 - `ComponentIngestor::enqueue_component_deps(string $component_name)` infers asset type from file extension and enqueues under namespaced handles: `abcnorio-dep-{type}-{component}-{slug}-{hash}`.
 - Handle is deterministic per path; WordPress deduplicates re-enqueues automatically.
-- `ComponentIngestor::render()` calls `enqueue_component_deps` automatically.
-- Direct-query blocks (`EventListingQuery`, `ContentListingQuery`) call `enqueue_component_deps` explicitly for each component they render, including child teasers.
+- WordPress block renderers call `enqueue_component_deps` explicitly for each component they need, including child teasers. Declared JS dependencies load as ES modules.
+- Gallery does not enqueue its frontend script in WordPress; the editor provides its own controls.
 
 1. Install dependencies in `abcnorio-func`.
 2. Run `npm run build` in `abcnorio-func`.
@@ -36,6 +36,28 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 - Admin CSS is direct: `ComponentIngestor::enqueueRuntimeStyles()` plus `resources/css/admin-overrides.css`.
 - `resources/css/admin-overrides.css` stays manual and small.
 - No generated `resources/css/admin-styles.css` is part of the runtime contract.
+- Component appearance comes from ingested component CSS; keep only admin
+  controls and editor interaction exceptions in admin overrides where possible.
+- To check block output and dependency enqueues in a WordPress environment, run
+  `wp eval-file /path/to/abcnorio-func/tests/component-ingestion-test.php`.
+
+## Group Layout
+
+New Groups use normal flow; Row, Stack, and Grid keep their layout types.
+
+## Public form messages
+
+Settings > ABC No Rio > Public form messages controls these site-wide
+messages: success, delivery failure, sending, too-fast submission, validation
+summary, connection failure, missing form, unexpected error, required field,
+invalid selection, invalid email, and minimum length. Blank settings use the
+defaults. Field validation messages use `{field}` for the field label;
+minimum-length messages also use `{min_length}`. Delivery failures are logged
+without form values; check the configured mail transport's logs for details.
+
+Run `wp eval-file /path/to/abcnorio-func/tests/public-form-messages-test.php`
+in a WordPress environment with an email-configured form containing a required
+field. The test intercepts mail and does not send submissions.
 
 ## Content Listing Contract
 

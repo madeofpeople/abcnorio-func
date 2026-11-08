@@ -191,6 +191,8 @@ class ComponentIngestor {
         if ($asset_type === 'script') {
             if (!wp_script_is($handle, 'registered')) {
                 wp_register_script($handle, $asset_url, [], null, true);
+                wp_script_add_data($handle, 'abcnorio_module', true);
+                add_filter('script_loader_tag', [self::class, 'moduleScriptTag'], 10, 2);
             }
             return;
         }
@@ -198,6 +200,14 @@ class ComponentIngestor {
         if (!wp_style_is($handle, 'registered')) {
             wp_register_style($handle, $asset_url, [], null);
         }
+    }
+
+    public static function moduleScriptTag(string $tag, string $handle): string {
+        if (wp_scripts()->get_data($handle, 'abcnorio_module')) {
+            return str_replace('<script ', '<script type="module" ', $tag);
+        }
+
+        return $tag;
     }
 
     public static function register_component_deps(string $component_name): void {

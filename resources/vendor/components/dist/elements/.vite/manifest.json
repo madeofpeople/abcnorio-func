@@ -1,6 +1,6 @@
 {
-  "_breakpoints-DcHPuBNd.js": {
-    "file": "chunks/breakpoints-DcHPuBNd.js",
+  "_breakpoints-sWZgTKLh.js": {
+    "file": "chunks/breakpoints-sWZgTKLh.js",
     "name": "breakpoints"
   },
   "_drawer-BWAQbeb7.js": {
@@ -46,7 +46,7 @@
     "src": "src/components/content-listing/content-listing.js",
     "isEntry": true,
     "imports": [
-      "_breakpoints-DcHPuBNd.js"
+      "_breakpoints-sWZgTKLh.js"
     ]
   },
   "src/components/event-listing/event-listing.js": {
@@ -55,7 +55,7 @@
     "src": "src/components/event-listing/event-listing.js",
     "isEntry": true,
     "imports": [
-      "_breakpoints-DcHPuBNd.js"
+      "_breakpoints-sWZgTKLh.js"
     ]
   },
   "src/components/event-teaser/event-teaser.js": {
@@ -91,7 +91,7 @@
     "src": "src/components/wp-blocks/gallery/gallery.js",
     "isEntry": true,
     "imports": [
-      "_breakpoints-DcHPuBNd.js"
+      "_breakpoints-sWZgTKLh.js"
     ]
   },
   "src/components/wp-blocks/hero/hero.js": {

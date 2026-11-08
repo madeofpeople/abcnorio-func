@@ -3,6 +3,7 @@
 namespace abcnorio\CustomFunc\RestApi;
 
 use abcnorio\CustomFunc\ContentModel\PublicFormGroups;
+use abcnorio\CustomFunc\Settings\PublicFormSettings;
 
 final class FormSubmissionEndpoint
 {
@@ -58,7 +59,7 @@ final class FormSubmissionEndpoint
         if ($formSlug === '') {
             return new \WP_REST_Response([
                 'success' => false,
-                'message' => 'Form slug is required.',
+                'message' => PublicFormSettings::message('not_found_message'),
             ], 400);
         }
 
@@ -66,7 +67,7 @@ final class FormSubmissionEndpoint
         if ($form === null) {
             return new \WP_REST_Response([
                 'success' => false,
-                'message' => 'Form not found.',
+                'message' => PublicFormSettings::message('not_found_message'),
             ], 404);
         }
 
@@ -79,6 +80,10 @@ final class FormSubmissionEndpoint
                 'submit_label' => $form['submit_label'],
                 'success_message' => $form['success_message'],
                 'error_message' => $form['error_message'],
+                'sending_message' => $form['sending_message'],
+                'wait_message' => $form['wait_message'],
+                'connection_message' => $form['connection_message'],
+                'generic_error_message' => $form['generic_error_message'],
                 'civi_endpoint_url' => $form['civi_endpoint_url'] ?? '',
                 'to_email' => $form['to_email'] ?? '',
                 'fields' => $form['fields'],
@@ -99,14 +104,14 @@ final class FormSubmissionEndpoint
         if (self::isHoneypotTriggered($submitted)) {
             return new \WP_REST_Response([
                 'success' => true,
-                'message' => 'Thanks for reaching out! We\'ll be in touch.',
+                'message' => PublicFormSettings::successMessage(),
             ], 200);
         }
 
         if (! self::passesSubmitTimingThreshold($submitted)) {
             return new \WP_REST_Response([
                 'success' => false,
-                'message' => 'Please wait a moment and try again.',
+                'message' => PublicFormSettings::message('wait_message'),
             ], 429);
         }
 
@@ -116,7 +121,7 @@ final class FormSubmissionEndpoint
         if ($form === null) {
             return new \WP_REST_Response([
                 'success' => false,
-                'message' => 'Form not found.',
+                'message' => PublicFormSettings::message('not_found_message'),
             ], 404);
         }
 
@@ -124,17 +129,28 @@ final class FormSubmissionEndpoint
         if ($errors !== []) {
             return new \WP_REST_Response([
                 'success' => false,
-                'message' => 'Please check the form fields and try again.',
+                'message' => PublicFormSettings::message('validation_message'),
                 'errors' => $errors,
             ], 400);
         }
 
         $sanitized = self::sanitizeFields($submitted, $form['fields']);
+
+        // Civi delivery is not implemented; request format and response handling depend on its endpoint.
+        // if ($form['civi_endpoint_url'] !== '') {
+        //     $response = wp_remote_post($form['civi_endpoint_url'], [
+        //         'headers' => ['Content-Type' => 'application/json'],
+        //         'body' => wp_json_encode($sanitized),
+        //     ]);
+        //     Handle errors and the Civi response before returning a result.
+        // }
+
         $recipient = self::buildToEmail($form);
         if ($recipient === '') {
+            error_log('[abcnorio][forms] Delivery is not configured for form ' . $formSlug);
             return new \WP_REST_Response([
                 'success' => false,
-                'message' => 'Form delivery is not configured.',
+                'message' => $form['error_message'],
             ], 500);
         }
 
@@ -146,15 +162,16 @@ final class FormSubmissionEndpoint
         ]);
 
         if (! $sent) {
+            error_log('[abcnorio][forms] Mail delivery failed for form ' . $formSlug . '; check mail transport logs.');
             return new \WP_REST_Response([
                 'success' => false,
-                'message' => 'Submission could not be sent.',
+                'message' => $form['error_message'],
             ], 500);
         }
 
         return new \WP_REST_Response([
             'success' => true,
-            'message' => $form['success_message'] !== '' ? $form['success_message'] : 'Thanks for reaching out.',
+            'message' => $form['success_message'],
             'form' => [
                 'id' => $form['id'],
                 'slug' => $form['slug'],
@@ -242,8 +259,12 @@ final class FormSubmissionEndpoint
                 'id' => 0,
                 'slug' => $slug,
                 'title' => (string) ($group['title'] ?? $slug),
-                'success_message' => 'Thanks for reaching out! We\'ll be in touch.',
-                'error_message' => 'Something went wrong. Please try again.',
+                'success_message' => PublicFormSettings::successMessage(),
+                'error_message' => PublicFormSettings::errorMessage(),
+                'sending_message' => PublicFormSettings::message('sending_message'),
+                'wait_message' => PublicFormSettings::message('wait_message'),
+                'connection_message' => PublicFormSettings::message('connection_message'),
+                'generic_error_message' => PublicFormSettings::message('generic_error_message'),
                 'submit_label' => 'Send',
                 'civi_endpoint_url' => PublicFormGroups::civiEndpointUrl($groupId),
                 'to_email' => PublicFormGroups::toEmail($groupId),
@@ -324,8 +345,12 @@ final class FormSubmissionEndpoint
                 'slug' => $slug,
                 'title' => (string) ($group['title'] ?? $slug),
                 'submit_label' => 'Send',
-                'success_message' => 'Thanks for reaching out! We\'ll be in touch.',
-                'error_message' => 'Something went wrong. Please try again.',
+                'success_message' => PublicFormSettings::successMessage(),
+                'error_message' => PublicFormSettings::errorMessage(),
+                'sending_message' => PublicFormSettings::message('sending_message'),
+                'wait_message' => PublicFormSettings::message('wait_message'),
+                'connection_message' => PublicFormSettings::message('connection_message'),
+                'generic_error_message' => PublicFormSettings::message('generic_error_message'),
                 'civi_endpoint_url' => PublicFormGroups::civiEndpointUrl($groupId),
                 'to_email' => PublicFormGroups::toEmail($groupId),
                 'fields' => $fields,
@@ -426,7 +451,7 @@ final class FormSubmissionEndpoint
             $validation = (string) ($field['validation'] ?? '');
 
             if ($required && self::isEmptyValue($value)) {
-                $errors[$name] = sprintf('%s is required.', $field['label'] ?? $name);
+                $errors[$name] = strtr(PublicFormSettings::message('required_message'), ['{field}' => (string) ($field['label'] ?? $name)]);
                 continue;
             }
 
@@ -435,13 +460,13 @@ final class FormSubmissionEndpoint
                     if (! $required && ! empty($field['allow_null'])) {
                         continue;
                     }
-                    $errors[$name] = sprintf('%s must be a valid selection.', $field['label'] ?? $name);
+                    $errors[$name] = strtr(PublicFormSettings::message('selection_message'), ['{field}' => (string) ($field['label'] ?? $name)]);
                     continue;
                 }
 
                 $allowedValues = array_column($field['options'] ?? [], 'value');
                 if (! is_string($value) || ! in_array($value, $allowedValues, true)) {
-                    $errors[$name] = sprintf('%s must be a valid selection.', $field['label'] ?? $name);
+                    $errors[$name] = strtr(PublicFormSettings::message('selection_message'), ['{field}' => (string) ($field['label'] ?? $name)]);
                 }
                 continue;
             }
@@ -452,14 +477,17 @@ final class FormSubmissionEndpoint
 
             if ($type === 'email' || $validation === 'email') {
                 if (! is_email((string) $value)) {
-                    $errors[$name] = sprintf('%s must be a valid email address.', $field['label'] ?? $name);
+                    $errors[$name] = strtr(PublicFormSettings::message('email_message'), ['{field}' => (string) ($field['label'] ?? $name)]);
                 }
             }
 
             if ($validation === 'min_length' && is_string($value)) {
                 $minLength = isset($field['min_length']) ? (int) $field['min_length'] : 30;
                 if (mb_strlen($value) < $minLength) {
-                    $errors[$name] = sprintf('%s must be at least %d characters.', $field['label'] ?? $name, $minLength);
+                    $errors[$name] = strtr(PublicFormSettings::message('min_length_message'), [
+                        '{field}' => (string) ($field['label'] ?? $name),
+                        '{min_length}' => (string) $minLength,
+                    ]);
                 }
             }
         }

@@ -252,6 +252,18 @@ registerBlockType('abcnorio/gallery', {
             <div {...blockProps}>
                 <InspectorControls>
                     <PanelBody title="Gallery Controls" initialOpen={true}>
+                        <MediaUploadCheck>
+                            <MediaUpload
+                                onSelect={insertSelectedImages}
+                                allowedTypes={['image']}
+                                multiple
+                                render={({ open }) => (
+                                    <Button variant="secondary" onClick={open}>
+                                        Select Images
+                                    </Button>
+                                )}
+                            />
+                        </MediaUploadCheck>
                         <SelectControl
                             label="Variant"
                             value={variant}
@@ -272,18 +284,6 @@ registerBlockType('abcnorio/gallery', {
                                 onChange={(value) => setAttributes({ itemsPerPage: value ?? itemsPerPage })}
                             />
                         )}
-                        <MediaUploadCheck>
-                            <MediaUpload
-                                onSelect={insertSelectedImages}
-                                allowedTypes={['image']}
-                                multiple
-                                render={({ open }) => (
-                                    <Button variant="secondary" onClick={open}>
-                                        Select Images
-                                    </Button>
-                                )}
-                            />
-                        </MediaUploadCheck>
                     </PanelBody>
                 </InspectorControls>
 

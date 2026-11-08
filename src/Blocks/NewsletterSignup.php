@@ -2,6 +2,8 @@
 
 namespace abcnorio\CustomFunc\Blocks;
 
+use abcnorio\CustomFunc\Components\ComponentIngestor;
+
 final class NewsletterSignup
 {
     public static function registerHooks(): void
@@ -27,6 +29,8 @@ final class NewsletterSignup
     {
         unset($content, $block);
 
+        ComponentIngestor::enqueueRuntimeStyles();
+
         $header = sanitize_text_field((string) ($attributes['header'] ?? 'Newsletter Signup'));
         $subHeader = sanitize_text_field((string) ($attributes['subHeader'] ?? ''));
         $submitText = sanitize_text_field((string) ($attributes['submitText'] ?? 'Subscribe'));
@@ -40,13 +44,13 @@ final class NewsletterSignup
         }
 
         $html = '';
-        $html .= '<div class="wp-block-abcnorio-newsletter-signup">';
-        $html .= '<h3 class="abcnorio-newsletter-signup__preview-title">' . esc_html($header) . '</h3>';
+        $html .= '<div class="wp-block-abcnorio-newsletter-signup abcnorio-newsletter-signup">';
+        $html .= '<h3 class="abcnorio-newsletter-signup__header">' . esc_html($header) . '</h3>';
         if ($subHeader !== '') {
-            $html .= '<p class="abcnorio-newsletter-signup__preview-subtitle">' . esc_html($subHeader) . '</p>';
+            $html .= '<p class="abcnorio-newsletter-signup__sub-header">' . esc_html($subHeader) . '</p>';
         }
-        $html .= '<div class="abcnorio-newsletter-signup__preview-field">';
-        $html .= '<label class="abcnorio-newsletter-signup__preview-label">Email address *</label>';
+        $html .= '<div class="abcnorio-newsletter-signup__field">';
+        $html .= '<span class="abcnorio-newsletter-signup__preview-label">Email address *</span>';
         $html .= '<div class="abcnorio-newsletter-signup__preview-input"></div>';
         $html .= '</div>';
         $html .= '<button type="button" class="abcnorio-newsletter-signup__preview-button" disabled>' . esc_html($submitText) . '</button>';

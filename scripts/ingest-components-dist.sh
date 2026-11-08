@@ -25,7 +25,7 @@ rm -rf "${DST_DIR}"
 mkdir -p "$(dirname "${DST_DIR}")"
 cp -R "${SRC_DIR}" "${DST_DIR}"
 
-find "${DST_DIR}/styles" -type f -name '*.css' -exec perl -0pi -e 's{url\(/assets/}{url(../assets/}g' {} +
+find "${DST_DIR}/styles" -type f -name '*.css' -exec perl -pi -e 's|url\(/assets/|url(../assets/|g' {} +
 
 for relative_path in "${REQUIRED_FILES[@]}"; do
   if [[ ! -f "${DST_DIR}/${relative_path}" ]]; then

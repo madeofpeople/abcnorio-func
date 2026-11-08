@@ -27,7 +27,7 @@ final class HtmlFragmentSupport
         $previous = libxml_use_internal_errors(true);
 
         $loaded = $fragmentDom->loadHTML(
-            '<wrapper>' . $html . '</wrapper>',
+            '<meta charset="utf-8"><wrapper>' . $html . '</wrapper>',
             LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
         );
 

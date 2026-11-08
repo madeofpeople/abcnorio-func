@@ -48,6 +48,7 @@ final class EventListingQuery
         $showAllLinkLabel = sanitize_text_field((string) ($attributes['showAllLinkLabel'] ?? 'View all'));
         $eventType = sanitize_title((string) ($attributes['eventType'] ?? ''));
         $collectiveAssociation = sanitize_title((string) ($attributes['collectiveAssociation'] ?? ''));
+        $slidesPerPage = self::slidesPerPageAttributes($attributes);
 
         if ($isPaged) {
             $isSlider = false;
@@ -146,7 +147,7 @@ final class EventListingQuery
             );
         }
 
-        return self::renderListingFromDist($countLabel, $itemsHtml, $isSlider, $title, $showAllLink, $showAllLinkHref, $showAllLinkLabel);
+        return self::renderListingFromDist($countLabel, $itemsHtml, $isSlider, $title, $showAllLink, $showAllLinkHref, $showAllLinkLabel, $slidesPerPage);
     }
 
     private static function renderEventCard(\WP_Post $post): string
@@ -183,33 +184,35 @@ final class EventListingQuery
         ]);
     }
 
-    private static function renderListingFromDist(?string $countLabel, string $itemsHtml, bool $isSlider, string $title, bool $showAllLink, string $showAllLinkHref, string $showAllLinkLabel): string
+    private static function renderListingFromDist(?string $countLabel, string $itemsHtml, bool $isSlider, string $title, bool $showAllLink, string $showAllLinkHref, string $showAllLinkLabel, array $slidesPerPage): string
     {
-        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('event-listing/empty.html'));
+        $fixture = $isSlider ? 'event-listing/slider.html' : 'event-listing.html';
+        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml($fixture));
         $xpath = new \DOMXPath($dom);
 
         $listing = $dom->getElementsByTagName('event-listing')->item(0);
         if (! $listing instanceof \DOMElement) {
-            $dom = self::createFallbackListingDom();
-            $xpath = new \DOMXPath($dom);
-            $listing = $dom->getElementsByTagName('event-listing')->item(0);
-
-            if (! $listing instanceof \DOMElement) {
-                throw new \RuntimeException('Components System Error: event-listing fallback root missing.');
-            }
+            throw new \RuntimeException('Components System Error: event-listing fixture root missing.');
         }
 
         $listing->setAttribute(
             'class',
             trim($listing->getAttribute('class') . ' wp-block-abcnorio-event-listing')
         );
+        foreach ([
+            'all' => 'data-slides-per-page',
+            'xs' => 'data-slides-per-page-xs',
+            'sm' => 'data-slides-per-page-sm',
+            'md' => 'data-slides-per-page-md',
+            'lg' => 'data-slides-per-page-lg',
+        ] as $breakpoint => $attribute) {
+            $listing->setAttribute($attribute, $slidesPerPage[$breakpoint]);
+        }
 
         $titleNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " event-listing__title ")]')->item(0);
         if ($title !== '') {
             if (! $titleNode instanceof \DOMElement) {
-                $titleNode = $dom->createElement('h2');
-                $titleNode->setAttribute('class', 'event-listing__title');
-                $listing->insertBefore($titleNode, $listing->firstChild);
+                throw new \RuntimeException('Components System Error: event-listing fixture title missing.');
             }
 
             $titleNode->nodeValue = $title;
@@ -251,15 +254,11 @@ final class EventListingQuery
 
         if ($showAllLink) {
             if (! $actionsNode instanceof \DOMElement) {
-                $actionsNode = $dom->createElement('div');
-                $actionsNode->setAttribute('class', 'actions');
-                $listing->appendChild($actionsNode);
+                throw new \RuntimeException('Components System Error: event-listing fixture actions missing.');
             }
 
             if (! $showAllNode instanceof \DOMElement) {
-                $showAllNode = $dom->createElement('a');
-                $showAllNode->setAttribute('class', 'show-all button');
-                $actionsNode->appendChild($showAllNode);
+                throw new \RuntimeException('Components System Error: event-listing fixture show-all link missing.');
             }
 
             $resolvedHref = $showAllLinkHref !== '' ? $showAllLinkHref : '/events/';
@@ -270,50 +269,26 @@ final class EventListingQuery
             $showAllNode->parentNode?->removeChild($showAllNode);
         }
 
-        if ($isSlider) {
-            HtmlFragmentSupport::removeClass($listing, 'card-grid');
-            HtmlFragmentSupport::addClass($listing, 'blaze-slider');
-
-            HtmlFragmentSupport::addClass($teaserList, 'blaze-track');
-
-            $blazeContainer = $dom->createElement('div');
-            $blazeContainer->setAttribute('class', 'blaze-container');
-
-            $trackContainer = $dom->createElement('div');
-            $trackContainer->setAttribute('class', 'blaze-track-container');
-
-            $teaserParent = $teaserList->parentNode;
-            if ($teaserParent instanceof \DOMNode) {
-                $teaserParent->replaceChild($blazeContainer, $teaserList);
-            }
-
-            $blazeContainer->appendChild($trackContainer);
-            $trackContainer->appendChild($teaserList);
-
-            $prevButton = $dom->createElement('button', 'previous');
-            $prevButton->setAttribute('class', 'blaze-prev');
-            $blazeContainer->appendChild($prevButton);
-
-            $nextButton = $dom->createElement('button', 'next');
-            $nextButton->setAttribute('class', 'blaze-next');
-            $blazeContainer->appendChild($nextButton);
-
-            $pagination = $dom->createElement('div');
-            $pagination->setAttribute('class', 'blaze-pagination');
-            $blazeContainer->appendChild($pagination);
-        }
-
         return trim((string) $dom->saveHTML($listing));
     }
 
-    private static function createFallbackListingDom(): \DOMDocument
+    private static function slidesPerPageAttributes(array $attributes): array
     {
-        return HtmlFragmentSupport::loadHtmlFragment(
-            '<event-listing class="event-listing card-grid" data-component="abcnorio/event-listing">'
-            . '<section id="teaser-list" class="teaser-list" role="region" aria-label="Events" aria-busy="false"></section>'
-            . '<div class="actions"><a href="/events" class="show-all button">View all</a></div>'
-            . '</event-listing>'
-        );
+        $defaults = [
+            'all' => ['slidesPerPage', 1],
+            'xs' => ['slidesPerPageXs', 2],
+            'sm' => ['slidesPerPageSm', 3],
+            'md' => ['slidesPerPageMd', 4],
+            'lg' => ['slidesPerPageLg', 3.5],
+        ];
+        $slidesPerPage = [];
+
+        foreach ($defaults as $breakpoint => [$key, $default]) {
+            $value = is_numeric($attributes[$key] ?? null) ? (float) $attributes[$key] : $default;
+            $slidesPerPage[$breakpoint] = rtrim(rtrim(number_format(min(6, max(1, $value)), 1, '.', ''), '0'), '.');
+        }
+
+        return $slidesPerPage;
     }
 
     private static function renderEventCardFromDist(array $data): string

@@ -38,6 +38,8 @@ final class ContentListingQuery
         $count = max(1, min(50, (int) ($attributes['listingCount'] ?? 5)));
         $order = strtolower(sanitize_key((string) ($attributes['order'] ?? 'desc'))) === 'asc' ? 'asc' : 'desc';
         $tags = self::normalizeTags($attributes['listingTagFilter'] ?? []);
+        $isSlider = strtolower(sanitize_key((string) ($attributes['variant'] ?? 'grid'))) === 'slider';
+        $slidesPerPage = self::slidesPerPageAttributes($attributes);
 
         $request = new \WP_REST_Request('GET', '/abcnorio/v1/content-listing');
         $request->set_param('post_types', $postTypes);
@@ -73,10 +75,10 @@ final class ContentListingQuery
             }
         }
 
-        return self::renderListingFromDist(count($items), $itemsHtml);
+        return self::renderListingFromDist(count($items), $itemsHtml, $isSlider, $slidesPerPage);
     }
 
-    private static function renderListingFromDist(int $totalItems, string $itemsHtml): string
+    private static function renderListingFromDist(int $totalItems, string $itemsHtml, bool $isSlider, array $slidesPerPage): string
     {
         $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('content-listing.html'));
         $xpath = new \DOMXPath($dom);
@@ -87,6 +89,15 @@ final class ContentListingQuery
         }
 
         HtmlFragmentSupport::addClass($listing, 'wp-block-abcnorio-content-listing');
+        foreach ([
+            'all' => 'data-slides-per-page',
+            'xs' => 'data-slides-per-page-xs',
+            'sm' => 'data-slides-per-page-sm',
+            'md' => 'data-slides-per-page-md',
+            'lg' => 'data-slides-per-page-lg',
+        ] as $breakpoint => $attribute) {
+            $listing->setAttribute($attribute, $slidesPerPage[$breakpoint]);
+        }
 
         $countNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__count ")]')->item(0);
         if (! $countNode instanceof \DOMElement) {
@@ -110,6 +121,36 @@ final class ContentListingQuery
             throw new \RuntimeException('Components System Error: content-listing items node missing.');
         }
 
+        if ($isSlider) {
+            HtmlFragmentSupport::removeClass($listing, 'card-grid');
+            HtmlFragmentSupport::addClass($listing, 'blaze-slider');
+            HtmlFragmentSupport::addClass($itemsNode, 'blaze-track');
+
+            $trackContainer = $dom->createElement('div');
+            $trackContainer->setAttribute('class', 'blaze-track-container');
+            $container = $dom->createElement('div');
+            $container->setAttribute('class', 'blaze-container');
+            $itemsNode->parentNode?->replaceChild($container, $itemsNode);
+            $container->appendChild($trackContainer);
+            $trackContainer->appendChild($itemsNode);
+
+            foreach (['blaze-prev' => 'Previous', 'blaze-next' => 'Next'] as $class => $label) {
+                $button = $dom->createElement('button');
+                $button->setAttribute('type', 'button');
+                $button->setAttribute('class', $class);
+                $button->appendChild($dom->createElement('span', $label));
+                $container->appendChild($button);
+            }
+
+            $actions = $dom->createElement('div');
+            $actions->setAttribute('class', 'actions');
+            $dots = $dom->createElement('nav');
+            $dots->setAttribute('class', 'blaze-slide-dots');
+            $dots->setAttribute('aria-label', 'Slide navigation');
+            $actions->appendChild($dots);
+            $listing->appendChild($actions);
+        }
+
         while ($itemsNode->firstChild) {
             $itemsNode->removeChild($itemsNode->firstChild);
         }
@@ -117,6 +158,25 @@ final class ContentListingQuery
         HtmlFragmentSupport::appendHtmlFragment($dom, $itemsNode, $itemsHtml, 'content listing');
 
         return trim((string) $dom->saveHTML($listing));
+    }
+
+    private static function slidesPerPageAttributes(array $attributes): array
+    {
+        $defaults = [
+            'all' => ['slidesPerPage', 1],
+            'xs' => ['slidesPerPageXs', 2],
+            'sm' => ['slidesPerPageSm', 3],
+            'md' => ['slidesPerPageMd', 3],
+            'lg' => ['slidesPerPageLg', 4],
+        ];
+        $slidesPerPage = [];
+
+        foreach ($defaults as $breakpoint => [$key, $default]) {
+            $value = is_numeric($attributes[$key] ?? null) ? (float) $attributes[$key] : $default;
+            $slidesPerPage[$breakpoint] = rtrim(rtrim(number_format(min(6, max(1, $value)), 1, '.', ''), '0'), '.');
+        }
+
+        return $slidesPerPage;
     }
 
     private static function renderEventItemFromDist(array $item): string
@@ -185,8 +245,9 @@ final class ContentListingQuery
         $root = $dom->getElementsByTagName('article-teaser')->item(0);
         $link = $dom->getElementsByTagName('a')->item(0);
         $title = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " article-teaser__title ")]')->item(0);
+        $excerpt = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " article-teaser__excerpt ")]')->item(0);
 
-        if (! $root instanceof \DOMElement || ! $link instanceof \DOMElement || ! $title instanceof \DOMElement) {
+        if (! $root instanceof \DOMElement || ! $link instanceof \DOMElement || ! $title instanceof \DOMElement || ! $excerpt instanceof \DOMElement) {
             throw new \RuntimeException('Components System Error: article-teaser fixture structure missing required nodes.');
         }
 
@@ -195,6 +256,16 @@ final class ContentListingQuery
 
         $link->setAttribute('href', esc_url(self::resolveItemHref($item, '/articles')));
         $title->nodeValue = wp_strip_all_tags((string) ($item['title']['rendered'] ?? 'Untitled article'));
+
+        while ($excerpt->firstChild) {
+            $excerpt->removeChild($excerpt->firstChild);
+        }
+        HtmlFragmentSupport::appendHtmlFragment(
+            $dom,
+            $excerpt,
+            wp_kses_post((string) ($item['excerpt']['rendered'] ?? '')),
+            'article teaser excerpt'
+        );
 
         $rawDate = (string) ($item['acf']['item_date'] ?? $item['date'] ?? '');
         $time = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " article-teaser__date ")]')->item(0);

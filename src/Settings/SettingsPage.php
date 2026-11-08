@@ -34,6 +34,7 @@ final class SettingsPage
             EventScheduleSettings::renderSection();
             BackupRetentionSettings::renderSection();
             NewsletterSettings::renderSection();
+            PublicFormSettings::renderSection();
             SocialLinks::renderSection();
             ?>
         </div>

@@ -20,6 +20,19 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 - Rebuild an old release with `just plugin-artifact vX.Y.Z`; the script exports that tag and `npm ci` uses the exact dependency commit recorded in its `package-lock.json`.
 - Keep the tagged `package-lock.json` as the dependency source of truth; `npm install` can refresh the `#main` Git reference and should not be used for historical artifact rebuilds.
 
+When plugin PHP starts using a new or changed fixture, first build and push the
+matching webcomponents revision. Update the plugin's pin with
+`npm update abcnorio-webcomponents --package-lock-only --ignore-scripts`, review
+the resolved commit in `package-lock.json`, then commit and push the lockfile
+before running the release recipe. `just wc-pin` updates the Astro lockfile,
+not this one. `just plugin-dev-assets` uses the local component build for dev
+and does not update the release pin.
+
+The release build checks the manifest and selected assets, not every fixture
+referenced by PHP. Check newly required fixtures in the release artifact or
+installed staging plugin before deploying the frontend. A missing fixture
+throws a runtime error and can cause WordPress REST requests to return 500.
+
 ### Component dep enqueue
 
 - `manifest.components[name].deps` is a flat array of relative dist paths explicitly declared in fixture metadata for WordPress, including direct assets when needed.

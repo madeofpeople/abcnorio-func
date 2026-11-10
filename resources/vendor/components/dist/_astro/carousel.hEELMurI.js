@@ -1,0 +1,1 @@
+function e(e){Object.keys(e).forEach(t=>{if(e[t]&&typeof e[t]==`object`){let n=e[t].slidesToShow;n!==Math.floor(n)&&(e[t].slidesToScroll=Math.floor(n))}})}export{e as t};

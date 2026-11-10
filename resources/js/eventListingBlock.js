@@ -31,10 +31,26 @@ const SLIDE_BREAKPOINTS = [
     { key: 'slidesPerPageLg', label: 'LG (1250px and up)', defaultValue: 3.5 },
 ];
 
+const SLIDE_OPTIONS = [
+    { label: '1.333', value: '1.333' },
+    { label: '2', value: '2' },
+    { label: '2.333', value: '2.333' },
+    { label: '3', value: '3' },
+    { label: '3.333', value: '3.333' },
+    { label: '4', value: '4' },
+    { label: '4.333', value: '4.333' },
+    { label: '5', value: '5' },
+    { label: '6', value: '6' },
+];
+
 function normalizeSlidesPerPage(value, fallback) {
     const parsed = Number.parseFloat(value);
     const count = Number.isFinite(parsed) ? parsed : fallback;
     return Math.max(1, Math.min(6, count));
+}
+
+function getSlideOptions() {
+    return SLIDE_OPTIONS;
 }
 
 function useTaxonomyOptions( taxonomy ) {
@@ -95,16 +111,7 @@ function useTaxonomyOptions( taxonomy ) {
                                 key={key}
                                 label={`Items per page — ${label}`}
                                 value={String(slidesPerPage[key])}
-                                options={[
-                                    ...Array.from({ length: 6 }, (_, index) => {
-                                        const count = index + 1;
-                                        return { label: String(count), value: String(count) };
-                                    }),
-                                    ...(defaultValue % 1 === 0 ? [] : [{
-                                        label: `${defaultValue} (peek)`,
-                                        value: String(defaultValue),
-                                    }]),
-                                ]}
+                                options={getSlideOptions()}
                                 onChange={(value) => setAttributes({
                                     [key]: normalizeSlidesPerPage(value, slidesPerPage[key]),
                                 })}

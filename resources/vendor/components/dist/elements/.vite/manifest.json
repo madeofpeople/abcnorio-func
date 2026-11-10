@@ -3,6 +3,10 @@
     "file": "chunks/breakpoints-sWZgTKLh.js",
     "name": "breakpoints"
   },
+  "_carousel-hEELMurI.js": {
+    "file": "chunks/carousel-hEELMurI.js",
+    "name": "carousel"
+  },
   "_drawer-BWAQbeb7.js": {
     "file": "chunks/drawer-BWAQbeb7.js",
     "name": "drawer"
@@ -46,7 +50,8 @@
     "src": "src/components/content-listing/content-listing.js",
     "isEntry": true,
     "imports": [
-      "_breakpoints-sWZgTKLh.js"
+      "_breakpoints-sWZgTKLh.js",
+      "_carousel-hEELMurI.js"
     ]
   },
   "src/components/event-listing/event-listing.js": {
@@ -55,7 +60,8 @@
     "src": "src/components/event-listing/event-listing.js",
     "isEntry": true,
     "imports": [
-      "_breakpoints-sWZgTKLh.js"
+      "_breakpoints-sWZgTKLh.js",
+      "_carousel-hEELMurI.js"
     ]
   },
   "src/components/event-teaser/event-teaser.js": {

@@ -41,6 +41,22 @@ function normalizeSlidesPerPage(value, fallback) {
     return Math.max(1, Math.min(6, count));
 }
 
+const SLIDE_OPTIONS = [
+    { label: '1.333', value: '1.333' },
+    { label: '2', value: '2' },
+    { label: '2.333', value: '2.333' },
+    { label: '3', value: '3' },
+    { label: '3.333', value: '3.333' },
+    { label: '4', value: '4' },
+    { label: '4.333', value: '4.333' },
+    { label: '5', value: '5' },
+    { label: '6', value: '6' },
+];
+
+function getSlideOptions() {
+    return SLIDE_OPTIONS;
+}
+
 function togglePostType(postTypes, value) {
     const current = Array.isArray(postTypes) ? postTypes : [];
     if (current.includes(value)) {
@@ -176,15 +192,12 @@ registerBlockType('abcnorio/content-listing', {
                             options={VARIANT_OPTIONS}
                             onChange={(value) => setAttributes({ variant: value })}
                         />
-                        {attributes.variant === 'slider' && SLIDE_BREAKPOINTS.map(({ key, label }) => (
+                        {attributes.variant === 'slider' && SLIDE_BREAKPOINTS.map(({ key, label, defaultValue }) => (
                             <SelectControl
                                 key={key}
                                 label={`Items per page — ${label}`}
                                 value={String(slidesPerPage[key])}
-                                options={Array.from({ length: 6 }, (_, index) => {
-                                    const count = index + 1;
-                                    return { label: String(count), value: String(count) };
-                                })}
+                                options={getSlideOptions()}
                                 onChange={(value) => setAttributes({
                                     [key]: normalizeSlidesPerPage(value, slidesPerPage[key]),
                                 })}

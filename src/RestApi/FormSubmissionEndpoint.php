@@ -93,13 +93,30 @@ final class FormSubmissionEndpoint
 
     public static function serveSubmit(\WP_REST_Request $request)
     {
-        $payload = $request->get_json_params();
-        if (! is_array($payload)) {
-            $payload = [];
-        }
+        $contentType = $request->get_header('Content-Type') ?? '';
+        $isFormEncoded = strpos($contentType, 'application/x-www-form-urlencoded') !== false;
 
-        $formSlug = isset($payload['form_slug']) ? sanitize_key((string) $payload['form_slug']) : '';
-        $submitted = isset($payload['fields']) && is_array($payload['fields']) ? $payload['fields'] : [];
+        if ($isFormEncoded) {
+            $formSlug = sanitize_key((string) $request->get_param('form_slug'));
+            $submitted = [];
+            $params = $request->get_params();
+            foreach ($params as $key => $value) {
+                if (! in_array($key, ['rest_route', '_wpnonce', 'form_slug'], true)) {
+                    $submitted[$key] = $value;
+                }
+            }
+            $payload = [
+                'form_slug' => $formSlug,
+                'fields' => $submitted,
+            ];
+        } else {
+            $payload = $request->get_json_params();
+            if (! is_array($payload)) {
+                $payload = [];
+            }
+            $formSlug = isset($payload['form_slug']) ? sanitize_key((string) $payload['form_slug']) : '';
+            $submitted = isset($payload['fields']) && is_array($payload['fields']) ? $payload['fields'] : [];
+        }
 
         if (self::isHoneypotTriggered($submitted)) {
             return new \WP_REST_Response([
@@ -127,6 +144,14 @@ final class FormSubmissionEndpoint
 
         $errors = self::validateFields($submitted, $form['fields']);
         if ($errors !== []) {
+            if ($isFormEncoded) {
+                status_header(400);
+                wp_send_json([
+                    'success' => false,
+                    'message' => PublicFormSettings::message('validation_message'),
+                    'errors' => $errors,
+                ], 400);
+            }
             return new \WP_REST_Response([
                 'success' => false,
                 'message' => PublicFormSettings::message('validation_message'),
@@ -163,10 +188,28 @@ final class FormSubmissionEndpoint
 
         if (! $sent) {
             error_log('[abcnorio][forms] Mail delivery failed for form ' . $formSlug . '; check mail transport logs.');
+            if ($isFormEncoded) {
+                wp_send_json([
+                    'success' => false,
+                    'message' => $form['error_message'],
+                ], 500);
+            }
             return new \WP_REST_Response([
                 'success' => false,
                 'message' => $form['error_message'],
             ], 500);
+        }
+
+        if ($isFormEncoded) {
+            wp_send_json([
+                'success' => true,
+                'message' => $form['success_message'],
+                'form' => [
+                    'id' => $form['id'],
+                    'slug' => $form['slug'],
+                    'title' => $form['title'],
+                ],
+            ], 200);
         }
 
         return new \WP_REST_Response([

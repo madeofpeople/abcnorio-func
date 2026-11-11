@@ -15,7 +15,7 @@ import { addFilter } from '@wordpress/hooks';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import imageSizes from '../../src/Blocks/gallery/image-sizes.json';
 
-const ALLOWED_BLOCKS = ['core/image'];x``
+const ALLOWED_BLOCKS = ['core/image'];
 const MIN_ITEMS_PER_PAGE = 8;
 const MAX_ITEMS_PER_PAGE = 24;
 

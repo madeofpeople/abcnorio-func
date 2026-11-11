@@ -43,3 +43,4 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 - Allowed `post_types[]` are strict and backend-limited to `event` and `article`.
 - `count` is backend-capped at `50`.
 - `tags[]` maps to `event_tag` for events and `post_tag` for articles (when taxonomy exists).
+- Event Listing and Content Listing offer `grid-3` and `grid-4` variants. Their grid layouts currently use the existing responsive grid; red and blue borders mark the respective placeholders until their layouts are defined.

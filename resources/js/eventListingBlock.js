@@ -19,6 +19,8 @@ const ORDER_OPTIONS = [
 
 const VARIANT_OPTIONS = [
     { label: 'Grid', value: 'grid' },
+    { label: '3 by Grid', value: 'grid-3' },
+    { label: '4 by Grid', value: 'grid-4' },
     { label: 'Slider', value: 'slider' },
     { label: 'Paged Grid', value: 'paged-grid' },
 ];
@@ -79,7 +81,7 @@ function useTaxonomyOptions( taxonomy ) {
         const eventTypeOptions = useTaxonomyOptions( 'event_type' );
         const collectiveOptions = useTaxonomyOptions( 'collective_association' );
         const variantValue = String( attributes.variant || 'grid' ).toLowerCase();
-        const variant = variantValue === 'slider' || variantValue === 'paged-grid' ? variantValue : 'grid';
+        const variant = VARIANT_OPTIONS.some((option) => option.value === variantValue) ? variantValue : 'grid';
         const isPaged = variant === 'paged-grid';
         const showAllLink = Boolean( attributes.showAllLink ?? true );
         const effectiveShowAllLink = isPaged ? false : showAllLink;

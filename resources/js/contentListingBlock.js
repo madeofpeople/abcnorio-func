@@ -19,6 +19,8 @@ const ORDER_OPTIONS = [
 
 const VARIANT_OPTIONS = [
     { label: 'Grid', value: 'grid' },
+    { label: '3 by Grid', value: 'grid-3' },
+    { label: '4 by Grid', value: 'grid-4' },
     { label: 'Slider', value: 'slider' },
 ];
 
@@ -188,7 +190,7 @@ registerBlockType('abcnorio/content-listing', {
                     <PanelBody title="Content Listing Options" initialOpen={true}>
                         <SelectControl
                             label="Variant"
-                            value={attributes.variant === 'slider' ? 'slider' : 'grid'}
+                            value={VARIANT_OPTIONS.some((option) => option.value === attributes.variant) ? attributes.variant : 'grid'}
                             options={VARIANT_OPTIONS}
                             onChange={(value) => setAttributes({ variant: value })}
                         />

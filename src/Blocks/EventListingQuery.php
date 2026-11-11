@@ -147,7 +147,7 @@ final class EventListingQuery
             );
         }
 
-        return self::renderListingFromDist($countLabel, $itemsHtml, $isSlider, $title, $showAllLink, $showAllLinkHref, $showAllLinkLabel, $slidesPerPage);
+        return self::renderListingFromDist($countLabel, $itemsHtml, $isSlider, $title, $showAllLink, $showAllLinkHref, $showAllLinkLabel, $slidesPerPage, $variant);
     }
 
     private static function renderEventCard(\WP_Post $post): string
@@ -184,7 +184,7 @@ final class EventListingQuery
         ]);
     }
 
-    private static function renderListingFromDist(?string $countLabel, string $itemsHtml, bool $isSlider, string $title, bool $showAllLink, string $showAllLinkHref, string $showAllLinkLabel, array $slidesPerPage): string
+    private static function renderListingFromDist(?string $countLabel, string $itemsHtml, bool $isSlider, string $title, bool $showAllLink, string $showAllLinkHref, string $showAllLinkLabel, array $slidesPerPage, string $variant): string
     {
         $fixture = $isSlider ? 'event-listing/slider.html' : 'event-listing.html';
         $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml($fixture));
@@ -199,6 +199,9 @@ final class EventListingQuery
             'class',
             trim($listing->getAttribute('class') . ' wp-block-abcnorio-event-listing')
         );
+        if (in_array($variant, ['grid-3', 'grid-4'], true)) {
+            HtmlFragmentSupport::addClass($listing, $variant);
+        }
         foreach ([
             'all' => 'data-slides-per-page',
             'xs' => 'data-slides-per-page-xs',

@@ -34,7 +34,11 @@ $manifest = ComponentIngestor::load();
 if (! in_array('elements/event-listing.js', $manifest['components']['event-listing']['deps'], true)) {
     throw new RuntimeException('Event Listing module missing from declared dependencies.');
 }
+set_current_screen('post');
 $iframeAssets = _wp_get_iframed_editor_assets();
+if (! str_contains($iframeAssets['styles'], '/styles/component-fixtures.css?ver=')) {
+    throw new RuntimeException('Component fixture styles missing from editor iframe assets.');
+}
 if (! preg_match('/<script\b(?=[^>]*\btype=["\']module["\'])(?=[^>]*\bsrc=["\'][^"\']*\/elements\/event-listing\.js(?:\?[^"\']*)?["\'])[^>]*>/', $iframeAssets['scripts'])) {
     throw new RuntimeException('Event Listing module missing from editor iframe assets.');
 }
@@ -51,6 +55,8 @@ foreach ($cases as $block => [$attributes, $components]) {
             wp_dequeue_script($handle);
         }
     }
+
+    do_action('enqueue_block_assets');
 
     $html = render_block([
         'blockName' => 'abcnorio/' . $block,
@@ -136,6 +142,26 @@ foreach ($cases as $block => [$attributes, $components]) {
     }
     echo "ok {$block}\n";
 }
+
+$masonryHtml = render_block([
+    'blockName' => 'abcnorio/gallery',
+    'attrs' => ['variant' => 'masonry'],
+    'innerBlocks' => [],
+    'innerHTML' => '',
+    'innerContent' => [],
+]);
+$masonry = HtmlFragmentSupport::loadHtmlFragment($masonryHtml);
+$masonryRoot = $masonry->getElementsByTagName('gallery-listing')->item(0);
+$masonryXpath = new DOMXPath($masonry);
+if (! $masonryRoot instanceof DOMElement
+    || ! str_contains($masonryRoot->getAttribute('class'), 'gallery--masonry')
+    || str_contains($masonryRoot->getAttribute('class'), 'blaze-slider')
+    || $masonryXpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " blaze-track ")]')->length !== 0
+    || $masonryXpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " blaze-prev ") or contains(concat(" ", normalize-space(@class), " "), " gallery-pagination ")]')->length !== 0
+) {
+    throw new RuntimeException('Masonry gallery must render without slider or pagination markup.');
+}
+echo "ok masonry gallery\n";
 
 $renderArticle = new ReflectionMethod(ContentListingQuery::class, 'renderArticleItemFromDist');
 foreach ([

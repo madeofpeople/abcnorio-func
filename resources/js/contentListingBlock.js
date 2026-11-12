@@ -19,8 +19,6 @@ const ORDER_OPTIONS = [
 
 const VARIANT_OPTIONS = [
     { label: 'Grid', value: 'grid' },
-    { label: '3 by Grid', value: 'grid-3' },
-    { label: '4 by Grid', value: 'grid-4' },
     { label: 'Slider', value: 'slider' },
 ];
 
@@ -103,6 +101,8 @@ function isUpcomingForDayOrBeyond(dateValue) {
 registerBlockType('abcnorio/content-listing', {
     edit({ attributes, setAttributes }) {
         const blockProps = useBlockProps();
+        const variant = attributes.variant === 'slider' ? 'slider' : 'grid';
+        const gridColumns = attributes.gridColumns || (['grid-3', 'grid-4'].includes(attributes.variant) ? attributes.variant : '');
         const orderMode = attributes.order === 'asc' || attributes.order === 'manual' ? attributes.order : 'desc';
         const isManualOrder = orderMode === 'manual';
         const selectedPostTypes = Array.isArray(attributes.listingPostTypes)
@@ -190,10 +190,21 @@ registerBlockType('abcnorio/content-listing', {
                     <PanelBody title="Content Listing Options" initialOpen={true}>
                         <SelectControl
                             label="Variant"
-                            value={VARIANT_OPTIONS.some((option) => option.value === attributes.variant) ? attributes.variant : 'grid'}
+                            value={variant}
                             options={VARIANT_OPTIONS}
-                            onChange={(value) => setAttributes({ variant: value })}
+                            onChange={(value) => setAttributes({ variant: value, gridColumns })}
                         />
+                        {variant === 'grid' && (
+                            <SelectControl
+                                label="Grid columns"
+                                value={gridColumns === 'grid-4' ? 'grid-4' : ''}
+                                options={[
+                                    { label: '3 Col Grid', value: 'grid-3' },
+                                    { label: '4 Col Grid', value: 'grid-4' },
+                                ]}
+                                onChange={(value) => setAttributes({ variant, gridColumns: value })}
+                            />
+                        )}
                         {attributes.variant === 'slider' && SLIDE_BREAKPOINTS.map(({ key, label, defaultValue }) => (
                             <SelectControl
                                 key={key}

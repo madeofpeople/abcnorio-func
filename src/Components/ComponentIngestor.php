@@ -96,12 +96,28 @@ class ComponentIngestor {
                     $handle,
                     self::distUrl() . ltrim($relative_path, '/'),
                     [],
-                    null
+                    (string) filemtime($absolute_path)
                 );
             }
 
             wp_enqueue_style($handle);
         }
+    }
+
+    public static function enqueueEditorStyles(): void {
+        $relative_path = 'styles/component-fixtures.css';
+        $absolute_path = self::distDir() . '/' . $relative_path;
+
+        if (!file_exists($absolute_path)) {
+            throw new \RuntimeException("Components System Error: Editor CSS missing at '{$absolute_path}'.");
+        }
+
+        wp_enqueue_style(
+            'abcnorio-components-editor',
+            self::distUrl() . $relative_path,
+            ['abcnorio-components-runtime'],
+            (string) filemtime($absolute_path)
+        );
     }
 
     public static function readDistHtml(string $relative_path): string {
@@ -198,7 +214,7 @@ class ComponentIngestor {
         }
 
         if (!wp_style_is($handle, 'registered')) {
-            wp_register_style($handle, $asset_url, [], null);
+            wp_register_style($handle, $asset_url, [], (string) filemtime($absolute_path));
         }
     }
 

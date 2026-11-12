@@ -39,6 +39,7 @@ final class ContentListingQuery
         $order = strtolower(sanitize_key((string) ($attributes['order'] ?? 'desc'))) === 'asc' ? 'asc' : 'desc';
         $tags = self::normalizeTags($attributes['listingTagFilter'] ?? []);
         $variant = strtolower(sanitize_key((string) ($attributes['variant'] ?? 'grid')));
+        $gridColumns = sanitize_key((string) ($attributes['gridColumns'] ?? '')) ?: $variant;
         $isSlider = $variant === 'slider';
         $slidesPerPage = self::slidesPerPageAttributes($attributes);
 
@@ -76,10 +77,10 @@ final class ContentListingQuery
             }
         }
 
-        return self::renderListingFromDist(count($items), $itemsHtml, $isSlider, $slidesPerPage, $variant);
+        return self::renderListingFromDist(count($items), $itemsHtml, $isSlider, $slidesPerPage, $gridColumns);
     }
 
-    private static function renderListingFromDist(int $totalItems, string $itemsHtml, bool $isSlider, array $slidesPerPage, string $variant): string
+    private static function renderListingFromDist(int $totalItems, string $itemsHtml, bool $isSlider, array $slidesPerPage, string $gridColumns): string
     {
         $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('content-listing.html'));
         $xpath = new \DOMXPath($dom);
@@ -90,8 +91,8 @@ final class ContentListingQuery
         }
 
         HtmlFragmentSupport::addClass($listing, 'wp-block-abcnorio-content-listing');
-        if (in_array($variant, ['grid-3', 'grid-4'], true)) {
-            HtmlFragmentSupport::addClass($listing, $variant);
+        if (! $isSlider && in_array($gridColumns, ['grid-3', 'grid-4'], true)) {
+            HtmlFragmentSupport::addClass($listing, $gridColumns);
         }
         foreach ([
             'all' => 'data-slides-per-page',

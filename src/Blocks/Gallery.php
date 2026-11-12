@@ -39,11 +39,13 @@ final class Gallery
 
         $itemsPerPage = absint((int) ($attributes['itemsPerPage'] ?? 6));
         $itemsPerPage = min(24, max(8, $itemsPerPage ?: 8));
+        $isPagedGrid = $variant === 'paged-grid';
+        $usesBlaze = ! $isPagedGrid && $variant !== 'masonry';
 
         $className = trim((string) ($attributes['className'] ?? ''));
         $classes = array_filter([
             'gallery',
-            $variant === 'paged-grid' ? null : 'blaze-slider',
+            $usesBlaze ? 'blaze-slider' : null,
             'gallery--' . $variant,
             'gallery--nav-' . $navigationMode,
             'abcnorio-gallery',
@@ -52,10 +54,9 @@ final class Gallery
             $className !== '' ? $className : null,
         ]);
 
-        $isPagedGrid = $variant === 'paged-grid';
-        $containerClass = $isPagedGrid ? '' : 'blaze-container';
-        $trackContainerClass = $isPagedGrid ? '' : 'blaze-track-container';
-        $trackClass = $isPagedGrid ? 'images' : 'images blaze-track';
+        $containerClass = $usesBlaze ? 'blaze-container' : '';
+        $trackContainerClass = $usesBlaze ? 'blaze-track-container' : '';
+        $trackClass = $usesBlaze ? 'images blaze-track' : 'images';
 
         $dom = HtmlFragmentSupport::loadHtmlFragment(
             '<gallery-listing class="' . esc_attr(implode(' ', $classes)) . '" data-variant="' . esc_attr($variant) . '" data-navigation-mode="' . esc_attr($navigationMode) . '" data-items-per-page="' . esc_attr((string) $itemsPerPage) . '">' .
@@ -63,15 +64,15 @@ final class Gallery
                     '<div' . ($trackContainerClass !== '' ? ' class="' . esc_attr($trackContainerClass) . '"' : '') . '>' .
                         '<div class="' . esc_attr($trackClass) . '"></div>' .
                     '</div>' .
-                    ($isPagedGrid ? '' :
+                    ($usesBlaze ?
                         '<a href="javascript:void(0)" role="button" class="blaze-prev"><span>Previous!</span></a>' .
                         '<a href="javascript:void(0)" role="button" class="blaze-next"><span>Next!</span></a>' .
-                        '<div class="blaze-pagination"></div>'
+                        '<div class="blaze-pagination"></div>' : ''
                     ) .
                 '</div>' .
                 ($isPagedGrid
                     ? '<nav class="gallery-pagination" aria-label="Gallery pagination" hidden></nav>'
-                    : '<nav class="blaze-slide-dots" aria-label="Slide navigation"></nav>') .
+                    : ($usesBlaze ? '<nav class="blaze-slide-dots" aria-label="Slide navigation"></nav>' : '')) .
             '</gallery-listing>'
         );
 

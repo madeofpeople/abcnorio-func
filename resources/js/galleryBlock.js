@@ -24,7 +24,7 @@ function normalizeNavigationMode(value) {
 }
 
 function normalizeVariant(value) {
-    return value === 'default' || value === 'paged-grid' ? value : 'slider';
+    return value === 'default' || value === 'paged-grid' || value === 'masonry' ? value : 'slider';
 }
 
 // Sizes come from the image style, so drop core/image's drag handles inside the gallery.
@@ -48,6 +48,7 @@ registerBlockType('abcnorio/gallery', {
     edit({ attributes, setAttributes, clientId }) {
         const navigationMode = normalizeNavigationMode(attributes.navigationMode);
         const variant = normalizeVariant(attributes.variant);
+        const usesBlaze = variant !== 'paged-grid' && variant !== 'masonry';
         const itemsPerPage = Math.max(
             MIN_ITEMS_PER_PAGE,
             Math.min(MAX_ITEMS_PER_PAGE, Number.parseInt(attributes.itemsPerPage, 10) || MIN_ITEMS_PER_PAGE)
@@ -114,7 +115,7 @@ registerBlockType('abcnorio/gallery', {
                 'abcnorio-gallery-editor',
                 `abcnorio-gallery-nav-${navigationMode}`,
                 `abcnorio-gallery--${variant}`,
-                variant === 'paged-grid' ? null : 'blaze-slider',
+                usesBlaze ? 'blaze-slider' : null,
             ].join(' '),
         });
 
@@ -137,6 +138,7 @@ registerBlockType('abcnorio/gallery', {
                                 { label: 'Default', value: 'default' },
                                 { label: 'Slider', value: 'slider' },
                                 { label: 'Paged Grid', value: 'paged-grid' },
+                                { label: 'Masonry', value: 'masonry' },
                             ]}
                             onChange={(value) => setAttributes({ variant: normalizeVariant(value) })}
                         />
@@ -167,17 +169,17 @@ registerBlockType('abcnorio/gallery', {
 
                 <gallery-listing
                     ref={galleryRef}
-                    class={`gallery ${variant === 'paged-grid' ? '' : 'blaze-slider'} gallery--${variant} gallery--nav-${navigationMode}`}
+                    class={`gallery ${usesBlaze ? 'blaze-slider' : ''} gallery--${variant} gallery--nav-${navigationMode}`}
                     data-variant={variant}
                     data-navigation-mode={navigationMode}
                     data-items-per-page={itemsPerPage}
                 >
-                    <div className={variant === 'paged-grid' ? undefined : 'blaze-container'}>
-                        <div className={variant === 'paged-grid' ? undefined : 'blaze-track-container'}>
-                            <div {...innerBlocksProps} className={variant === 'paged-grid' ? 'images' : 'images blaze-track'} />
+                    <div className={usesBlaze ? 'blaze-container' : undefined}>
+                        <div className={usesBlaze ? 'blaze-track-container' : undefined}>
+                            <div {...innerBlocksProps} className={usesBlaze ? 'images blaze-track' : 'images'} />
                         </div>
 
-                        {variant !== 'paged-grid' && (
+                        {usesBlaze && (
                             <>
                                 <a href="javascript:void(0)" role="button" className="blaze-prev"><span>Previous!</span></a>
                                 <a href="javascript:void(0)" role="button" className="blaze-next"><span>Next!</span></a>
@@ -186,7 +188,7 @@ registerBlockType('abcnorio/gallery', {
                         )}
                     </div>
 
-                    {variant !== 'paged-grid' && <nav className="blaze-slide-dots" aria-label="Slide navigation"></nav>}
+                    {usesBlaze && <nav className="blaze-slide-dots" aria-label="Slide navigation"></nav>}
                 </gallery-listing>
             </div>
         );

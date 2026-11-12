@@ -32,6 +32,10 @@
       "type": "string",
       "default": "grid"
     },
+    "gridColumns": {
+      "type": "string",
+      "default": ""
+    },
     "itemCount": {
       "type": "number",
       "default": 6

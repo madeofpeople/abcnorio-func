@@ -204,6 +204,9 @@ final class Plugin
         self::enqueueComponentRuntimeStyles();
 
         try {
+            if (is_admin()) {
+                ComponentIngestor::enqueueEditorStyles();
+            }
             ComponentIngestor::enqueue_component_deps('event-listing');
             ComponentIngestor::enqueue_component_deps('content-listing');
         } catch (\Throwable $e) {

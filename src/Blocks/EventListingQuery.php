@@ -40,6 +40,7 @@ final class EventListingQuery
         $dateFilter = sanitize_key((string) ($attributes['dateFilter'] ?? 'upcoming'));
         $order = strtoupper(sanitize_key((string) ($attributes['order'] ?? 'desc')));
         $variant = strtolower(sanitize_key((string) ($attributes['variant'] ?? 'grid')));
+        $gridColumns = sanitize_key((string) ($attributes['gridColumns'] ?? '')) ?: $variant;
         $isSlider = $variant === 'slider';
         $isPaged = $variant === 'paged-grid';
         $itemCount = (int) ($attributes['itemCount'] ?? 6);
@@ -147,7 +148,7 @@ final class EventListingQuery
             );
         }
 
-        return self::renderListingFromDist($countLabel, $itemsHtml, $isSlider, $title, $showAllLink, $showAllLinkHref, $showAllLinkLabel, $slidesPerPage, $variant);
+        return self::renderListingFromDist($countLabel, $itemsHtml, $isSlider, $title, $showAllLink, $showAllLinkHref, $showAllLinkLabel, $slidesPerPage, $gridColumns);
     }
 
     private static function renderEventCard(\WP_Post $post): string
@@ -184,7 +185,7 @@ final class EventListingQuery
         ]);
     }
 
-    private static function renderListingFromDist(?string $countLabel, string $itemsHtml, bool $isSlider, string $title, bool $showAllLink, string $showAllLinkHref, string $showAllLinkLabel, array $slidesPerPage, string $variant): string
+    private static function renderListingFromDist(?string $countLabel, string $itemsHtml, bool $isSlider, string $title, bool $showAllLink, string $showAllLinkHref, string $showAllLinkLabel, array $slidesPerPage, string $gridColumns): string
     {
         $fixture = $isSlider ? 'event-listing/slider.html' : 'event-listing.html';
         $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml($fixture));
@@ -199,8 +200,8 @@ final class EventListingQuery
             'class',
             trim($listing->getAttribute('class') . ' wp-block-abcnorio-event-listing')
         );
-        if (in_array($variant, ['grid-3', 'grid-4'], true)) {
-            HtmlFragmentSupport::addClass($listing, $variant);
+        if (! $isSlider && in_array($gridColumns, ['grid-3', 'grid-4'], true)) {
+            HtmlFragmentSupport::addClass($listing, $gridColumns);
         }
         foreach ([
             'all' => 'data-slides-per-page',

@@ -19,8 +19,6 @@ const ORDER_OPTIONS = [
 
 const VARIANT_OPTIONS = [
     { label: 'Grid', value: 'grid' },
-    { label: '3 by Grid', value: 'grid-3' },
-    { label: '4 by Grid', value: 'grid-4' },
     { label: 'Slider', value: 'slider' },
     { label: 'Paged Grid', value: 'paged-grid' },
 ];
@@ -82,6 +80,7 @@ function useTaxonomyOptions( taxonomy ) {
         const collectiveOptions = useTaxonomyOptions( 'collective_association' );
         const variantValue = String( attributes.variant || 'grid' ).toLowerCase();
         const variant = VARIANT_OPTIONS.some((option) => option.value === variantValue) ? variantValue : 'grid';
+        const gridColumns = attributes.gridColumns || (['grid-3', 'grid-4'].includes(variantValue) ? variantValue : '');
         const isPaged = variant === 'paged-grid';
         const showAllLink = Boolean( attributes.showAllLink ?? true );
         const effectiveShowAllLink = isPaged ? false : showAllLink;
@@ -106,8 +105,19 @@ function useTaxonomyOptions( taxonomy ) {
                             label="Variant"
                             value={ variant }
                             options={ VARIANT_OPTIONS }
-                            onChange={ ( value ) => setAttributes( { variant: value } ) }
+                            onChange={ ( value ) => setAttributes( { variant: value, gridColumns } ) }
                         />
+                        {variant !== 'slider' && (
+                            <SelectControl
+                                label="Grid columns"
+                                value={gridColumns === 'grid-4' ? 'grid-4' : ''}
+                                options={[
+                                    { label: '3 Col Grid', value: 'grid-3' },
+                                    { label: '4 Col Grid', value: 'grid-4' },
+                                ]}
+                                onChange={(value) => setAttributes({ variant, gridColumns: value })}
+                            />
+                        )}
                         {variant === 'slider' && SLIDE_BREAKPOINTS.map(({ key, label, defaultValue }) => (
                             <SelectControl
                                 key={key}

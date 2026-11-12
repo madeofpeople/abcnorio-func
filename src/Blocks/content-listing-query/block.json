@@ -50,6 +50,10 @@
       "type": "string",
       "default": "grid"
     },
+    "gridColumns": {
+      "type": "string",
+      "default": ""
+    },
     "slidesPerPage": {
       "type": "number",
       "default": 1

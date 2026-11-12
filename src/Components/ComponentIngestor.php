@@ -118,6 +118,21 @@ class ComponentIngestor {
             ['abcnorio-components-runtime'],
             (string) filemtime($absolute_path)
         );
+
+        foreach (self::load()['components'] as $component_name => $component) {
+            $editor_css = $component['editorCss'] ?? [];
+            if (!is_array($editor_css)) {
+                throw new \RuntimeException("Components System Error: Invalid editorCss for '{$component_name}'.");
+            }
+            foreach ($editor_css as $relative_path) {
+                if (!is_string($relative_path) || !str_starts_with($relative_path, 'styles/editor/') || !str_ends_with($relative_path, '.css')) {
+                    throw new \RuntimeException("Components System Error: Invalid editor stylesheet for '{$component_name}'.");
+                }
+                self::registerDepAsset($component_name, $relative_path);
+                $handle = self::depHandle($component_name, $relative_path);
+                wp_enqueue_style($handle);
+            }
+        }
     }
 
     public static function readDistHtml(string $relative_path): string {

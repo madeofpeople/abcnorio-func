@@ -100,9 +100,8 @@ function isUpcomingForDayOrBeyond(dateValue) {
 
 registerBlockType('abcnorio/content-listing', {
     edit({ attributes, setAttributes }) {
-        const blockProps = useBlockProps();
         const variant = attributes.variant === 'slider' ? 'slider' : 'grid';
-        const gridColumns = attributes.gridColumns || (['grid-3', 'grid-4'].includes(attributes.variant) ? attributes.variant : '');
+        const gridColumns = attributes.gridColumns || (['grid-3', 'grid-4'].includes(attributes.variant) ? attributes.variant : 'grid-4');
         const orderMode = attributes.order === 'asc' || attributes.order === 'manual' ? attributes.order : 'desc';
         const isManualOrder = orderMode === 'manual';
         const selectedPostTypes = Array.isArray(attributes.listingPostTypes)
@@ -119,6 +118,16 @@ registerBlockType('abcnorio/content-listing', {
                 normalizeSlidesPerPage(attributes[key], defaultValue),
             ])
         );
+        const blockProps = useBlockProps({
+            style: {
+                '--listing-preview-columns': gridColumns === 'grid-3' ? 3 : 4,
+                '--listing-preview-slides': slidesPerPage.slidesPerPage,
+                '--listing-preview-slides-xs': slidesPerPage.slidesPerPageXs,
+                '--listing-preview-slides-sm': slidesPerPage.slidesPerPageSm,
+                '--listing-preview-slides-md': slidesPerPage.slidesPerPageMd,
+                '--listing-preview-slides-lg': slidesPerPage.slidesPerPageLg,
+            },
+        });
 
         const candidateRecords = useSelect(
             (select) => {
@@ -197,7 +206,7 @@ registerBlockType('abcnorio/content-listing', {
                         {variant === 'grid' && (
                             <SelectControl
                                 label="Grid columns"
-                                value={gridColumns === 'grid-4' ? 'grid-4' : ''}
+                                value={gridColumns}
                                 options={[
                                     { label: '3 Col Grid', value: 'grid-3' },
                                     { label: '4 Col Grid', value: 'grid-4' },

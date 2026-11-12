@@ -75,12 +75,11 @@ function useTaxonomyOptions( taxonomy ) {
 
     registerBlockType( 'abcnorio/event-listing', {
     edit( { attributes, setAttributes } ) {
-        const blockProps = useBlockProps();
         const eventTypeOptions = useTaxonomyOptions( 'event_type' );
         const collectiveOptions = useTaxonomyOptions( 'collective_association' );
         const variantValue = String( attributes.variant || 'grid' ).toLowerCase();
         const variant = VARIANT_OPTIONS.some((option) => option.value === variantValue) ? variantValue : 'grid';
-        const gridColumns = attributes.gridColumns || (['grid-3', 'grid-4'].includes(variantValue) ? variantValue : '');
+        const gridColumns = attributes.gridColumns || (['grid-3', 'grid-4'].includes(variantValue) ? variantValue : 'grid-4');
         const isPaged = variant === 'paged-grid';
         const showAllLink = Boolean( attributes.showAllLink ?? true );
         const effectiveShowAllLink = isPaged ? false : showAllLink;
@@ -96,6 +95,16 @@ function useTaxonomyOptions( taxonomy ) {
                 normalizeSlidesPerPage(attributes[key], defaultValue),
             ])
         );
+        const blockProps = useBlockProps({
+            style: {
+                '--listing-preview-columns': gridColumns === 'grid-3' ? 3 : 4,
+                '--listing-preview-slides': slidesPerPage.slidesPerPage,
+                '--listing-preview-slides-xs': slidesPerPage.slidesPerPageXs,
+                '--listing-preview-slides-sm': slidesPerPage.slidesPerPageSm,
+                '--listing-preview-slides-md': slidesPerPage.slidesPerPageMd,
+                '--listing-preview-slides-lg': slidesPerPage.slidesPerPageLg,
+            },
+        });
 
         return (
             <div { ...blockProps }>
@@ -110,7 +119,7 @@ function useTaxonomyOptions( taxonomy ) {
                         {variant !== 'slider' && (
                             <SelectControl
                                 label="Grid columns"
-                                value={gridColumns === 'grid-4' ? 'grid-4' : ''}
+                                value={gridColumns}
                                 options={[
                                     { label: '3 Col Grid', value: 'grid-3' },
                                     { label: '4 Col Grid', value: 'grid-4' },

@@ -33,8 +33,12 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 
 ## Admin CSS Contract
 
+- Component-specific styles, including editor previews, belong in the webcomponents component stylesheets, not `admin-overrides.css`.
+- Gallery's "Captioned Gallery" variant uses slider layout with core/image captions beneath images and no lightbox.
+- Components own optional `editor.scss` files, compiled separately and listed under `manifest.components[name].editorCss`. The plugin enqueues them only in the block editor, after shared fixture styles. Gallery editor sizing and navigation previews live in its `editor.scss`.
 - Admin CSS uses shared runtime styles and `resources/css/admin-overrides.css`. The block editor also loads `styles/component-fixtures.css` before listing-specific styles so previews include component and slider styles.
 - `resources/css/admin-overrides.css` stays manual and small.
+- Admin overrides cover editor-shell typography/layout, link click suppression, and admin UI only. Content buttons use component styles; WordPress buttons and block appenders retain native styling.
 - No generated `resources/css/admin-styles.css` is part of the runtime contract.
 
 ## Content Listing Contract
@@ -43,4 +47,5 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 - Allowed `post_types[]` are strict and backend-limited to `event` and `article`.
 - `count` is backend-capped at `50`.
 - `tags[]` maps to `event_tag` for events and `post_tag` for articles (when taxonomy exists).
-- Event Listing (Grid and Paged Grid) and Content Listing (Grid) default to four columns at 1250px and above, three from 720px, and two below that. Default and 4 Col Grid use the same responsive layout; previously saved `grid-3` selections display as Default and follow it. Gallery layouts are independent.
+- Event Listing (Grid and Paged Grid) and Content Listing (Grid) offer 3 Col Grid and 4 Col Grid. Unspecified layouts default to four columns. Frontend uses the selected count at 1250px and above, three columns from 720px, and two below that. Editor previews immediately show the selected count regardless of canvas width. Slider and gallery layouts are unaffected.
+- Plugin releases rebuild staging's editor bundle, not the mounted dev bundle. After editing block controls, run `./node_modules/.bin/wp-scripts build resources/js/index.js --output-path=build` in the plugin directory to refresh dev.

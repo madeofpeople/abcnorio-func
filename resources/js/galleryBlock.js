@@ -24,7 +24,7 @@ function normalizeNavigationMode(value) {
 }
 
 function normalizeVariant(value) {
-    return value === 'default' || value === 'paged-grid' || value === 'masonry' ? value : 'slider';
+    return value === 'default' || value === 'paged-grid' || value === 'masonry' || value === 'captioned' ? value : 'slider';
 }
 
 // Sizes come from the image style, so drop core/image's drag handles inside the gallery.
@@ -137,6 +137,7 @@ registerBlockType('abcnorio/gallery', {
                             options={[
                                 { label: 'Default', value: 'default' },
                                 { label: 'Slider', value: 'slider' },
+                                { label: 'Captioned Gallery', value: 'captioned' },
                                 { label: 'Paged Grid', value: 'paged-grid' },
                                 { label: 'Masonry', value: 'masonry' },
                             ]}

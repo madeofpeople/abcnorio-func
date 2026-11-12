@@ -19,7 +19,10 @@
       ],
       "css": [],
       "js": [],
-      "deps": []
+      "deps": [],
+      "editorCss": [
+        "styles/editor/announcement-tout.css"
+      ]
     },
     "article-listing": {
       "id": "article-listing",
@@ -53,7 +56,22 @@
       ],
       "css": [],
       "js": [],
-      "deps": []
+      "deps": [],
+      "editorCss": [
+        "styles/editor/button.css"
+      ]
+    },
+    "buttons": {
+      "id": "buttons",
+      "fixtures": [
+        "buttons"
+      ],
+      "css": [],
+      "js": [],
+      "deps": [],
+      "editorCss": [
+        "styles/editor/buttons.css"
+      ]
     },
     "collective-listing": {
       "id": "collective-listing",
@@ -94,6 +112,9 @@
         "styles/article-teaser.css",
         "styles/content-listing.css",
         "styles/event-teaser.css"
+      ],
+      "editorCss": [
+        "styles/editor/content-listing.css"
       ]
     },
     "event-listing": {
@@ -111,6 +132,9 @@
         "elements/event-listing.js",
         "styles/event-listing.css",
         "styles/event-teaser.css"
+      ],
+      "editorCss": [
+        "styles/editor/event-listing.css"
       ]
     },
     "event-teaser": {
@@ -128,11 +152,15 @@
     "gallery": {
       "id": "gallery",
       "fixtures": [
-        "gallery"
+        "gallery",
+        "gallery/captioned"
       ],
       "css": [],
       "js": [],
-      "deps": []
+      "deps": [],
+      "editorCss": [
+        "styles/editor/gallery.css"
+      ]
     },
     "hero": {
       "id": "hero",
@@ -141,7 +169,10 @@
       ],
       "css": [],
       "js": [],
-      "deps": []
+      "deps": [],
+      "editorCss": [
+        "styles/editor/hero.css"
+      ]
     },
     "image": {
       "id": "image",
@@ -169,7 +200,10 @@
       ],
       "css": [],
       "js": [],
-      "deps": []
+      "deps": [],
+      "editorCss": [
+        "styles/editor/newsletter-signup.css"
+      ]
     },
     "press-item": {
       "id": "press-item",
@@ -188,7 +222,10 @@
       ],
       "css": [],
       "js": [],
-      "deps": []
+      "deps": [],
+      "editorCss": [
+        "styles/editor/public-form.css"
+      ]
     },
     "quote": {
       "id": "quote",
@@ -297,6 +334,14 @@
       "css": [],
       "js": []
     },
+    "buttons": {
+      "id": "buttons",
+      "component": "buttons",
+      "fixturePath": "buttons.html",
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><link rel=\"stylesheet\" href=\"/styles/_..css\"><link rel=\"stylesheet\" href=\"/styles/component-fixtures.css\"></head><body><a class=\"button\" href=\"#example\" data-astro-cid-4vddrdvu>Example button</a></body></html>",
+      "css": [],
+      "js": []
+    },
     "collective-listing": {
       "id": "collective-listing",
       "component": "collective-listing",
@@ -386,6 +431,14 @@
       "js": [
         "elements/event-teaser.js"
       ]
+    },
+    "gallery/captioned": {
+      "id": "gallery/captioned",
+      "component": "gallery",
+      "fixturePath": "gallery/captioned.html",
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><link rel=\"stylesheet\" href=\"/styles/_..css\"><link rel=\"stylesheet\" href=\"/styles/component-fixtures.css\"></head><body><gallery-listing data-variant=\"captioned\" data-navigation-mode=\"page\" data-items-per-page=\"8\" data-astro-cid-fc2z7wve=\"true\" class=\"gallery blaze-slider gallery--captioned gallery--nav-page\"><div class=\"blaze-container\" data-astro-cid-fc2z7wve><div class=\"blaze-track-container\" data-astro-cid-fc2z7wve><div class=\"images blaze-track\" data-astro-cid-fc2z7wve></div></div><a href=\"javascript:void(0)\" role=\"button\" class=\"blaze-prev\" data-astro-cid-fc2z7wve><span data-astro-cid-fc2z7wve>Previous!</span></a><a href=\"javascript:void(0)\" role=\"button\" class=\"blaze-next\" data-astro-cid-fc2z7wve><span data-astro-cid-fc2z7wve>Next!</span></a><div class=\"blaze-pagination\" data-astro-cid-fc2z7wve></div></div><nav class=\"blaze-slide-dots\" aria-label=\"Slide navigation\" data-astro-cid-fc2z7wve></nav></gallery-listing></body></html>",
+      "css": [],
+      "js": []
     },
     "gallery": {
       "id": "gallery",

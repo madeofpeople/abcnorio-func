@@ -31,6 +31,10 @@ $cases = [
 ];
 
 $manifest = ComponentIngestor::load();
+$adminCss = file_get_contents(dirname(__DIR__) . '/resources/css/admin-overrides.css');
+if (preg_match('/(?:\.wp-block-buttons|a\.button|(?:editor-styles-wrapper|block-editor-iframe__body)\s+button\b)/', $adminCss)) {
+    throw new RuntimeException('Component button styling belongs in component styles, not admin overrides.');
+}
 if (! in_array('elements/event-listing.js', $manifest['components']['event-listing']['deps'], true)) {
     throw new RuntimeException('Event Listing module missing from declared dependencies.');
 }
@@ -43,6 +47,15 @@ if (! preg_match('/<script\b(?=[^>]*\btype=["\']module["\'])(?=[^>]*\bsrc=["\'][
     throw new RuntimeException('Event Listing module missing from editor iframe assets.');
 }
 echo "ok event-listing editor iframe module\n";
+foreach (['announcement-tout', 'gallery', 'hero', 'event-listing', 'content-listing', 'buttons', 'public-form', 'newsletter-signup'] as $component) {
+    $path = "styles/editor/{$component}.css";
+    if (($manifest['components'][$component]['editorCss'] ?? []) !== [$path]
+        || !str_contains($iframeAssets['styles'], "/{$path}?ver=")
+    ) {
+        throw new RuntimeException("Component editor stylesheet missing from iframe: {$component}");
+    }
+}
+echo "ok component editor styles in iframe\n";
 
 foreach ($cases as $block => [$attributes, $components]) {
     foreach (wp_styles()->queue as $handle) {
@@ -162,6 +175,19 @@ if (! $masonryRoot instanceof DOMElement
     throw new RuntimeException('Masonry gallery must render without slider or pagination markup.');
 }
 echo "ok masonry gallery\n";
+
+$captionedHtml = \abcnorio\CustomFunc\Blocks\Gallery::render(
+    ['variant' => 'captioned'],
+    '<figure class="wp-block-image"><img src="/caption-example.webp" alt="Example" width="300" height="400"><figcaption>Caption with <em>formatting</em>.</figcaption></figure>'
+);
+if (!str_contains($captionedHtml, 'data-variant="captioned"')
+    || !str_contains($captionedHtml, 'images blaze-track')
+    || !str_contains($captionedHtml, '<figcaption>Caption with <em>formatting</em>.</figcaption>')
+    || str_contains($captionedHtml, 'data-pswp-item')
+) {
+    throw new RuntimeException('Captioned gallery must preserve figures and captions without lightbox links.');
+}
+echo "ok captioned gallery\n";
 
 $renderArticle = new ReflectionMethod(ContentListingQuery::class, 'renderArticleItemFromDist');
 foreach ([

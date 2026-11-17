@@ -7,8 +7,6 @@ use abcnorio\CustomFunc\RestApi\ContentListingEndpoint;
 
 final class ContentListingQuery
 {
-    private const ALLOWED_POST_TYPES = ['event', 'article'];
-
     public static function registerHooks(): void
     {
         add_action('init', [self::class, 'registerBlock']);
@@ -34,20 +32,17 @@ final class ContentListingQuery
 
         self::enqueueComponentAssets();
 
-        $postTypes = self::normalizePostTypes($attributes['listingPostTypes'] ?? []);
         $count = max(1, min(50, (int) ($attributes['listingCount'] ?? 5)));
-        $order = strtolower(sanitize_key((string) ($attributes['order'] ?? 'desc'))) === 'asc' ? 'asc' : 'desc';
-        $tags = self::normalizeTags($attributes['listingTagFilter'] ?? []);
-        $variant = strtolower(sanitize_key((string) ($attributes['variant'] ?? 'grid')));
-        $gridColumns = sanitize_key((string) ($attributes['gridColumns'] ?? '')) ?: $variant;
-        $isSlider = $variant === 'slider';
-        $slidesPerPage = self::slidesPerPageAttributes($attributes);
+        $order = strtolower(sanitize_key((string) ($attributes['order'] ?? 'desc')));
 
         $request = new \WP_REST_Request('GET', '/abcnorio/v1/content-listing');
-        $request->set_param('post_types', $postTypes);
-        $request->set_param('tags', $tags);
+        $request->set_param('post_types', $attributes['listingPostTypes'] ?? []);
+        $request->set_param('tags', $attributes['listingTagFilter'] ?? []);
         $request->set_param('count', $count);
-        $request->set_param('order', $order);
+        $request->set_param('order', $order === 'asc' ? 'asc' : 'desc');
+        if ($order === 'manual') {
+            $request->set_param('orderIds', $attributes['sortOrderPostIds'] ?? []);
+        }
 
         $response = ContentListingEndpoint::serve($request);
 
@@ -77,12 +72,13 @@ final class ContentListingQuery
             }
         }
 
-        return self::renderListingFromDist(count($items), $itemsHtml, $isSlider, $slidesPerPage, $gridColumns);
+        return self::renderListingFromDist(count($items), $itemsHtml, $attributes);
     }
 
-    private static function renderListingFromDist(int $totalItems, string $itemsHtml, bool $isSlider, array $slidesPerPage, string $gridColumns): string
+    private static function renderListingFromDist(int $totalItems, string $itemsHtml, array $attributes): string
     {
-        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('content-listing.html'));
+        $fixture = ($attributes['variant'] ?? 'grid') === 'slider' ? 'content-listing/slider.html' : 'content-listing.html';
+        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml($fixture));
         $xpath = new \DOMXPath($dom);
 
         $listing = $dom->getElementsByTagName('content-listing')->item(0);
@@ -91,69 +87,38 @@ final class ContentListingQuery
         }
 
         HtmlFragmentSupport::addClass($listing, 'wp-block-abcnorio-content-listing');
-        if (! $isSlider && in_array($gridColumns, ['grid-3', 'grid-4'], true)) {
-            HtmlFragmentSupport::addClass($listing, $gridColumns);
-        }
-        foreach ([
-            'all' => 'data-slides-per-page',
-            'xs' => 'data-slides-per-page-xs',
-            'sm' => 'data-slides-per-page-sm',
-            'md' => 'data-slides-per-page-md',
-            'lg' => 'data-slides-per-page-lg',
-        ] as $breakpoint => $attribute) {
-            $listing->setAttribute($attribute, $slidesPerPage[$breakpoint]);
-        }
+        ListingLayout::apply($listing, $attributes);
 
+        $titleNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__title ")]')->item(0);
         $countNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__count ")]')->item(0);
-        if (! $countNode instanceof \DOMElement) {
-            $countNode = $dom->createElement('p');
-            $countNode->setAttribute('class', 'content-listing__count');
-            $listing->insertBefore($countNode, $listing->firstChild);
+        $ctaNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__cta ")]')->item(0);
+        if (! $titleNode instanceof \DOMElement || ! $countNode instanceof \DOMElement || ! $ctaNode instanceof \DOMElement) {
+            throw new \RuntimeException('Components System Error: content-listing fixture missing title/count/CTA slots.');
         }
 
-        $countNode->nodeValue = sprintf(
-            'Displaying %d %s.',
-            $totalItems,
-            $totalItems === 1 ? 'item' : 'items'
-        );
+        $title = sanitize_text_field((string) ($attributes['title'] ?? ''));
+        if ($title !== '') {
+            $titleNode->nodeValue = $title;
+        } else {
+            $titleNode->parentNode->removeChild($titleNode);
+        }
+        if (! empty($attributes['showCount'])) {
+            $countNode->nodeValue = sprintf('Displaying %d %s.', $totalItems, $totalItems === 1 ? 'item' : 'items');
+        } else {
+            $countNode->parentNode->removeChild($countNode);
+        }
+        $ctaLabel = sanitize_text_field((string) ($attributes['ctaLabel'] ?? ''));
+        $ctaUrl = esc_url((string) ($attributes['ctaUrl'] ?? ''));
+        if (! empty($attributes['hasCta']) && $ctaLabel !== '' && $ctaUrl !== '') {
+            $ctaNode->nodeValue = $ctaLabel;
+            $ctaNode->setAttribute('href', $ctaUrl);
+        } else {
+            $ctaNode->parentNode->removeChild($ctaNode);
+        }
 
         $itemsNode = $dom->getElementById('content-listing-list');
         if (! $itemsNode instanceof \DOMElement) {
-            $itemsNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " content-listing__items ")]')->item(0);
-        }
-
-        if (! $itemsNode instanceof \DOMElement) {
             throw new \RuntimeException('Components System Error: content-listing items node missing.');
-        }
-
-        if ($isSlider) {
-            HtmlFragmentSupport::removeClass($listing, 'card-grid');
-            HtmlFragmentSupport::addClass($listing, 'blaze-slider');
-            HtmlFragmentSupport::addClass($itemsNode, 'blaze-track');
-
-            $trackContainer = $dom->createElement('div');
-            $trackContainer->setAttribute('class', 'blaze-track-container');
-            $container = $dom->createElement('div');
-            $container->setAttribute('class', 'blaze-container');
-            $itemsNode->parentNode?->replaceChild($container, $itemsNode);
-            $container->appendChild($trackContainer);
-            $trackContainer->appendChild($itemsNode);
-
-            foreach (['blaze-prev' => 'Previous', 'blaze-next' => 'Next'] as $class => $label) {
-                $button = $dom->createElement('button');
-                $button->setAttribute('type', 'button');
-                $button->setAttribute('class', $class);
-                $button->appendChild($dom->createElement('span', $label));
-                $container->appendChild($button);
-            }
-
-            $actions = $dom->createElement('div');
-            $actions->setAttribute('class', 'actions');
-            $dots = $dom->createElement('nav');
-            $dots->setAttribute('class', 'blaze-slide-dots');
-            $dots->setAttribute('aria-label', 'Slide navigation');
-            $actions->appendChild($dots);
-            $listing->appendChild($actions);
         }
 
         while ($itemsNode->firstChild) {
@@ -165,94 +130,33 @@ final class ContentListingQuery
         return trim((string) $dom->saveHTML($listing));
     }
 
-    private static function slidesPerPageAttributes(array $attributes): array
-    {
-        $defaults = [
-            'all' => ['slidesPerPage', 1],
-            'xs' => ['slidesPerPageXs', 2],
-            'sm' => ['slidesPerPageSm', 3],
-            'md' => ['slidesPerPageMd', 3],
-            'lg' => ['slidesPerPageLg', 4],
-        ];
-        $slidesPerPage = [];
-
-        foreach ($defaults as $breakpoint => [$key, $default]) {
-            $value = is_numeric($attributes[$key] ?? null) ? (float) $attributes[$key] : $default;
-            $slidesPerPage[$breakpoint] = rtrim(rtrim(number_format(min(6, max(1, $value)), 1, '.', ''), '0'), '.');
-        }
-
-        return $slidesPerPage;
-    }
-
     private static function renderEventItemFromDist(array $item): string
     {
-        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('event-teaser.html'));
-        $xpath = new \DOMXPath($dom);
-
-        $root = $dom->getElementsByTagName('event-teaser')->item(0);
-        $link = $dom->getElementsByTagName('a')->item(0);
-        $title = $dom->getElementsByTagName('h3')->item(0);
-
-        if (! $root instanceof \DOMElement || ! $link instanceof \DOMElement || ! $title instanceof \DOMElement) {
-            throw new \RuntimeException('Components System Error: event-teaser fixture structure missing required nodes.');
-        }
-
-        HtmlFragmentSupport::addClass($root, 'content-listing__item');
-        HtmlFragmentSupport::addClass($root, 'content-listing__item--event');
-
-        $link->setAttribute('href', esc_url(self::resolveItemHref($item, '/events')));
-        $title->nodeValue = wp_strip_all_tags((string) ($item['title']['rendered'] ?? 'Untitled event'));
-
         $eventStart = (string) ($item['acf']['event_start_date'] ?? '');
-        $time = $dom->getElementsByTagName('time')->item(0);
-        if ($time instanceof \DOMElement) {
-            if ($eventStart !== '') {
-                $timestamp = strtotime($eventStart);
-                if ($timestamp !== false) {
-                    $dateTime = wp_date(DATE_ATOM, $timestamp);
-                    $dateLabel = wp_date('M j, Y', $timestamp);
-                    $timeLabel = wp_date('g:i A', $timestamp);
-
-                    $time->setAttribute('datetime', $dateTime);
-                    $span = $time->getElementsByTagName('span')->item(0);
-                    if ($span instanceof \DOMElement) {
-                        while ($span->firstChild) {
-                            $span->removeChild($span->firstChild);
-                        }
-                        $span->appendChild($dom->createTextNode($dateLabel));
-                        $span->appendChild($dom->createElement('br'));
-                        $span->appendChild($dom->createTextNode('@ ' . $timeLabel));
-                    }
-                }
-            } else {
-                $time->parentNode?->removeChild($time);
-            }
-        }
-
-        HtmlFragmentSupport::syncCardImage(
-            $dom,
-            $xpath,
-            $root,
-            isset($item['featured_image']) && is_array($item['featured_image']) ? $item['featured_image'] : null,
-            'event-teaser__content',
-            'event-teaser__image',
-            'event-teaser'
-        );
-
-        return trim((string) $dom->saveHTML($root));
+        $date = $eventStart !== '' ? \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $eventStart, wp_timezone()) : false;
+        return EventTeaser::render([
+            'href' => self::resolveItemHref($item, '/events'),
+            'title' => (string) ($item['title']['rendered'] ?? 'Untitled event'),
+            'dateLabel' => $date ? $date->format('M j, Y') : '',
+            'timeLabel' => $date ? $date->format('g:i A') : '',
+            'dateTime' => $date ? $date->format(DATE_ATOM) : '',
+            'featured_image' => $item['featured_image'] ?? null,
+            'classes' => ['content-listing__item', 'content-listing__item--event'],
+        ]);
     }
 
     private static function renderArticleItemFromDist(array $item): string
     {
-        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml('article-teaser.html'));
+        $image = $item['featured_image'] ?? null;
+        $fixture = !empty($image['url']) || !empty($image['src']) ? 'article-teaser.html' : 'article-teaser/no-image.html';
+        $dom = HtmlFragmentSupport::loadHtmlFragment(ComponentIngestor::readDistHtml($fixture));
         $xpath = new \DOMXPath($dom);
 
         $root = $dom->getElementsByTagName('article-teaser')->item(0);
         $link = $dom->getElementsByTagName('a')->item(0);
         $title = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " article-teaser__title ")]')->item(0);
-        $excerpt = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " article-teaser__excerpt ")]')->item(0);
 
-        if (! $root instanceof \DOMElement || ! $link instanceof \DOMElement || ! $title instanceof \DOMElement || ! $excerpt instanceof \DOMElement) {
+        if (! $root instanceof \DOMElement || ! $link instanceof \DOMElement || ! $title instanceof \DOMElement) {
             throw new \RuntimeException('Components System Error: article-teaser fixture structure missing required nodes.');
         }
 
@@ -262,25 +166,24 @@ final class ContentListingQuery
         $link->setAttribute('href', esc_url(self::resolveItemHref($item, '/articles')));
         $title->nodeValue = wp_strip_all_tags((string) ($item['title']['rendered'] ?? 'Untitled article'));
 
+        $excerpt = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " article-teaser__excerpt ")]')->item(0);
+        if (! $excerpt instanceof \DOMElement) {
+            throw new \RuntimeException('Components System Error: article-teaser fixture missing excerpt slot.');
+        }
         while ($excerpt->firstChild) {
             $excerpt->removeChild($excerpt->firstChild);
         }
-        HtmlFragmentSupport::appendHtmlFragment(
-            $dom,
-            $excerpt,
-            wp_kses_post((string) ($item['excerpt']['rendered'] ?? '')),
-            'article teaser excerpt'
-        );
+        HtmlFragmentSupport::appendHtmlFragment($dom, $excerpt, wp_kses_post((string) ($item['excerpt']['rendered'] ?? '')), 'article excerpt');
 
-        $rawDate = (string) ($item['acf']['item_date'] ?? $item['date'] ?? '');
+        $rawDate = (string) (($item['acf']['article_date'] ?? '') ?: ($item['date'] ?? ''));
         $time = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " article-teaser__date ")]')->item(0);
         if ($time instanceof \DOMElement) {
             if ($rawDate === '') {
                 $time->parentNode?->removeChild($time);
             } else {
-                $timestamp = strtotime($rawDate);
-                $datetime = $timestamp !== false ? wp_date('Y-m-d', $timestamp) : $rawDate;
-                $label = $timestamp !== false ? wp_date('M j, Y', $timestamp) : $rawDate;
+                $date = \DateTimeImmutable::createFromFormat('!Y-m-d', substr($rawDate, 0, 10), wp_timezone());
+                $datetime = $date ? $date->format('Y-m-d') : $rawDate;
+                $label = $date ? $date->format('M j, Y') : $rawDate;
                 $time->setAttribute('datetime', $datetime);
                 $time->nodeValue = $label;
             }
@@ -290,7 +193,7 @@ final class ContentListingQuery
             $dom,
             $xpath,
             $root,
-            isset($item['featured_image']) && is_array($item['featured_image']) ? $item['featured_image'] : null,
+            $image,
             'article-teaser__content',
             'article-teaser__image',
             'article-teaser'
@@ -311,26 +214,6 @@ final class ContentListingQuery
         $slug = sanitize_title((string) ($item['slug'] ?? ''));
 
         return $slug === '' ? $basePath : trailingslashit($basePath) . $slug;
-    }
-
-    private static function normalizeTags($rawTags): array
-    {
-        $tags = is_array($rawTags)
-            ? array_values(array_filter(array_map(static fn ($value): string => sanitize_key((string) $value), $rawTags)))
-            : [];
-
-        return $tags;
-    }
-
-    private static function normalizePostTypes($rawPostTypes): array
-    {
-        $postTypes = is_array($rawPostTypes)
-            ? array_values(array_filter(array_map(static fn ($value): string => sanitize_key((string) $value), $rawPostTypes)))
-            : [];
-
-        $allowed = array_values(array_filter($postTypes, static fn (string $postType): bool => in_array($postType, self::ALLOWED_POST_TYPES, true)));
-
-        return $allowed === [] ? self::ALLOWED_POST_TYPES : $allowed;
     }
 
     private static function enqueueComponentAssets(): void

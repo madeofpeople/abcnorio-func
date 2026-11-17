@@ -5,6 +5,7 @@
 use abcnorio\CustomFunc\Components\ComponentIngestor;
 use abcnorio\CustomFunc\Blocks\ContentListingQuery;
 use abcnorio\CustomFunc\Blocks\HtmlFragmentSupport;
+use abcnorio\CustomFunc\Plugin;
 
 $cases = [
     'gallery' => [['variant' => 'slider'], ['gallery']],
@@ -31,6 +32,12 @@ $cases = [
 ];
 
 $manifest = ComponentIngestor::load();
+$styleUrl = new ReflectionMethod(ComponentIngestor::class, 'styleUrl');
+if (has_action('enqueue_block_editor_assets', [Plugin::class, 'enqueueWpComponentOverridesForEditor']) !== false
+    || has_action('wp_enqueue_scripts', [Plugin::class, 'enqueueWpComponentOverrides']) !== false
+) {
+    throw new RuntimeException('Obsolete component override hooks must not be registered.');
+}
 $adminCss = file_get_contents(dirname(__DIR__) . '/resources/css/admin-overrides.css');
 if (preg_match('/(?:\.wp-block-buttons|a\.button|(?:editor-styles-wrapper|block-editor-iframe__body)\s+button\b)/', $adminCss)) {
     throw new RuntimeException('Component button styling belongs in component styles, not admin overrides.');
@@ -50,7 +57,7 @@ echo "ok event-listing editor iframe module\n";
 foreach (['announcement-tout', 'gallery', 'hero', 'event-listing', 'content-listing', 'buttons', 'public-form', 'newsletter-signup'] as $component) {
     $path = "styles/editor/{$component}.css";
     if (($manifest['components'][$component]['editorCss'] ?? []) !== [$path]
-        || !str_contains($iframeAssets['styles'], "/{$path}?ver=")
+        || !str_contains($iframeAssets['styles'], $styleUrl->invoke(null, $path) . '?ver=')
     ) {
         throw new RuntimeException("Component editor stylesheet missing from iframe: {$component}");
     }
@@ -70,6 +77,11 @@ foreach ($cases as $block => [$attributes, $components]) {
     }
 
     do_action('enqueue_block_assets');
+    foreach (['event', 'content'] as $listingType) {
+        if (wp_style_is("abcnorio-{$listingType}-listing-overrides", 'enqueued')) {
+            throw new RuntimeException('Empty listing override stylesheets must not be enqueued.');
+        }
+    }
 
     $html = render_block([
         'blockName' => 'abcnorio/' . $block,
@@ -139,11 +151,13 @@ foreach ($cases as $block => [$attributes, $components]) {
 
     foreach ($components as $component) {
         foreach ($manifest['components'][$component]['deps'] as $path) {
-            $registry = strtolower(pathinfo($path, PATHINFO_EXTENSION)) === 'css' ? wp_styles() : wp_scripts();
+            $isCss = strtolower(pathinfo($path, PATHINFO_EXTENSION)) === 'css';
+            $registry = $isCss ? wp_styles() : wp_scripts();
+            $expectedUrl = $isCss ? $styleUrl->invoke(null, $path) : ComponentIngestor::distUrl() . $path;
             $found = false;
             foreach ($registry->queue as $handle) {
                 $asset = $registry->registered[$handle] ?? null;
-                if ($asset && str_starts_with($handle, "abcnorio-dep-") && str_contains($handle, "-{$component}-") && str_contains($asset->src, $path)) {
+                if ($asset && $asset->src === $expectedUrl) {
                     $found = true;
                     break;
                 }

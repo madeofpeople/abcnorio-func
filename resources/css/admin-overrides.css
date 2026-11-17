@@ -20,6 +20,64 @@ body.wp-admin :where(a, a:visited) {
 
 /* --- Admin UI (term editor, deployment dashboard) --- */
 
+.components-panel__body .abcnorio-manual-order__empty,
+.components-panel__body .abcnorio-manual-order__hint {
+	color: #666;
+	font-size: 12px;
+}
+
+.components-panel__body .abcnorio-manual-order__hint,
+.components-panel__body .abcnorio-manual-order__heading {
+	margin: 0 0 8px 0;
+}
+
+.components-panel__body .abcnorio-manual-order__heading {
+	color: #333;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.abcnorio-manual-order__list {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	background-color: #fafafa;
+}
+
+.abcnorio-manual-order__item {
+	padding: 8px 12px;
+	border-bottom: 1px solid #eee;
+	cursor: move;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	background-color: #fff;
+}
+
+.abcnorio-manual-order__item:last-child {
+	border-bottom: none;
+}
+
+.abcnorio-manual-order__handle {
+	color: #999;
+	font-size: 18px;
+	margin-right: 4px;
+}
+
+.abcnorio-manual-order__title {
+	flex: 1;
+	font-size: 13px;
+}
+
+.abcnorio-manual-order__meta {
+	color: #999;
+	margin-left: 4px;
+}
+
+body.abcnorio-gallery-image-selected .block-editor-block-inspector .components-base-control:has(select option[value="galery-slider"]),
+body.abcnorio-gallery-image-selected .block-editor-block-inspector .components-base-control:has(select option[value="abcnorio-card"]) {
+	display: none;
+}
+
 .column-abcnorio_term_editor {
 	min-width: 260px;
 }

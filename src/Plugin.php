@@ -123,8 +123,6 @@ final class Plugin
         add_action('after_setup_theme', [self::class, 'enableFeaturedImages']);
         add_action('enqueue_block_assets', [self::class, 'enqueueBlockComponentAssets']);
         add_action('enqueue_block_editor_assets', [self::class, 'enqueueEditorAssets']);
-        add_action('enqueue_block_editor_assets', [self::class, 'enqueueWpComponentOverridesForEditor'], 120);
-        add_action('wp_enqueue_scripts', [self::class, 'enqueueWpComponentOverrides'], 120);
         add_action('admin_init', [CapabilityManager::class, 'maybeMigrateCapabilities'], 1);
         add_action('init', [self::class, 'registerContentModels']);
         add_action('init', [self::class, 'disableComments'], 15);
@@ -204,87 +202,11 @@ final class Plugin
         self::enqueueComponentRuntimeStyles();
 
         try {
-            if (is_admin()) {
-                ComponentIngestor::enqueueEditorStyles();
-            }
+            ComponentIngestor::enqueueEditorStyles();
             ComponentIngestor::enqueue_component_deps('event-listing');
             ComponentIngestor::enqueue_component_deps('content-listing');
         } catch (\Throwable $e) {
             self::handleComponentSystemFailure($e, 'block component deps enqueue');
-        }
-
-        self::enqueueMatchingComponentOverrideStyles(self::currentRequestPostContent());
-    }
-
-    public static function enqueueWpComponentOverrides(): void
-    {
-        if (is_admin()) {
-            return;
-        }
-
-        self::enqueueMatchingComponentOverrideStyles(self::currentRequestPostContent());
-    }
-
-    public static function enqueueWpComponentOverridesForEditor(): void
-    {
-        if (!is_admin()) {
-            return;
-        }
-
-        self::enqueueMatchingComponentOverrideStyles(self::currentRequestPostContent());
-    }
-
-    private static function currentRequestPostContent(): string
-    {
-        if (is_admin()) {
-            $postId = isset($_GET['post']) ? (int) $_GET['post'] : 0;
-            if ($postId > 0) {
-                $post = get_post($postId);
-                if ($post instanceof \WP_Post) {
-                    return (string) $post->post_content;
-                }
-            }
-        }
-
-        $queried = get_queried_object();
-        if ($queried instanceof \WP_Post) {
-            return (string) $queried->post_content;
-        }
-
-        global $post;
-        if ($post instanceof \WP_Post) {
-            return (string) $post->post_content;
-        }
-
-        return '';
-    }
-
-    private static function enqueueMatchingComponentOverrideStyles(string $postContent): void
-    {
-        if ($postContent === '') {
-            return;
-        }
-
-        // only run if the listing is on the page.
-        $hasEventListing = $postContent !== '' && has_block('abcnorio/event-listing', $postContent);
-        $hasContentListing = $postContent !== '' && has_block('abcnorio/content-listing', $postContent);
-
-        if ($hasEventListing) {
-            wp_enqueue_style(
-                'abcnorio-event-listing-overrides',
-                plugin_dir_url(ABCNORIO_CUSTOM_FUNC_FILE) . 'resources/css/event-listing-overrides.css',
-                [],
-                null
-            );
-        }
-
-        if ($hasContentListing) {
-            wp_enqueue_style(
-                'abcnorio-content-listing-overrides',
-                plugin_dir_url(ABCNORIO_CUSTOM_FUNC_FILE) . 'resources/css/content-listing-overrides.css',
-                [],
-                null
-            );
         }
 
     }

@@ -10,6 +10,8 @@ import {
     stripHtmlTags,
 } from './blockHelpers';
 import { normalizeUniqueValues, parsePositiveInt, useQueryPostManualOrder } from './query-post-manual-order';
+import blockMetadata from '../../src/Blocks/content-listing-query/block.json';
+import { listingLayout, ListingLayoutControls } from './listingLayout';
 
 const ORDER_OPTIONS = [
     { label: 'Ascending', value: 'asc' },
@@ -26,36 +28,6 @@ const POST_TYPE_OPTIONS = [
     { label: 'Events', value: 'event' },
     { label: 'Articles', value: 'article' },
 ];
-
-const SLIDE_BREAKPOINTS = [
-    { key: 'slidesPerPage', label: 'Base (under 450px)', defaultValue: 1 },
-    { key: 'slidesPerPageXs', label: 'XS (450px and up)', defaultValue: 2 },
-    { key: 'slidesPerPageSm', label: 'SM (720px and up)', defaultValue: 3 },
-    { key: 'slidesPerPageMd', label: 'MD (1024px and up)', defaultValue: 3 },
-    { key: 'slidesPerPageLg', label: 'LG (1250px and up)', defaultValue: 4 },
-];
-
-function normalizeSlidesPerPage(value, fallback) {
-    const parsed = Number.parseFloat(value);
-    const count = Number.isFinite(parsed) ? parsed : fallback;
-    return Math.max(1, Math.min(6, count));
-}
-
-const SLIDE_OPTIONS = [
-    { label: '1.333', value: '1.333' },
-    { label: '2', value: '2' },
-    { label: '2.333', value: '2.333' },
-    { label: '3', value: '3' },
-    { label: '3.333', value: '3.333' },
-    { label: '4', value: '4' },
-    { label: '4.333', value: '4.333' },
-    { label: '5', value: '5' },
-    { label: '6', value: '6' },
-];
-
-function getSlideOptions() {
-    return SLIDE_OPTIONS;
-}
 
 function togglePostType(postTypes, value) {
     const current = Array.isArray(postTypes) ? postTypes : [];
@@ -100,8 +72,8 @@ function isUpcomingForDayOrBeyond(dateValue) {
 
 registerBlockType('abcnorio/content-listing', {
     edit({ attributes, setAttributes }) {
-        const variant = attributes.variant === 'slider' ? 'slider' : 'grid';
-        const gridColumns = attributes.gridColumns || (['grid-3', 'grid-4'].includes(attributes.variant) ? attributes.variant : 'grid-4');
+        const layout = listingLayout(attributes, blockMetadata.attributes);
+        const blockProps = useBlockProps({ style: layout.style });
         const orderMode = attributes.order === 'asc' || attributes.order === 'manual' ? attributes.order : 'desc';
         const isManualOrder = orderMode === 'manual';
         const selectedPostTypes = Array.isArray(attributes.listingPostTypes)
@@ -112,22 +84,6 @@ registerBlockType('abcnorio/content-listing', {
             QUERY_BLOCK_MIN_ITEM_COUNT,
             Math.min(QUERY_BLOCK_MAX_ITEM_COUNT, Number.parseInt(attributes.listingCount, 10) || 5)
         );
-        const slidesPerPage = Object.fromEntries(
-            SLIDE_BREAKPOINTS.map(({ key, defaultValue }) => [
-                key,
-                normalizeSlidesPerPage(attributes[key], defaultValue),
-            ])
-        );
-        const blockProps = useBlockProps({
-            style: {
-                '--listing-preview-columns': gridColumns === 'grid-3' ? 3 : 4,
-                '--listing-preview-slides': slidesPerPage.slidesPerPage,
-                '--listing-preview-slides-xs': slidesPerPage.slidesPerPageXs,
-                '--listing-preview-slides-sm': slidesPerPage.slidesPerPageSm,
-                '--listing-preview-slides-md': slidesPerPage.slidesPerPageMd,
-                '--listing-preview-slides-lg': slidesPerPage.slidesPerPageLg,
-            },
-        });
 
         const candidateRecords = useSelect(
             (select) => {
@@ -199,36 +155,20 @@ registerBlockType('abcnorio/content-listing', {
                     <PanelBody title="Content Listing Options" initialOpen={true}>
                         <SelectControl
                             label="Variant"
-                            value={variant}
+                            value={layout.variant}
                             options={VARIANT_OPTIONS}
-                            onChange={(value) => setAttributes({ variant: value, gridColumns })}
+                            onChange={(value) => setAttributes({ variant: value, gridColumns: layout.gridColumns })}
                         />
-                        {variant === 'grid' && (
-                            <SelectControl
-                                label="Grid columns"
-                                value={gridColumns}
-                                options={[
-                                    { label: '3 Col Grid', value: 'grid-3' },
-                                    { label: '4 Col Grid', value: 'grid-4' },
-                                ]}
-                                onChange={(value) => setAttributes({ variant, gridColumns: value })}
-                            />
-                        )}
-                        {attributes.variant === 'slider' && SLIDE_BREAKPOINTS.map(({ key, label, defaultValue }) => (
-                            <SelectControl
-                                key={key}
-                                label={`Items per page — ${label}`}
-                                value={String(slidesPerPage[key])}
-                                options={getSlideOptions()}
-                                onChange={(value) => setAttributes({
-                                    [key]: normalizeSlidesPerPage(value, slidesPerPage[key]),
-                                })}
-                            />
-                        ))}
+                        <ListingLayoutControls layout={layout} setAttributes={setAttributes} />
                         <TextControl
                             label="Title"
                             value={attributes.title || ''}
                             onChange={(value) => setAttributes({ title: value })}
+                        />
+                        <CheckboxControl
+                            label="Show count"
+                            checked={Boolean(attributes.showCount)}
+                            onChange={(value) => setAttributes({ showCount: Boolean(value) })}
                         />
                         <CheckboxControl
                             label="Has CTA"
@@ -249,21 +189,18 @@ registerBlockType('abcnorio/content-listing', {
                                 />
                             </>
                         )}
-                        <fieldset style={{ display: 'flex', gap: '1rem', flexWrap: 'nowrap' }}>
-                            <legend>Show…</legend>
-                            {POST_TYPE_OPTIONS.map((option) => (
-                                <CheckboxControl
-                                    key={option.value}
-                                    label={option.label}
-                                    checked={selectedPostTypes.includes(option.value)}
-                                    onChange={() =>
-                                        setAttributes({
-                                            listingPostTypes: togglePostType(selectedPostTypes, option.value),
-                                        })
-                                    }
-                                />
-                            ))}
-                        </fieldset>
+                        {POST_TYPE_OPTIONS.map((option) => (
+                            <CheckboxControl
+                                key={option.value}
+                                label={option.label}
+                                checked={selectedPostTypes.includes(option.value)}
+                                onChange={() =>
+                                    setAttributes({
+                                        listingPostTypes: togglePostType(selectedPostTypes, option.value),
+                                    })
+                                }
+                            />
+                        ))}
                         <TextControl
                             label="Tag Slugs (comma separated)"
                             value={(Array.isArray(attributes.listingTagFilter) ? attributes.listingTagFilter : []).join(', ')}
@@ -297,16 +234,16 @@ registerBlockType('abcnorio/content-listing', {
                     {isManualOrder && (
                         <PanelBody title="Manual Item Order" initialOpen={true}>
                         {draggableRecords.length === 0 ? (
-                            <p style={{ color: '#666', fontSize: '12px' }}>No matching items found</p>
+                            <p className="abcnorio-manual-order__empty">No matching items found</p>
                         ) : (
                             <div>
-                                <p style={{ fontSize: '12px', margin: '0 0 8px 0', color: '#666' }}>
+                                <p className="abcnorio-manual-order__hint">
                                     only shows upcoming entries for the day of and beyond
                                 </p>
-                                <p style={{ fontSize: '12px', fontWeight: 600, margin: '0 0 8px 0', color: '#333' }}>
+                                <p className="abcnorio-manual-order__heading">
                                     Drag to reorder (showing first {draggableRecords.length} items)
                                 </p>
-                                <div style={{ border: '1px solid #ddd', borderRadius: '4px', backgroundColor: '#fafafa' }}>
+                                <div className="abcnorio-manual-order__list">
                                     {draggableRecords.map((record, index) => (
                                         <div
                                             key={record.id}
@@ -314,20 +251,12 @@ registerBlockType('abcnorio/content-listing', {
                                             onDragStart={(e) => handleDragStart(e, record.id)}
                                             onDragOver={handleDragOver}
                                             onDrop={(e) => handleDrop(e, index)}
-                                            style={{
-                                                padding: '8px 12px',
-                                                borderBottom: index < draggableRecords.length - 1 ? '1px solid #eee' : 'none',
-                                                cursor: 'move',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                backgroundColor: '#fff',
-                                            }}
+                                            className="abcnorio-manual-order__item"
                                         >
-                                            <span style={{ color: '#999', fontSize: '18px', marginRight: '4px' }}>⋮⋮</span>
-                                            <span style={{ flex: 1, fontSize: '13px' }}>
+                                            <span className="abcnorio-manual-order__handle">⋮⋮</span>
+                                            <span className="abcnorio-manual-order__title">
                                                 {record.title}
-                                                <span style={{ color: '#999', marginLeft: '4px' }}>
+                                                <span className="abcnorio-manual-order__meta">
                                                     ({record.postType}) #{record.id}
                                                 </span>
                                             </span>

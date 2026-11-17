@@ -94,7 +94,7 @@ class ComponentIngestor {
             if (!wp_style_is($handle, 'registered')) {
                 wp_register_style(
                     $handle,
-                    self::distUrl() . ltrim($relative_path, '/'),
+                    self::styleUrl($relative_path),
                     [],
                     (string) filemtime($absolute_path)
                 );
@@ -104,33 +104,75 @@ class ComponentIngestor {
         }
     }
 
-    public static function enqueueEditorStyles(): void {
-        $relative_path = 'styles/component-fixtures.css';
-        $absolute_path = self::distDir() . '/' . $relative_path;
+    private static function styleUrl(string $path): string {
+        if (!is_admin() || !in_array(wp_get_environment_type(), ['local', 'development'], true)) {
+            return self::distUrl() . ltrim($path, '/');
+        }
+        $origin = (string) getenv('DEV_FRONTEND_URL');
+        $parts = wp_parse_url($origin);
+        if (!is_array($parts) || !in_array($parts['scheme'] ?? '', ['http', 'https'], true)
+            || empty($parts['host']) || isset($parts['user']) || isset($parts['pass'])
+            || isset($parts['query']) || isset($parts['fragment']) || !in_array($parts['path'] ?? '', ['', '/'], true)) {
+            throw new \RuntimeException('Components System Error: Development requires DEV_FRONTEND_URL as a browser-accessible HTTP(S) origin.');
+        }
+        $entries = self::load()['styleEntries'] ?? null;
+        if (!is_array($entries) || $entries === []) {
+            throw new \RuntimeException('Components System Error: Live styles require manifest.styleEntries. Rebuild and ingest the webcomponents package once.');
+        }
+        foreach ($entries as $id => $entry) {
+            if (($entry['css'] ?? null) === $path) {
+                return rtrim($origin, '/') . '/__abcnorio/styles/' . rawurlencode($id) . '.css';
+            }
+            if (($entry['editorCss'] ?? null) === $path) {
+                return rtrim($origin, '/') . '/__abcnorio/styles/' . rawurlencode($id) . '-editor.css';
+            }
+        }
+        return self::distUrl() . ltrim($path, '/');
+    }
 
-        if (!file_exists($absolute_path)) {
-            throw new \RuntimeException("Components System Error: Editor CSS missing at '{$absolute_path}'.");
+    public static function enqueueEditorStyles(): void {
+        if (!is_admin()) {
+            return;
         }
 
-        wp_enqueue_style(
-            'abcnorio-components-editor',
-            self::distUrl() . $relative_path,
-            ['abcnorio-components-runtime'],
-            (string) filemtime($absolute_path)
-        );
+        $relative_path = 'styles/component-fixtures.css';
+        $absolute_path = self::distDir() . '/' . $relative_path;
+        if (!is_file($absolute_path)) {
+            throw new \RuntimeException("Components System Error: Editor component CSS missing at '{$absolute_path}'.");
+        }
 
-        foreach (self::load()['components'] as $component_name => $component) {
-            $editor_css = $component['editorCss'] ?? [];
-            if (!is_array($editor_css)) {
-                throw new \RuntimeException("Components System Error: Invalid editorCss for '{$component_name}'.");
+        if (!wp_style_is('abcnorio-components-editor', 'registered')) {
+            wp_register_style(
+                'abcnorio-components-editor',
+                self::distUrl() . $relative_path,
+                ['abcnorio-components-runtime'],
+                (string) filemtime($absolute_path)
+            );
+        }
+        wp_enqueue_style('abcnorio-components-editor');
+
+        $components = self::load()['components'] ?? null;
+        if (!is_array($components)) {
+            throw new \RuntimeException('Components System Error: components must be an object in manifest.');
+        }
+
+        foreach ($components as $component_name => $meta) {
+            if (!is_array($meta)) {
+                throw new \RuntimeException("Components System Error: Invalid component metadata for '{$component_name}'.");
             }
-            foreach ($editor_css as $relative_path) {
-                if (!is_string($relative_path) || !str_starts_with($relative_path, 'styles/editor/') || !str_ends_with($relative_path, '.css')) {
-                    throw new \RuntimeException("Components System Error: Invalid editor stylesheet for '{$component_name}'.");
+
+            $editor_css = $meta['editorCss'] ?? [];
+            if (!is_array($editor_css)) {
+                throw new \RuntimeException("Components System Error: editorCss must be an array for '{$component_name}'.");
+            }
+
+            foreach ($editor_css as $path) {
+                if (!is_string($path) || $path === '' || self::depAssetType($path) !== 'style') {
+                    throw new \RuntimeException("Components System Error: Invalid editor CSS path for '{$component_name}'.");
                 }
-                self::registerDepAsset($component_name, $relative_path);
-                $handle = self::depHandle($component_name, $relative_path);
-                wp_enqueue_style($handle);
+
+                self::registerDepAsset($component_name, $path);
+                wp_enqueue_style(self::depHandle($component_name, $path));
             }
         }
     }
@@ -197,6 +239,10 @@ class ComponentIngestor {
     }
 
     private static function depHandle(string $component_name, string $relative_path): string {
+        $shared_index = array_search($relative_path, self::load()['shared']['css'] ?? [], true);
+        if ($shared_index !== false) {
+            return $shared_index === 0 ? 'abcnorio-components-runtime' : "abcnorio-components-runtime-{$shared_index}";
+        }
         $component_slug = self::sanitizeComponentHandle($component_name);
         $asset_slug = self::sanitizeComponentHandle(pathinfo($relative_path, PATHINFO_FILENAME));
         $asset_type = self::depAssetType($relative_path);
@@ -229,16 +275,19 @@ class ComponentIngestor {
         }
 
         if (!wp_style_is($handle, 'registered')) {
-            wp_register_style($handle, $asset_url, [], (string) filemtime($absolute_path));
+            wp_register_style($handle, esc_url(self::styleUrl($relative_path)), [], (string) filemtime($absolute_path));
         }
     }
 
     public static function moduleScriptTag(string $tag, string $handle): string {
-        if (wp_scripts()->get_data($handle, 'abcnorio_module')) {
-            return str_replace('<script ', '<script type="module" ', $tag);
+        if (!wp_scripts()->get_data($handle, 'abcnorio_module')) {
+            return $tag;
         }
-
-        return $tag;
+        $processor = new \WP_HTML_Tag_Processor($tag);
+        if ($processor->next_tag('script')) {
+            $processor->set_attribute('type', 'module');
+        }
+        return $processor->get_updated_html();
     }
 
     public static function register_component_deps(string $component_name): void {

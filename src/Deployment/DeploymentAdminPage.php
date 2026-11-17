@@ -110,7 +110,7 @@ final class DeploymentAdminPage
         ?>
         <strong><?php esc_html_e('Recent Production Backups', 'abcnorio-func'); ?></strong>
         <?php if ($backups === []) : ?>
-            <p style="margin: 0.5rem 0 0; color: #666;">
+            <p style="margin: 0.5rem 0 0; color: #666; border: 12px var(--color-gray--darkest ) solid;">
                 <?php esc_html_e('No backup archives found yet.', 'abcnorio-func'); ?>
             </p>
         <?php else : ?>

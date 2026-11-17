@@ -3,13 +3,16 @@
     "file": "chunks/breakpoints-sWZgTKLh.js",
     "name": "breakpoints"
   },
-  "_carousel-hEELMurI.js": {
-    "file": "chunks/carousel-hEELMurI.js",
-    "name": "carousel"
-  },
   "_drawer-BWAQbeb7.js": {
     "file": "chunks/drawer-BWAQbeb7.js",
     "name": "drawer"
+  },
+  "_listing-slider-DhHhkQqx.js": {
+    "file": "chunks/listing-slider-DhHhkQqx.js",
+    "name": "listing-slider",
+    "imports": [
+      "_breakpoints-sWZgTKLh.js"
+    ]
   },
   "src/components/add-to-calendar/add-to-calendar.js": {
     "file": "add-to-calendar.js",
@@ -50,8 +53,7 @@
     "src": "src/components/content-listing/content-listing.js",
     "isEntry": true,
     "imports": [
-      "_breakpoints-sWZgTKLh.js",
-      "_carousel-hEELMurI.js"
+      "_listing-slider-DhHhkQqx.js"
     ]
   },
   "src/components/event-listing/event-listing.js": {
@@ -60,8 +62,7 @@
     "src": "src/components/event-listing/event-listing.js",
     "isEntry": true,
     "imports": [
-      "_breakpoints-sWZgTKLh.js",
-      "_carousel-hEELMurI.js"
+      "_listing-slider-DhHhkQqx.js"
     ]
   },
   "src/components/event-teaser/event-teaser.js": {

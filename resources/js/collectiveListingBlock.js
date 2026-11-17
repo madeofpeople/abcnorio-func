@@ -105,13 +105,13 @@ registerBlockType('abcnorio/collective-listing', {
                     {isManualOrder && (
                         <PanelBody title="Manual Item Order" initialOpen={true}>
                             {draggableRecords.length === 0 ? (
-                                <p style={{ color: '#666', fontSize: '12px' }}>No matching items found</p>
+                                <p className="abcnorio-manual-order__empty">No matching items found</p>
                             ) : (
                                 <div>
-                                    <p style={{ fontSize: '12px', fontWeight: 600, margin: '0 0 8px 0', color: '#333' }}>
+                                    <p className="abcnorio-manual-order__heading">
                                         Drag to reorder (showing {draggableRecords.length} items)
                                     </p>
-                                    <div style={{ border: '1px solid #ddd', borderRadius: '4px', backgroundColor: '#fafafa' }}>
+                                    <div className="abcnorio-manual-order__list">
                                         {draggableRecords.map((record, index) => (
                                             <div
                                                 key={record.slug}
@@ -119,20 +119,12 @@ registerBlockType('abcnorio/collective-listing', {
                                                 onDragStart={(event) => handleDragStart(event, record.slug)}
                                                 onDragOver={handleDragOver}
                                                 onDrop={(event) => handleDrop(event, index)}
-                                                style={{
-                                                    padding: '8px 12px',
-                                                    borderBottom: index < draggableRecords.length - 1 ? '1px solid #eee' : 'none',
-                                                    cursor: 'move',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '8px',
-                                                    backgroundColor: '#fff',
-                                                }}
+                                                className="abcnorio-manual-order__item"
                                             >
-                                                <span style={{ color: '#999', fontSize: '18px', marginRight: '4px' }}>⋮⋮</span>
-                                                <span style={{ flex: 1, fontSize: '13px' }}>
+                                                <span className="abcnorio-manual-order__handle">⋮⋮</span>
+                                                <span className="abcnorio-manual-order__title">
                                                     {record.title}
-                                                    <span style={{ color: '#999', marginLeft: '4px' }}>
+                                                    <span className="abcnorio-manual-order__meta">
                                                         ({record.slug}) #{record.id}
                                                     </span>
                                                 </span>

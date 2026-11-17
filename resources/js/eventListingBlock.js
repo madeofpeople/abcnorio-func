@@ -5,6 +5,8 @@ import { useSelect } from '@wordpress/data';
 import { useMemo } from '@wordpress/element';
 import ServerSideRender from '@wordpress/server-side-render';
 import { QUERY_BLOCK_MAX_ITEM_COUNT, QUERY_BLOCK_MIN_ITEM_COUNT } from './blockHelpers';
+import blockMetadata from '../../src/Blocks/event-listing-query/block.json';
+import { listingLayout, ListingLayoutControls } from './listingLayout';
 
 const DATE_FILTER_OPTIONS = [
     { label: 'Upcoming', value: 'upcoming' },
@@ -22,36 +24,6 @@ const VARIANT_OPTIONS = [
     { label: 'Slider', value: 'slider' },
     { label: 'Paged Grid', value: 'paged-grid' },
 ];
-
-const SLIDE_BREAKPOINTS = [
-    { key: 'slidesPerPage', label: 'Base (under 450px)', defaultValue: 1 },
-    { key: 'slidesPerPageXs', label: 'XS (450px and up)', defaultValue: 2 },
-    { key: 'slidesPerPageSm', label: 'SM (720px and up)', defaultValue: 3 },
-    { key: 'slidesPerPageMd', label: 'MD (1024px and up)', defaultValue: 4 },
-    { key: 'slidesPerPageLg', label: 'LG (1250px and up)', defaultValue: 3.5 },
-];
-
-const SLIDE_OPTIONS = [
-    { label: '1.333', value: '1.333' },
-    { label: '2', value: '2' },
-    { label: '2.333', value: '2.333' },
-    { label: '3', value: '3' },
-    { label: '3.333', value: '3.333' },
-    { label: '4', value: '4' },
-    { label: '4.333', value: '4.333' },
-    { label: '5', value: '5' },
-    { label: '6', value: '6' },
-];
-
-function normalizeSlidesPerPage(value, fallback) {
-    const parsed = Number.parseFloat(value);
-    const count = Number.isFinite(parsed) ? parsed : fallback;
-    return Math.max(1, Math.min(6, count));
-}
-
-function getSlideOptions() {
-    return SLIDE_OPTIONS;
-}
 
 function useTaxonomyOptions( taxonomy ) {
     const terms = useSelect(
@@ -75,11 +47,11 @@ function useTaxonomyOptions( taxonomy ) {
 
     registerBlockType( 'abcnorio/event-listing', {
     edit( { attributes, setAttributes } ) {
+        const layout = listingLayout(attributes, blockMetadata.attributes);
+        const blockProps = useBlockProps({ style: layout.style });
         const eventTypeOptions = useTaxonomyOptions( 'event_type' );
         const collectiveOptions = useTaxonomyOptions( 'collective_association' );
-        const variantValue = String( attributes.variant || 'grid' ).toLowerCase();
-        const variant = VARIANT_OPTIONS.some((option) => option.value === variantValue) ? variantValue : 'grid';
-        const gridColumns = attributes.gridColumns || (['grid-3', 'grid-4'].includes(variantValue) ? variantValue : 'grid-4');
+        const variant = layout.variant;
         const isPaged = variant === 'paged-grid';
         const showAllLink = Boolean( attributes.showAllLink ?? true );
         const effectiveShowAllLink = isPaged ? false : showAllLink;
@@ -89,22 +61,6 @@ function useTaxonomyOptions( taxonomy ) {
             QUERY_BLOCK_MIN_ITEM_COUNT,
             Math.min( QUERY_BLOCK_MAX_ITEM_COUNT, Number.parseInt( attributes.itemCount, 10 ) || 6 )
         );
-        const slidesPerPage = Object.fromEntries(
-            SLIDE_BREAKPOINTS.map(({ key, defaultValue }) => [
-                key,
-                normalizeSlidesPerPage(attributes[key], defaultValue),
-            ])
-        );
-        const blockProps = useBlockProps({
-            style: {
-                '--listing-preview-columns': gridColumns === 'grid-3' ? 3 : 4,
-                '--listing-preview-slides': slidesPerPage.slidesPerPage,
-                '--listing-preview-slides-xs': slidesPerPage.slidesPerPageXs,
-                '--listing-preview-slides-sm': slidesPerPage.slidesPerPageSm,
-                '--listing-preview-slides-md': slidesPerPage.slidesPerPageMd,
-                '--listing-preview-slides-lg': slidesPerPage.slidesPerPageLg,
-            },
-        });
 
         return (
             <div { ...blockProps }>
@@ -114,30 +70,9 @@ function useTaxonomyOptions( taxonomy ) {
                             label="Variant"
                             value={ variant }
                             options={ VARIANT_OPTIONS }
-                            onChange={ ( value ) => setAttributes( { variant: value, gridColumns } ) }
+                            onChange={ ( value ) => setAttributes( { variant: value, gridColumns: layout.gridColumns } ) }
                         />
-                        {variant !== 'slider' && (
-                            <SelectControl
-                                label="Grid columns"
-                                value={gridColumns}
-                                options={[
-                                    { label: '3 Col Grid', value: 'grid-3' },
-                                    { label: '4 Col Grid', value: 'grid-4' },
-                                ]}
-                                onChange={(value) => setAttributes({ variant, gridColumns: value })}
-                            />
-                        )}
-                        {variant === 'slider' && SLIDE_BREAKPOINTS.map(({ key, label, defaultValue }) => (
-                            <SelectControl
-                                key={key}
-                                label={`Items per page — ${label}`}
-                                value={String(slidesPerPage[key])}
-                                options={getSlideOptions()}
-                                onChange={(value) => setAttributes({
-                                    [key]: normalizeSlidesPerPage(value, slidesPerPage[key]),
-                                })}
-                            />
-                        ))}
+                        <ListingLayoutControls layout={layout} setAttributes={setAttributes} />
                         <TextControl
                             label="Title"
                             value={ attributes.title || '' }

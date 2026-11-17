@@ -7,13 +7,8 @@ node_modules/
 vendor/
 .yarn/
 
-# Keep runtime-required webcomponents dist inside plugin repo.
-!resources/vendor/
-resources/vendor/*
-!resources/vendor/components/
-resources/vendor/components/*
-!resources/vendor/components/dist/
-!resources/vendor/components/dist/**
+# Generated component assets are ingested during builds and included in release archives.
+/resources/vendor/components/dist/
 
 # Env variables
 .env

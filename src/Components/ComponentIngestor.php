@@ -45,29 +45,6 @@ class ComponentIngestor {
         return plugin_dir_url(ABCNORIO_CUSTOM_FUNC_FILE) . self::COMPONENT_DIST_RELATIVE_PATH . '/';
     }
 
-    public static function runtimeCssUrl(): string {
-        $shared_css = self::load()['shared']['css'] ?? [];
-
-        if (!is_array($shared_css)) {
-            throw new \RuntimeException("Components System Error: shared.css missing in manifest.");
-        }
-
-        if (empty($shared_css)) {
-            $shared_css = ['styles/component-fixtures.css'];
-        }
-
-        if (!is_string($shared_css[0]) || $shared_css[0] === '') {
-            throw new \RuntimeException("Components System Error: shared.css entry is invalid.");
-        }
-
-        $runtime_css_path = self::distDir() . '/' . ltrim($shared_css[0], '/');
-        if (!file_exists($runtime_css_path)) {
-            throw new \RuntimeException("Components System Error: Runtime CSS missing at '{$runtime_css_path}'.");
-        }
-
-        return self::distUrl() . ltrim($shared_css[0], '/');
-    }
-
     public static function enqueueRuntimeStyles(): void {
         $shared_css = self::load()['shared']['css'] ?? [];
 

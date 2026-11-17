@@ -4,20 +4,32 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 
 ## Component Ingestion Contract
 
-- Source of truth for web component fixtures/assets is the webcomponents build output. Normal `npm run build` ingests `node_modules/abcnorio-webcomponents/dist`; the meta repo's `just update-plugin dev` opts into the local sibling `abcnorio-webcomponents/dist` for WordPress preview work.
+- Source of truth is the Git-pinned webcomponents source. Normal `npm run build` explicitly builds `node_modules/abcnorio-webcomponents`, then ingests its generated `dist`; the meta repo's `just plugin-dev-assets` builds the local sibling source instead for WordPress preview work.
 - Plugin-owned runtime artifacts are copied to `resources/vendor/components/dist` during `npm run build`.
+- This copied directory is gitignored, like `build/`; authored `resources/js`,
+  `resources/css`, and static assets remain tracked. After cloning, install locked
+  dependencies with `npm ci` and run `npm run build` before starting WordPress.
+- Neither the component package's original `dist/` nor its plugin copy is tracked.
+  `npm ci` installs source without building it; `npm run build:components` builds
+  and ingests it explicitly (also included in `npm run build`). Missing build
+  sources are an error, never a fallback to stale dist. Live SCSS does not replace
+  production CSS, scripts, manifests, or HTML fixtures.
+- `ABCNORIO_COMPONENTS_DIST_SOURCE=/absolute/path/to/abcnorio-webcomponents/dist`
+  selects a local source checkout for builds; install that checkout's dependencies
+  with `npm ci` first. The override's parent must be buildable component source.
 - Runtime PHP reads fixtures/assets only from plugin-local path (`resources/vendor/components/dist`).
 - Runtime CSS is enqueued as a static plugin URL from that same plugin-local path.
 - Contract is fail-loud: missing dist/manifest/css is a hard error.
 
 ## Release Artifact Contract
 
-- `build/` (webpack-compiled editor script, `wp-scripts build` output) is gitignored and never committed — this repo's git history stays source-only.
+- `build/` (webpack-compiled editor script) and `resources/vendor/components/dist/`
+  (ingested component assets) are gitignored. Release archives contain both.
 - Staging installs this plugin via Composer's `artifact` repository type (a folder of versioned tarballs), not a plain VCS checkout, so `build/` still reaches runtime without ever being tracked in git.
-- Release tarballs are produced by `abcnorio-meta/scripts/build-plugin-release.sh` (invoke via `just build-plugin-release [tag]` from `abcnorio-meta/`): it exports the exact git tag via `git archive` into a clean scratch directory, runs `npm ci && npm run build` there, and packages the runtime footprint (`composer.json`, `custom-func.php`, `src/`, `resources/`, `build/`) into `abcnorio-meta/wp/plugin-artifacts/abcnorio-func-<version>.tar.gz`.
-- From `abcnorio-meta`, `just update-plugin dev` builds local webcomponents and rebuilds the mounted dev plugin preview assets. It does not bump versions, commit, tag, push, or deploy.
-- `just release-plugin staging <bump>` builds and validates one candidate artifact from clean `HEAD` before changing the source version, committing, tagging, or pushing. It verifies the webcomponents manifest but does not rebuild the live webcomponents `dist/` tree.
-- Rebuild an old release with `just build-plugin-release vX.Y.Z`; the script exports that tag and `npm ci` uses the exact dependency commit recorded in its `package-lock.json`.
+- Release tarballs are produced by `abcnorio-meta/scripts/build-plugin-release.sh` (invoke via `just plugin-artifact [tag]` from `abcnorio-meta/`): it exports the exact git tag via `git archive` into a clean scratch directory, runs `npm ci && npm run build` there, and packages the runtime footprint (`composer.json`, `custom-func.php`, `src/`, `resources/`, `build/`) into `abcnorio-meta/wp/plugin-artifacts/abcnorio-func-<version>.tar.gz`.
+- From `abcnorio-meta`, `just plugin-dev-assets` builds local webcomponents and rebuilds the mounted dev plugin preview assets. It does not bump versions, commit, tag, push, or deploy.
+- `just plugin-release staging <bump>` builds and validates one candidate artifact from clean `HEAD` before changing the source version, committing, tagging, or pushing. It builds the locked webcomponents source and validates its manifest in scratch, without rebuilding the live sibling `dist/` tree.
+- Rebuild an old release with `just plugin-artifact vX.Y.Z`; the script exports that tag and `npm ci` uses the exact dependency commit recorded in its `package-lock.json`.
 - Keep the tagged `package-lock.json` as the dependency source of truth; `npm install` can refresh the `#main` Git reference and should not be used for historical artifact rebuilds.
 
 ### Component dep enqueue
@@ -25,7 +37,8 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 - `manifest.components[name].deps` is a flat array of relative dist paths for transitive CSS/JS deps declared in fixture metadata.
 - `ComponentIngestor::enqueue_component_deps(string $component_name)` infers asset type from file extension and enqueues under namespaced handles: `abcnorio-dep-{type}-{component}-{slug}-{hash}`.
 - Handle is deterministic per path; WordPress deduplicates re-enqueues automatically.
-- `ComponentIngestor::render()` calls `enqueue_component_deps` automatically.
+- Block renderers explicitly enqueue their declared component dependencies; reading
+  a fixture through `readDistHtml()` does not enqueue assets.
 - Direct-query blocks (`EventListingQuery`, `ContentListingQuery`) call `enqueue_component_deps` explicitly for each component they render, including child teasers.
 
 1. Install dependencies in `abcnorio-func`.

@@ -54,6 +54,7 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 - Run event template regression checks in a WordPress installation with `wp eval-file /path/to/abcnorio-func/tests/event-listing-render.php`.
 - `resources/css/admin-overrides.css` stays manual and small.
 - Admin overrides cover editor-shell typography/layout, link click suppression, and admin UI only. Content buttons use component styles; WordPress buttons and block appenders retain native styling.
+- The editor disables block Shadow controls and removes only the core image Rounded style choice. Default and other image styles remain available; existing saved styles are not migrated.
 - No generated `resources/css/admin-styles.css` is part of the runtime contract.
 - Empty listing override stylesheets and their content-scanning enqueue hooks have
   been removed. Listing styles come from the component manifest for both saved

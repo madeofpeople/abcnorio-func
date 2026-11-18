@@ -10,6 +10,7 @@ import './pressItemBlock';
 import './heroBlock';
 import './galleryBlock';
 import './groupLayout';
+import './editorStyleOptions';
 import './sidebarToutBlock';
 import './newsletterSignupBlock';
 import './publicFormBlock';

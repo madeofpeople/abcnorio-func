@@ -28,6 +28,17 @@ final class AdminExperience
         add_filter('post_type_link', [self::class, 'rewriteLinkToFrontend'], 10, 2);
         add_filter('preview_post_link', [self::class, 'rewriteLinkToFrontend'], 10, 2);
         add_filter('big_image_size_threshold', [self::class, 'bigImageSizeThreshold']);
+        add_filter('block_editor_settings_all', [self::class, 'disableEditorShadows']);
+    }
+
+    public static function disableEditorShadows(array $settings): array
+    {
+        $features = &$settings['__experimentalFeatures'];
+        $features['shadow'] = ['defaultPresets' => false, 'presets' => []];
+        foreach (array_keys($features['blocks'] ?? []) as $blockName) {
+            $features['blocks'][$blockName]['shadow'] = ['defaultPresets' => false, 'presets' => []];
+        }
+        return $settings;
     }
 
     public static function bigImageSizeThreshold(): int

@@ -4,7 +4,7 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 
 ## Component Ingestion Contract
 
-- Source of truth is the Git-pinned webcomponents source. Normal `npm run build` explicitly builds `node_modules/abcnorio-webcomponents`, then ingests its generated `dist`; the meta repo's `just plugin-dev-assets` builds the local sibling source instead for WordPress preview work.
+- Source of truth is the Git-pinned webcomponents source. Normal `npm run build` explicitly builds `node_modules/abcnorio-webcomponents`, then ingests its generated `dist`; the meta repo's `just dev-local` builds the local sibling source instead for WordPress preview work.
 - Plugin-owned runtime artifacts are copied to `resources/vendor/components/dist` during `npm run build`.
 - This copied directory is gitignored, like `build/`; authored `resources/js`,
   `resources/css`, and static assets remain tracked. After cloning, install locked
@@ -25,10 +25,10 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 - `build/` (webpack-compiled editor script) and `resources/vendor/components/dist/`
   (ingested component assets) are gitignored. Release archives contain both.
 - Staging installs this plugin via Composer's `artifact` repository type (a folder of versioned tarballs), not a plain VCS checkout, so `build/` still reaches runtime without ever being tracked in git.
-- Release tarballs are produced by `abcnorio-meta/scripts/build-plugin-release.sh` (invoke via `just plugin-artifact [tag]` from `abcnorio-meta/`): it exports the exact git tag via `git archive` into a clean scratch directory, runs `npm ci && npm run build` there, and packages the runtime footprint (`composer.json`, `custom-func.php`, `src/`, `resources/`, `build/`) into `abcnorio-meta/wp/plugin-artifacts/abcnorio-func-<version>.tar.gz`.
-- From `abcnorio-meta`, `just plugin-dev-assets` builds local webcomponents and rebuilds the mounted dev plugin preview assets. It does not bump versions, commit, tag, push, or deploy.
-- `just plugin-release staging <bump>` builds and validates one candidate artifact from clean `HEAD` before changing the source version, committing, tagging, or pushing. It builds the locked webcomponents source and validates its manifest in scratch, without rebuilding the live sibling `dist/` tree.
-- Rebuild an old release with `just plugin-artifact vX.Y.Z`; the script exports that tag and `npm ci` uses the exact dependency commit recorded in its `package-lock.json`.
+- Release tarballs are produced by `abcnorio-meta/scripts/build-plugin-release.sh` (invoke via `just plugin artifact build [tag]` from `abcnorio-meta/`): it exports the exact git tag via `git archive` into a clean scratch directory, runs `npm ci && npm run build` there, and packages the runtime footprint (`composer.json`, `custom-func.php`, `src/`, `resources/`, `build/`) into `abcnorio-meta/wp/plugin-artifacts/abcnorio-func-<version>.tar.gz`.
+- From `abcnorio-meta`, `just dev-local` builds and watches the mounted dev plugin preview assets. `just stack up dev` bootstraps missing assets internally. Neither publishes a release.
+- `just release staging <bump>` builds and validates one candidate artifact from clean `HEAD` before changing the source version, committing, tagging, or pushing. It builds the locked webcomponents source and validates its manifest in scratch, without rebuilding the live sibling `dist/` tree, then installs the plugin and deploys Astro staging.
+- Rebuild an old release with `just plugin artifact build vX.Y.Z`; the script exports that tag and `npm ci` uses the exact dependency commit recorded in its `package-lock.json`.
 - Keep the tagged `package-lock.json` as the dependency source of truth; `npm install` can refresh the `#main` Git reference and should not be used for historical artifact rebuilds.
 
 ### Component dep enqueue
@@ -83,7 +83,8 @@ generation and atomically replaces `dev-current.json` only after validation.
 WordPress local/development requests pin filesystem paths and asset URLs to one
 generation. Old generations remain available to open editor tabs. They consume
 disk space until explicitly cleaned; close editor tabs and stop watchers before
-running `just plugin-dev-clean`. This returns development to the normal `dist`
+running `node scripts/publish-components-dev.mjs --clean` from this repository.
+This maintenance operation returns development to the normal `dist`
 until the next successful watched build. Normal/release builds always produce
 `dist`; staging/production ignore development generations entirely.
 

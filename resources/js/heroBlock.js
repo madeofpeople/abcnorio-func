@@ -9,6 +9,7 @@ import {
     useBlockProps,
 } from '@wordpress/block-editor';
 import { PanelBody, SelectControl, ToolbarButton, ToolbarGroup } from '@wordpress/components';
+import ComponentShell from './componentShell';
 
 const TEMPLATE = [
     ['core/heading', { level: 2, placeholder: 'Write title...' }],
@@ -53,8 +54,8 @@ registerBlockType('abcnorio/hero', {
 
         const blockProps = useBlockProps({ className: variant === 'default' ? 'abcnorio-hero' : `abcnorio-hero ${variant}` });
 
-        return (
-            <div {...blockProps}>
+        const controls = (
+            <>
                 <InspectorControls>
                     <PanelBody title="Hero settings" initialOpen={true}>
                         <SelectControl
@@ -102,45 +103,46 @@ registerBlockType('abcnorio/hero', {
                         )}
                     </ToolbarGroup>
                 </BlockControls>
+            </>
+        );
+        const image = imageUrl === '' ? (
+            <MediaPlaceholder
+                icon="format-image"
+                labels={{ title: 'Cover background image' }}
+                onSelect={onSelectImage}
+                allowedTypes={['image']}
+            />
+        ) : null;
+        const content = (
+            <InnerBlocks
+                template={TEMPLATE}
+                templateLock={false}
+                allowedBlocks={[
+                    'core/heading',
+                    'core/paragraph',
+                    'core/buttons',
+                    'core/button',
+                    'core/group',
+                    'core/list',
+                    'core/list-item',
+                    'core/image',
+                ]}
+            />
+        );
 
-                <div className="abcnorio-hero__image-wrapper" style={style}>
-                    {imageUrl === '' && (
-                        <MediaPlaceholder
-                            icon="format-image"
-                            labels={{ title: 'Cover background image' }}
-                            onSelect={onSelectImage}
-                            allowedTypes={['image']}
-                        />
-                    )}
-                </div>
-                <div className="abcnorio-hero__content-wrapper">
-                    <div className="abcnorio-hero__content">
-                        <InnerBlocks
-                            template={TEMPLATE}
-                            templateLock={false}
-                            allowedBlocks={[
-                                'core/heading',
-                                'core/paragraph',
-                                'core/buttons',
-                                'core/button',
-                                'core/group',
-                                'core/list',
-                                'core/list-item',
-                                'core/image',
-                            ]}
-                        />
-                    </div>
-                </div>
-            </div>
+        return (
+            <>
+                {controls}
+                <ComponentShell
+                    component="hero"
+                    blockProps={blockProps}
+                    bindings={{ image: { props: { style } } }}
+                    slots={{ image, content }}
+                />
+            </>
         );
     },
     save() {
-        return (
-            <div className="abcnorio-hero__content-wrapper">
-                <div className="abcnorio-hero__content">
-                    <InnerBlocks.Content />
-                </div>
-            </div>
-        );
+        return <InnerBlocks.Content />;
     },
 });

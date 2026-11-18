@@ -93,7 +93,10 @@ final class HtmlFragmentSupport
             throw new \RuntimeException(sprintf('Components System Error: %s fixture missing link/content nodes.', $context));
         }
 
-        $img = $existing instanceof \DOMElement ? $existing : $dom->createElement('img');
+        if (!$existing instanceof \DOMElement) {
+            throw new \RuntimeException(sprintf('Components System Error: %s fixture missing image region.', $context));
+        }
+        $img = $existing;
         if ($imageClass !== null) {
             $img->setAttribute('class', $imageClass);
         }
@@ -114,8 +117,5 @@ final class HtmlFragmentSupport
             $img->setAttribute('sizes', (string) $image['sizes']);
         }
 
-        if (! $existing instanceof \DOMElement) {
-            $link->insertBefore($img, $content);
-        }
     }
 }

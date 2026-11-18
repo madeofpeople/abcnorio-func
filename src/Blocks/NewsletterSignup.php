@@ -43,20 +43,37 @@ final class NewsletterSignup
             $submitText = 'Subscribe';
         }
 
-        $html = '';
-        $html .= '<div class="wp-block-abcnorio-newsletter-signup abcnorio-newsletter-signup">';
-        $html .= '<h3 class="abcnorio-newsletter-signup__header">' . esc_html($header) . '</h3>';
-        if ($subHeader !== '') {
-            $html .= '<p class="abcnorio-newsletter-signup__sub-header">' . esc_html($subHeader) . '</p>';
+        $dom = HtmlFragmentSupport::loadHtmlFragment(
+            '<?xml encoding="UTF-8">' . ComponentIngestor::readDistHtml('newsletter-signup/preview.html')
+        );
+        $xpath = new \DOMXPath($dom);
+        $root = $xpath->query('//*[@data-newsletter-preview]')->item(0);
+        if (!$root instanceof \DOMElement) {
+            throw new \RuntimeException('Components System Error: newsletter preview root missing.');
         }
-        $html .= '<div class="abcnorio-newsletter-signup__field">';
-        $html .= '<span class="abcnorio-newsletter-signup__preview-label">Email address *</span>';
-        $html .= '<div class="abcnorio-newsletter-signup__preview-input"></div>';
-        $html .= '</div>';
-        $html .= '<button type="button" class="abcnorio-newsletter-signup__preview-button" disabled>' . esc_html($submitText) . '</button>';
-        $html .= '</div>';
-
-        return $html;
+        HtmlFragmentSupport::addClass($root, 'wp-block-abcnorio-newsletter-signup');
+        $showRequired = ($attributes['showRequiredIndicator'] ?? true) !== false;
+        $requiredText = sanitize_text_field((string) ($attributes['requiredIndicatorText'] ?? ''));
+        $values = [
+            'header' => $header,
+            'sub-header' => $subHeader === '' ? null : $subHeader,
+            'required-star' => $showRequired ? ' *' : null,
+            'required-text' => $showRequired ? ($requiredText === '' ? '* = required field' : $requiredText) : null,
+            'submit' => $submitText,
+        ];
+        foreach ($values as $name => $value) {
+            $nodes = $xpath->query('.//*[@data-newsletter-bind="' . $name . '"]', $root);
+            if ($nodes->length !== 1) {
+                throw new \RuntimeException("Components System Error: newsletter preview binding missing or duplicated: {$name}.");
+            }
+            $node = $nodes->item(0);
+            if ($value === null) {
+                $node->parentNode->removeChild($node);
+            } else {
+                $node->textContent = $value;
+            }
+        }
+        return trim((string) $dom->saveHTML($root));
     }
 
 }

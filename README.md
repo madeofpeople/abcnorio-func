@@ -12,8 +12,7 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
 - Neither the component package's original `dist/` nor its plugin copy is tracked.
   `npm ci` installs source without building it; `npm run build:components` builds
   and ingests it explicitly (also included in `npm run build`). Missing build
-  sources are an error, never a fallback to stale dist. Live SCSS does not replace
-  production CSS, scripts, manifests, or HTML fixtures.
+  sources are an error, never a fallback to stale dist.
 - `ABCNORIO_COMPONENTS_DIST_SOURCE=/absolute/path/to/abcnorio-webcomponents/dist`
   selects a local source checkout for builds; install that checkout's dependencies
   with `npm ci` first. The override's parent must be buildable component source.
@@ -60,30 +59,158 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
   been removed. Listing styles come from the component manifest for both saved
   blocks and newly inserted editor previews.
 
-### Local live SCSS
+### Local WordPress development
 
-After building/ingesting the updated webcomponents package once, development
-WordPress editors always load migrated styles from the existing Astro frontend.
-The existing `DEV_FRONTEND_URL` environment variable supplies the browser-accessible
-origin; the local Compose override sets it from `DEV_ASTRO_PORT`. There is no
-database setting, mode toggle, or packaged fallback in development.
+Install host Node dependencies in this repository and the sibling
+`abcnorio-webcomponents` checkout (`npm ci` in each), and install
+[Watchexec](https://github.com/watchexec/watchexec) (`brew install watchexec` on macOS).
+From `abcnorio-meta`, run `just dev-local` and keep it running.
 
-Hero, group, gallery, event listing, event teaser, content listing, article teaser and their manifest-declared
-editor styles load from Astro. Save SCSS and refresh
-again to see changes, including imports and design-token changes. No component
-build/ingestion is needed for these SCSS edits. This is refresh-based, not HMR.
+This one foreground command prepares calendar assets and starts:
+- The existing `wp-scripts start` watcher for plugin JS/imported CSS.
+- A queued Watchexec job building sibling component source, validating it and
+  publishing plugin-local component assets, initially and after source/config saves.
 
-Other components keep their packaged styles. Migrated component rules are separate
-assets, not duplicated in the combined fixture CSS. Shared dependency handles
-deduplicate listing styles. Frontend WordPress requests stay packaged.
+Wait for `[components] Ready`, then refresh WordPress. PHP and directly served
+plugin CSS changes only require refresh. There is no automatic editor reload,
+commit, dependency pin or deployment between edits. Astro's native source/HMR
+workflow is unchanged and need not be running for WordPress component previews.
+Ctrl-C stops both watchers. Build errors appear in the terminal; the component
+watcher remains available for the next save, keeping the previous successful output.
 
-WordPress `local`/`development` environments use live editor styles;
-`staging`/`production` environments always use built CSS. Keep Astro running in
-development: missing configuration is reported as an error, and failed stylesheet
-requests do not silently fall back to packaged styles.
-JS, templates, new manifest entries, and unmigrated components still use normal builds.
+Development publication writes a complete `resources/vendor/components/dev-<id>`
+generation and atomically replaces `dev-current.json` only after validation.
+WordPress local/development requests pin filesystem paths and asset URLs to one
+generation. Old generations remain available to open editor tabs. They consume
+disk space until explicitly cleaned; close editor tabs and stop watchers before
+running `just plugin-dev-clean`. This returns development to the normal `dist`
+until the next successful watched build. Normal/release builds always produce
+`dist`; staging/production ignore development generations entirely.
 
-Validate the loader without WordPress using `php tests/component-styles.php`.
+Validate PHP loading with `php tests/component-styles.php` and
+`php tests/component-generation.php`; run JS tests with
+`node --experimental-vm-modules --test tests/*.test.mjs` from this repository.
+
+### Hero editor
+
+Hero has one editor presentation path: the component-owned `hero/editor.html`
+fixture, rendered from the same Astro markup as the frontend. PHP embeds it
+before the editor bundle from the request's active component generation.
+There is no query flag, runtime fetch, alternate React shell or Shadow DOM.
+
+The shared `componentShell.js` adapter turns the trusted generated shell into
+React elements and replaces its image/content markers with Gutenberg controls
+and InnerBlocks. It preserves `useBlockProps` on the root and applies the
+block's background-image CSS variables through the declared `image` binding.
+React still owns inspector/media controls, attributes and editable child blocks.
+The save format stores only `InnerBlocks.Content`; presentation wrappers are no
+longer persisted. Existing wrapper-based hero content requires the one-time
+migration below. No legacy save/deprecation layer is registered.
+
+The adapter deliberately accepts a limited set of shell tags and rejects inline
+styles/event attributes. Missing fixtures/markers and unsupported markup are
+errors, not fallbacks to duplicated markup. Update the adapter and its checks
+when intentionally extending that contract. Component builds and the editor
+bundle must be released together, as with other packaged fixture consumers.
+
+Run `php tests/hero-shell.php` for shell loading in all environments and
+`node --experimental-vm-modules --test tests/hero-block.test.mjs` for controls and
+the child-only save contract.
+
+### Shared editable shell contract
+
+Hero, announcement tout, gallery, press item and the newsletter/public-form placeholders use the same
+adapter/loading path. Each component's
+`editor` fixture declares exactly one `data-editor-root`, uniquely named
+`data-editor-bind="name"` elements and `__EDITOR_SLOT_NAME__` text-node regions.
+These declarations are emitted only for editor fixtures, not frontend markup.
+The plugin discovers `<component>/editor` fixtures through the active manifest
+and embeds them together as `window.abcnorioEditorShells` before the editor JS.
+Required component shells missing from an old package produce an explicit error.
+
+React supplies `blockProps`, named `slots` and named `bindings`. Bindings may
+supply `props`, `children`, `tag` and `hidden`; their HTML still comes from the
+fixture. Missing/extra names and unsupported tags/inline style/event attributes
+in fixture markup fail explicitly. Heading/content changes retain stable
+InnerBlocks nodes; do not move DOM or inject markup over React-owned regions.
+Editable bindings may supply `render({ tag, props, children })` to render
+Gutenberg RichText using the component-declared tag/props instead of duplicating
+its presentation element. Preserve the supplied React key.
+Gallery adds scoped `<template data-editor-repeat="name">` repeaters. React
+supplies keyed item bindings, not repeated navigation JSX. Item keys must be
+unique strings/numbers; nested slots/bindings are checked in their own scope.
+Custom-element classes are emitted as `class`, not React's `className` attribute.
+Extend this small contract only for demonstrated requirements, not arbitrary HTML.
+
+Announcement tout retains its inspector controls and child-only save, but no
+longer duplicates toast/title/content HTML in its editor. Optional headings,
+heading levels 1-6 and secondary styling are bound into the Astro shell. Existing
+stored content requires no migration because its save format has not changed.
+
+Browser regression checks use installed public WordPress scripts and an existing
+Playwright-compatible browser. Generate a dependency URL list (no inline WP
+settings or credentials) and run from this repository:
+
+```sh
+wp eval-file /path/to/abcnorio-func/tests/editor-script-dependencies.php > /tmp/abcnorio-editor-scripts.json
+ABCNORIO_WP_SCRIPTS=/tmp/abcnorio-editor-scripts.json node tests/component-shell-browser.mjs
+```
+
+Set `ABCNORIO_TEST_BROWSER` to an existing Chromium-family executable if needed;
+`ABCNORIO_COMPONENTS_DIST_DIR` can select an isolated built component directory.
+The test uses synthetic content, never saves posts or uploads media, and closes
+its browser afterward.
+
+#### One-time hero content migration
+
+Before deploying the child-only save format to an existing database, stop editor
+writes and close editor tabs. Back up, migrate and release the matching editor
+assets within the same maintenance window; do not expose old content to the new
+save format or reopen stale editor tabs. No content recreation is required.
+
+In a bootstrapped WordPress installation (add your usual WP CLI flags), run:
+
+```sh
+wp eval-file /path/to/abcnorio-func/tests/hero-content-migration.php
+wp eval-file /path/to/abcnorio-func/tests/hero-content-migration-database.php
+wp eval-file /path/to/abcnorio-func/scripts/migrate-hero-content.php
+wp eval-file /path/to/abcnorio-func/scripts/migrate-hero-content.php backup /private/backup/hero-content.json
+# Preserve a private copy outside ephemeral containers before applying.
+wp eval-file /path/to/abcnorio-func/scripts/migrate-hero-content.php apply /private/backup/hero-content.json
+wp eval-file /path/to/abcnorio-func/scripts/migrate-hero-content.php
+```
+
+The default is read-only. The inventory covers active placed instances, database
+patterns/reusable blocks and templates. Revisions/autosaves, drafts/auto-drafts
+and trash are excluded; private content remains in scope. It also checks
+secondary metadata/options stores for hero markers.
+It preserves attributes, children and unrelated markup, rejects unknown shapes or
+unrelated serialization changes, and checks idempotence. Reports contain counts
+and record IDs, not post content. Unexpected formats/secondary stores must be
+reviewed before any application. Multisite requires a separate explicit plan.
+
+Backups contain affected content before/after migration, are exclusively created
+with private permissions outside WordPress directories, and are checked against
+the current site's identity and transformation. Keep them private and out of Git.
+Apply/restore require InnoDB, lock and compare each record, verify stored bytes,
+and roll back the entire transaction on conflict/error. They update only
+`post_content`, preserving IDs/statuses/attributes/timestamps without creating
+legacy revisions or triggering ordinary post-save side effects. Post caches are
+cleared and the frontend content-change signal is refreshed after success.
+The database test uses a disposable, uniquely named isolated table and removes it.
+
+Rollback, with matching old editor source/assets restored during maintenance:
+
+```sh
+wp eval-file /path/to/abcnorio-func/scripts/migrate-hero-content.php restore /private/backup/hero-content.json
+```
+
+Restore refuses to overwrite subsequent content edits. Repeated apply/restore
+is a no-op when already at the target state. A successful migration leaves zero
+legacy heroes; reopen the editor and verify nested edits, media/variants and no
+validation errors. Old database restores or imports must be inventoried/migrated
+before editing; they are not silently supported through a runtime fallback.
+The migration scripts are maintenance tooling only, never automatic boot hooks.
 
 ### Gallery editor
 
@@ -92,6 +219,106 @@ Validate the loader without WordPress using `php tests/component-styles.php`.
 - React retains ownership of image InnerBlocks. Slider previews scroll the existing editable track (including keyboard-selected images) rather than running the frontend carousel's DOM/lightbox setup.
 - Paged-grid previews use the component's entering/leaving animations, respect reduced motion, and retain the tallest visited grid height until a resize or content/settings change.
 - Navigation changes preview state only, not saved block attributes. Run editor behavior checks with `node --test tests/gallery-preview.test.mjs`.
+- Astro owns the shell, slider dots, paged navigation and item wrapper template.
+  PHP imports the matching variant fixture and clones its item wrapper; React
+  binds the real `useInnerBlocksProps` track. The outer Gutenberg block wrapper
+  and core/image editing/save markup remain WordPress-owned infrastructure.
+- Navigation always steps by pages, matching the public component. The obsolete
+  `navigationMode` attribute is ignored; existing child-only content needs no
+  database migration. **Responsive slider counts are unchanged**: 2 at base/XS,
+  3 at SM/MD and 4 at LG. `itemsPerPage` still controls paged grids only.
+- Run `wp eval-file tests/gallery-shell.php` in the bootstrapped plugin environment
+  for exact PHP/fixture shell parity, caption encoding and item population across
+  all five variants. The shared browser regression also checks gallery variant
+  changes, stable editable DOM, selected-image reveal, add/remove/reorder,
+  template pagination and existing-content save/reload.
+
+### Newsletter placeholder
+
+The editor and PHP render the same component-owned inert placeholder, not a
+reproduction of the selected public form. Header/subtitle/button/required-note
+controls bind into `newsletter-signup/editor` and `newsletter-signup/preview`
+fixtures. Field/group inspector controls and saved attributes remain intact.
+List data still loads for those controls, with existing loading/error feedback;
+the placeholder does not depend on that request succeeding.
+
+The placeholder has no form, real inputs, submission endpoint or public runtime
+initialization marker. Its button is disabled. Public Astro form/submission
+behavior is unchanged, and the block still saves attributes only (`save: null`).
+Run `node --experimental-vm-modules --test tests/newsletter-signup-block.test.mjs`
+and `wp eval-file tests/newsletter-preview.php` in WordPress; the shared browser
+test covers inertness during loading/success/error and preserved settings.
+
+### Public form placeholder
+
+The forms block keeps its configured ACF form selector and saved `formSlug`.
+Its editor uses the component-owned `public-form/editor` shell to show the
+selected title/slug and disabled submit-label button, not copied field/group
+markup. Loading, no selection, no configured forms, missing saved form,
+request errors and invalid responses have explicit status messages. A missing
+or temporarily unavailable selection is not automatically cleared.
+
+There are no form controls, submission endpoints or frontend form scripts in
+the placeholder. Frontend FormShell/FieldControl and submission behavior remain
+unchanged. The block still saves attributes only; no migration is needed.
+Validate with `node --experimental-vm-modules --test tests/public-form-block.test.mjs`
+and the shared Gutenberg browser regression (synthetic forms API, no submissions).
+
+### Press item
+
+The existing post type, page organization and saved content are unchanged.
+`press-item/editor` owns the article/date/title/source shell. React binds
+RichText directly to its declared heading/source elements and retains the date
+and fallback-date controls. The editor imports the component package's date
+formatter, including invalid-date fallback, instead of maintaining its own.
+Source links are constructed through DOM text/attribute APIs before RichText
+editing so literal text and quoted URLs are not interpolated into markup.
+The block still saves attributes only; no migration is required.
+
+The shared browser regression verifies real title/source editing, stable DOM,
+link roundtrips, dates/fallbacks and valid attribute-only save/reload.
+
+### Listing, teaser and sidebar markup ownership
+
+These blocks retain their fixture-populated PHP/server-rendered previews.
+Sidebar already shares its complete presentation; no new editor renderer is
+necessary. Event/collective counts and event-teaser date spans now come from
+component fixtures, not PHP-created elements. Card image population requires
+the fixture's image region when an image is supplied; missing presentation
+regions fail explicitly instead of creating replacement markup. Collective
+teasers no longer contain unused copied event/date rendering logic.
+
+Validate with WordPress `wp eval-file` for `tests/event-listing-render.php`,
+`tests/collective-listing-render.php`, `tests/content-listing-render.php` and
+`tests/listing-layout.php`. Query order, pagination, responsive slider settings
+and existing core block save contracts remain unchanged.
+
+### Core adapters and embeds
+
+Core blocks keep their native Gutenberg editors and saved markup. They do not
+need the shared editable-shell adapter: the component package already owns their
+frontend rendering, and the plugin does not maintain parallel presentation JSX.
+
+| Surface | Ownership retained |
+| --- | --- |
+| Group | Core editor/save; plugin layout hooks adjust only new/default group layouts and simple transforms. Shared Astro adapter owns frontend layout classes/children. |
+| Buttons | Core buttons/button editing/save; shared Astro adapter delegates presentation to the existing Button component. |
+| Heading, paragraph | Core RichText/save; frontend adapters handle heading levels/anchors and paragraph content. PHP heading-anchor bridge only enriches sourced data. |
+| Image | Core media/caption/link editing/save; shared frontend adapter owns image/link/caption output and image-size data handling. |
+| Quote, list/list-item | Core nested editing/save; shared adapters own frontend wrappers and content. |
+| HTML | Core HTML editor/save; shared frontend adapter retains its existing restricted Zeffy rendering policy. |
+| YouTube, Matterport | Core embed editor/save; shared provider registry selects existing frontend embed components. No new custom element or editor embed runtime. |
+
+This audit required no production renderer/save changes and no content
+migration. Do not copy native Gutenberg markup into Astro editor shells merely
+to make all blocks look architecturally identical.
+
+The shared browser regression includes 16 native core save/parse/reserialize
+cases, including nested buttons/list items, group layouts, all heading levels,
+linked/captioned image, quote, HTML and both embed providers. It does not load
+external video/tour providers. Run
+`node --experimental-vm-modules --test tests/group-layout-test.mjs` and
+`php tests/heading-anchor.php` for the plugin's core data/layout bridges.
 
 ### Responsive listing controls
 

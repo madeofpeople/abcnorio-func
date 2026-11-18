@@ -10,6 +10,7 @@ import {
 } from '@wordpress/components';
 import { useEffect, useMemo, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
+import ComponentShell from './componentShell';
 
 function toStringArray(value) {
     if (!Array.isArray(value)) {
@@ -125,12 +126,6 @@ registerBlockType('abcnorio/newsletter-signup', {
             setAttributes({ groupIds: next });
         };
 
-        const previewFields = (listData.merge_fields || [])
-            .filter((field) => selectedFieldTags.includes(String(field?.tag || '').trim()));
-
-        const previewGroups = (listData.interest_groups || [])
-            .filter((group) => selectedGroupIds.includes(String(group?.id || '').trim()));
-
         return (
             <div {...blockProps}>
                 <InspectorControls>
@@ -220,46 +215,20 @@ registerBlockType('abcnorio/newsletter-signup', {
                     </Notice>
                 )}
 
-                <div className="abcnorio-newsletter-signup abcnorio-newsletter-signup__preview">
-                    <h3 className="abcnorio-newsletter-signup__header">
-                        {attributes.header || 'Newsletter Signup'}
-                    </h3>
-                    {attributes.subHeader && (
-                        <p className="abcnorio-newsletter-signup__sub-header">{attributes.subHeader}</p>
-                    )}
-
-                    {previewFields.map((field) => {
-                        const tag = String(field?.tag || '').trim();
-                        const label = String(field?.name || tag);
-                        const required = Boolean(field?.required);
-
-                        return (
-                            <div key={tag} className="abcnorio-newsletter-signup__field">
-                                <span className="abcnorio-newsletter-signup__preview-label">
-                                    {label}
-                                    {required && attributes.showRequiredIndicator !== false ? ' *' : ''}
-                                </span>
-                                <div className="abcnorio-newsletter-signup__preview-input" />
-                            </div>
-                        );
-                    })}
-
-                    {previewGroups.map((group) => (
-                        <div key={String(group?.id || '')} className="abcnorio-newsletter-signup__group">
-                            <p className="abcnorio-newsletter-signup__group-title">{String(group?.title || '')}</p>
-                        </div>
-                    ))}
-
-                    {attributes.showRequiredIndicator !== false && (
-                        <p className="abcnorio-newsletter-signup__required">
-                            {attributes.requiredIndicatorText || '* = required field'}
-                        </p>
-                    )}
-
-                    <button type="button" className="abcnorio-newsletter-signup__preview-button" disabled>
-                        {attributes.submitText || 'Subscribe'}
-                    </button>
-                </div>
+                <ComponentShell
+                    component="newsletter-signup"
+                    blockProps={{}}
+                    bindings={{
+                        header: { children: attributes.header || 'Newsletter Signup' },
+                        'sub-header': { hidden: !attributes.subHeader, children: attributes.subHeader || '' },
+                        'required-star': { hidden: attributes.showRequiredIndicator === false },
+                        'required-text': {
+                            hidden: attributes.showRequiredIndicator === false,
+                            children: attributes.requiredIndicatorText || '* = required field',
+                        },
+                        submit: { children: attributes.submitText || 'Subscribe' },
+                    }}
+                />
             </div>
         );
     },

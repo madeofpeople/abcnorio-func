@@ -9,6 +9,8 @@ vendor/
 
 # Generated component assets are ingested during builds and included in release archives.
 /resources/vendor/components/dist/
+/resources/vendor/components/dev-*/
+/resources/vendor/components/dev-*.json
 
 # Env variables
 .env

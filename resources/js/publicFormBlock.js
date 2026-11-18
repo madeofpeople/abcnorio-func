@@ -3,46 +3,7 @@ import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { Notice, PanelBody, SelectControl, Spinner } from '@wordpress/components';
 import { useEffect, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
-
-// Mirrors FieldControl.astro
-function PreviewField({ field }) {
-    const inputId = `form-field-${field.name}`;
-
-    return (
-        <div className="field">
-            <label htmlFor={inputId}>{field.label}</label>
-            {field.type === 'textarea' && (
-                <textarea id={inputId} rows="6" placeholder={field.placeholder || undefined} disabled />
-            )}
-            {field.type === 'select' && (
-                <select id={inputId} disabled>
-                    {field.allow_null && <option value="">Select...</option>}
-                    {field.options.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                </select>
-            )}
-            {field.type !== 'textarea' && field.type !== 'select' && (
-                <input id={inputId} type={field.type} placeholder={field.placeholder || undefined} disabled />
-            )}
-        </div>
-    );
-}
-
-// Mirrors the fieldBlocks grouping in FormShell.astro
-function groupFields(fields) {
-    const blocks = [];
-    fields.forEach((field) => {
-        const group = field.group || '';
-        const last = blocks[blocks.length - 1];
-        if (group && last && last.group === group) {
-            last.fields.push(field);
-        } else {
-            blocks.push({ group, fields: [field] });
-        }
-    });
-    return blocks;
-}
+import ComponentShell from './componentShell';
 
 registerBlockType('abcnorio/forms', {
     edit({ attributes, setAttributes }) {
@@ -54,6 +15,7 @@ registerBlockType('abcnorio/forms', {
         const selectedForm = forms.find((form) => form.slug === formSlug);
         const options = [
             { label: 'Select a public form', value: '' },
+            ...(formSlug && !selectedForm ? [{ label: `Saved selection (${formSlug})`, value: formSlug }] : []),
             ...forms.map((form) => ({
                 label: `${form.title} (${form.slug})`,
                 value: form.slug,
@@ -66,7 +28,14 @@ registerBlockType('abcnorio/forms', {
             apiFetch({ path: '/abcnorio/v1/forms' })
                 .then((result) => {
                     if (isMounted) {
-                        setForms(Array.isArray(result) ? result : []);
+                        if (!Array.isArray(result) || result.some((form) =>
+                            !form || typeof form.slug !== 'string' || !form.slug.trim()
+                            || typeof form.title !== 'string'
+                            || (form.submit_label !== undefined && typeof form.submit_label !== 'string')
+                        )) {
+                            throw new Error('Could not load public forms: invalid response.');
+                        }
+                        setForms(result);
                     }
                 })
                 .catch((requestError) => {
@@ -102,28 +71,27 @@ registerBlockType('abcnorio/forms', {
                         {error && <Notice status="error" isDismissible={false}>{error}</Notice>}
                     </PanelBody>
                 </InspectorControls>
-                {selectedForm ? (
-                    <section className="abcnorio-form">
-                        <div className="abcnorio-form__preview-overlay">
-                            <span>Preview only: form is not active in the editor</span>
-                        </div>
-                        <form onSubmit={(event) => event.preventDefault()}>
-                            {groupFields(selectedForm.fields).map((block, index) => (
-                                block.group ? (
-                                    <fieldset className="field-group" key={index}>
-                                        <legend>{block.group}</legend>
-                                        {block.fields.map((field) => <PreviewField field={field} key={field.name} />)}
-                                    </fieldset>
-                                ) : (
-                                    <PreviewField field={block.fields[0]} key={index} />
-                                )
-                            ))}
-                            <button className="button reversed" type="button" disabled>{selectedForm.submit_label}</button>
-                        </form>
-                    </section>
-                ) : (
-                    <p>Select a configured ACF public form.</p>
-                )}
+                <ComponentShell
+                    component="public-form"
+                    blockProps={{}}
+                    bindings={{
+                        title: { children: selectedForm ? `Form: ${selectedForm.title}` : 'Public form' },
+                        slug: { hidden: !formSlug, children: formSlug },
+                        status: { children: isLoading
+                            ? 'Loading public forms...'
+                            : error
+                                ? error
+                                : formSlug && !selectedForm
+                                    ? 'The selected form is no longer available. Choose another form in the block settings.'
+                                    : selectedForm
+                                        ? 'Configured form selected.'
+                                        : forms.length === 0
+                                            ? 'No public forms are configured.'
+                                            : 'Select a configured ACF public form.',
+                        },
+                        submit: { hidden: !selectedForm, children: selectedForm?.submit_label || 'Submit' },
+                    }}
+                />
             </div>
         );
     },

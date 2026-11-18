@@ -169,15 +169,7 @@ final class CollectiveListingQuery
         $countNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " collective__count ") or contains(concat(" ", normalize-space(@class), " "), " collective-listing__count ")]')->item(0);
         if ($countLabel !== null) {
             if (! $countNode instanceof \DOMElement) {
-                $countNode = $dom->createElement('p');
-                $countNode->setAttribute('class', 'collective-listing__count collective__count');
-
-                $teaserListNode = $dom->getElementById('collective-list');
-                if ($teaserListNode instanceof \DOMElement && $teaserListNode->parentNode === $listing) {
-                    $listing->insertBefore($countNode, $teaserListNode);
-                } else {
-                    $listing->appendChild($countNode);
-                }
+                throw new \RuntimeException('Components System Error: collective-listing fixture count missing.');
             }
             $countNode->nodeValue = $countLabel;
         } elseif ($countNode instanceof \DOMElement) {
@@ -226,32 +218,6 @@ final class CollectiveListingQuery
                 wp_kses_post((string) ($data['excerpt'] ?? '')),
                 'collective teaser excerpt'
             );
-        }
-
-        if (! empty($data['isPastCollective'])) {
-            HtmlFragmentSupport::addClass($root, 'past');
-        } else {
-            HtmlFragmentSupport::removeClass($root, 'past');
-        }
-
-        $time = $dom->getElementsByTagName('time')->item(0);
-        if ($time instanceof \DOMElement) {
-            if ($data['dateLabel'] !== '' || $data['timeLabel'] !== '') {
-                $time->setAttribute('datetime', (string) $data['dateTime']);
-                while ($time->firstChild) {
-                    $time->removeChild($time->firstChild);
-                }
-
-                $dateSpan = $dom->createElement('span');
-                $dateSpan->appendChild($dom->createTextNode(' ' . (string) $data['dateLabel'] . ' '));
-                $time->appendChild($dateSpan);
-
-                $timeSpan = $dom->createElement('span');
-                $timeSpan->appendChild($dom->createTextNode(' @ ' . (string) $data['timeLabel']));
-                $time->appendChild($timeSpan);
-            } else {
-                $time->parentNode?->removeChild($time);
-            }
         }
 
         HtmlFragmentSupport::syncCardImage(

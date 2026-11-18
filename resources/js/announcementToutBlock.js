@@ -1,6 +1,7 @@
 import { registerBlockType } from '@wordpress/blocks';
 import { InspectorControls, InnerBlocks, useBlockProps } from '@wordpress/block-editor';
 import { PanelBody, SelectControl, TextControl } from '@wordpress/components';
+import ComponentShell from './componentShell';
 
 const ALLOWED_BLOCKS = [
     'core/heading',
@@ -19,10 +20,9 @@ registerBlockType('abcnorio/announcement-tout', {
         const blockProps = useBlockProps({ className: ['announcement-tout', variantClass].filter(Boolean).join(' ') });
         const headingLevel = Number.parseInt(String(attributes.toastHeadingLevel ?? 2), 10);
         const normalizedHeadingLevel = headingLevel >= 1 && headingLevel <= 6 ? headingLevel : 2;
-        const ToastHeadingTag = `h${normalizedHeadingLevel}`;
 
         return (
-            <div {...blockProps}>
+            <>
                 <InspectorControls>
                     <PanelBody title="Announcement Tout" initialOpen={true}>
                         <SelectControl
@@ -60,15 +60,20 @@ registerBlockType('abcnorio/announcement-tout', {
                     </PanelBody>
                 </InspectorControls>
 
-                {attributes.toast && <ToastHeadingTag className="announcement-tout__toast">{attributes.toast}</ToastHeadingTag>}
-                {attributes.title && <h3 className="announcement-tout__title">{attributes.title}</h3>}
-                <div className="announcement-tout__content">
-                    <InnerBlocks
-                        templateLock={false}
-                        allowedBlocks={ALLOWED_BLOCKS}
-                    />
-                </div>
-            </div>
+                <ComponentShell
+                    component="announcement-tout"
+                    blockProps={blockProps}
+                    bindings={{
+                        toast: {
+                            tag: `h${normalizedHeadingLevel}`,
+                            hidden: !attributes.toast,
+                            children: attributes.toast || '',
+                        },
+                        title: { hidden: !attributes.title, children: attributes.title || '' },
+                    }}
+                    slots={{ content: <InnerBlocks templateLock={false} allowedBlocks={ALLOWED_BLOCKS} /> }}
+                />
+            </>
         );
     },
     save() {

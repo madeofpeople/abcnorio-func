@@ -15,14 +15,11 @@ import { addFilter } from '@wordpress/hooks';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import imageSizes from '../../src/Blocks/gallery/image-sizes.json';
 import { createGallerySliderPreview, showGalleryPage } from './galleryPreview';
+import ComponentShell from './componentShell';
 
 const ALLOWED_BLOCKS = ['core/image'];
 const MIN_ITEMS_PER_PAGE = 8;
 const MAX_ITEMS_PER_PAGE = 24;
-
-function normalizeNavigationMode(value) {
-    return value === 'page' ? 'page' : 'item';
-}
 
 function normalizeVariant(value) {
     return value === 'default' || value === 'paged-grid' || value === 'masonry' || value === 'captioned' ? value : 'slider';
@@ -90,7 +87,6 @@ addFilter('editor.BlockEdit', 'abcnorio/gallery-image-no-resize', withoutImageRe
 
 registerBlockType('abcnorio/gallery', {
     edit({ attributes, setAttributes, clientId }) {
-        const navigationMode = normalizeNavigationMode(attributes.navigationMode);
         const variant = normalizeVariant(attributes.variant);
         const isSlider = variant !== 'paged-grid' && variant !== 'masonry';
         const itemsPerPage = Math.max(
@@ -155,13 +151,13 @@ registerBlockType('abcnorio/gallery', {
             if (variant === 'paged-grid' || variant === 'masonry') {
                 return;
             }
-            const preview = createGallerySliderPreview(galleryRef.current, navigationMode, setSliderNavigation);
+            const preview = createGallerySliderPreview(galleryRef.current, setSliderNavigation);
             sliderRef.current = preview;
             return () => {
                 preview.destroy();
                 sliderRef.current = null;
             };
-        }, [imageCount.count, navigationMode, variant]);
+        }, [imageCount.count, variant]);
 
         useEffect(() => {
             if (imageCount.selectedClientId) {
@@ -256,7 +252,7 @@ registerBlockType('abcnorio/gallery', {
             className: [
                 'wp-block-abcnorio-gallery',
                 'abcnorio-gallery-editor',
-                `abcnorio-gallery-nav-${navigationMode}`,
+                'abcnorio-gallery-nav-page',
                 `abcnorio-gallery--${variant}`,
                 isSlider ? 'blaze-slider' : null,
             ].join(' '),
@@ -312,77 +308,52 @@ registerBlockType('abcnorio/gallery', {
                     </PanelBody>
                 </InspectorControls>
 
-                <gallery-listing
-                    ref={galleryRef}
-                    class={`gallery ${isSlider ? 'blaze-slider' : ''} gallery--${variant} gallery--nav-${navigationMode}`}
-                    data-variant={variant}
-                    data-navigation-mode={navigationMode}
-                    data-items-per-page={itemsPerPage}
-                >
-                    <div className={isSlider ? 'blaze-container' : undefined}>
-                        <div className={isSlider ? 'blaze-track-container' : undefined}>
-                            <div {...innerBlockContainerProps} className={isSlider ? 'images blaze-track' : 'images'}>
-                                {innerBlockChildren}
-                            </div>
-                        </div>
-
-                        {isSlider && (
-                            <>
-                                <button type="button" className="blaze-prev" disabled={sliderNavigation.index === 0} onClick={() => sliderRef.current?.goTo(sliderNavigation.index - 1)}><span>Previous!</span></button>
-                                <button type="button" className="blaze-next" disabled={sliderNavigation.index === sliderNavigation.count - 1} onClick={() => sliderRef.current?.goTo(sliderNavigation.index + 1)}><span>Next!</span></button>
-                                <div className="blaze-pagination"></div>
-                            </>
-                        )}
-                    </div>
-
-                    {variant === 'paged-grid' && (
-                        <nav className="gallery-pagination" aria-label="Gallery pages">
-                            <ul>
-                                <li>
-                                    <button type="button" disabled={editorPage === 1} onClick={() => setEditorPage((page) => page - 1)}>
-                                        Previous
-                                    </button>
-                                </li>
-                                {Array.from({ length: pageCount }, (_, index) => {
-                                    const page = index + 1;
-                                    return (
-                                        <li key={page}>
-                                            <button
-                                                type="button"
-                                                className={page === editorPage ? 'is-current' : undefined}
-                                                aria-current={page === editorPage ? 'page' : undefined}
-                                                aria-label={page === editorPage ? `Page ${page}, current page` : `Go to page ${page}`}
-                                                onClick={() => setEditorPage(page)}
-                                            >
-                                                {page}
-                                            </button>
-                                        </li>
-                                    );
-                                })}
-                                <li>
-                                    <button type="button" disabled={editorPage === pageCount} onClick={() => setEditorPage((page) => page + 1)}>
-                                        Next
-                                    </button>
-                                </li>
-                            </ul>
-                        </nav>
-                    )}
-
-                    {isSlider && (
-                        <nav className="blaze-slide-dots" aria-label="Slide navigation">
-                            {sliderNavigation.count > 1 && Array.from({ length: sliderNavigation.count }, (_, index) => (
-                                <button
-                                    key={index}
-                                    type="button"
-                                    className={`blaze-slide-dot${index === sliderNavigation.index ? ' is-active' : ''}`}
-                                    aria-current={index === sliderNavigation.index ? 'true' : undefined}
-                                    aria-label={index === sliderNavigation.index ? `Current slide ${index + 1}` : `Go to slide ${index + 1}`}
-                                    onClick={() => sliderRef.current?.goTo(index)}
-                                />
-                            ))}
-                        </nav>
-                    )}
-                </gallery-listing>
+                <ComponentShell
+                    component="gallery"
+                    blockProps={{
+                        ref: galleryRef,
+                        className: `gallery ${isSlider ? 'blaze-slider' : ''} gallery--${variant} gallery--nav-page`,
+                        'data-variant': variant,
+                        'data-navigation-mode': 'page',
+                        'data-items-per-page': itemsPerPage,
+                    }}
+                    slots={{ content: innerBlockChildren }}
+                    bindings={{
+                        container: { props: { className: isSlider ? 'blaze-container' : undefined } },
+                        viewport: { props: { className: isSlider ? 'blaze-track-container' : undefined } },
+                        track: { props: { ...innerBlockContainerProps, className: isSlider ? 'images blaze-track' : 'images' } },
+                        previous: { hidden: !isSlider, props: { disabled: sliderNavigation.index === 0, onClick: () => sliderRef.current?.goTo(sliderNavigation.index - 1) } },
+                        next: { hidden: !isSlider, props: { disabled: sliderNavigation.index === sliderNavigation.count - 1, onClick: () => sliderRef.current?.goTo(sliderNavigation.index + 1) } },
+                        pagination: { hidden: !isSlider },
+                        dots: { hidden: !isSlider },
+                        pages: { hidden: variant !== 'paged-grid' || pageCount <= 1 },
+                        'previous-page': { props: { disabled: editorPage === 1, onClick: () => setEditorPage((page) => page - 1) } },
+                        'next-page': { props: { disabled: editorPage === pageCount, onClick: () => setEditorPage((page) => page + 1) } },
+                    }}
+                    repeats={{
+                        pages: Array.from({ length: pageCount }, (_, index) => ({
+                            key: index + 1,
+                            bindings: { button: {
+                                children: index + 1,
+                                props: {
+                                    className: index + 1 === editorPage ? 'is-current' : undefined,
+                                    'aria-current': index + 1 === editorPage ? 'page' : undefined,
+                                    'aria-label': index + 1 === editorPage ? `Page ${index + 1}, current page` : `Go to page ${index + 1}`,
+                                    onClick: () => setEditorPage(index + 1),
+                                },
+                            } },
+                        })),
+                        dots: sliderNavigation.count <= 1 ? [] : Array.from({ length: sliderNavigation.count }, (_, index) => ({
+                            key: index,
+                            bindings: { button: { props: {
+                                className: `blaze-slide-dot${index === sliderNavigation.index ? ' is-active' : ''}`,
+                                'aria-current': index === sliderNavigation.index ? 'true' : undefined,
+                                'aria-label': index === sliderNavigation.index ? `Current page ${index + 1}` : `Go to page ${index + 1}`,
+                                onClick: () => sliderRef.current?.goTo(index),
+                            } } },
+                        })),
+                    }}
+                />
             </div>
         );
     },

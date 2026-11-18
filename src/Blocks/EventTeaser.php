@@ -30,13 +30,12 @@ final class EventTeaser
         if ($time instanceof \DOMElement) {
             if ($data['dateLabel'] !== '' || $data['timeLabel'] !== '') {
                 $time->setAttribute('datetime', (string) $data['dateTime']);
-                while ($time->firstChild) {
-                    $time->removeChild($time->firstChild);
+                $parts = $xpath->query('./span', $time);
+                if ($parts->length !== 2) {
+                    throw new \RuntimeException('Components System Error: event-teaser fixture date/time regions missing.');
                 }
-                foreach ([' ' . $data['dateLabel'] . ' ', ' @ ' . $data['timeLabel']] as $label) {
-                    $span = $dom->createElement('span');
-                    $span->appendChild($dom->createTextNode($label));
-                    $time->appendChild($span);
+                foreach ([' ' . $data['dateLabel'] . ' ', ' @ ' . $data['timeLabel']] as $index => $label) {
+                    $parts->item($index)->textContent = $label;
                 }
             } else {
                 $time->parentNode?->removeChild($time);

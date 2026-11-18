@@ -214,15 +214,7 @@ final class EventListingQuery
         $countNode = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " events__count ") or contains(concat(" ", normalize-space(@class), " "), " event-listing__count ")]')->item(0);
         if ($countLabel !== null) {
             if (! $countNode instanceof \DOMElement) {
-                $countNode = $dom->createElement('p');
-                $countNode->setAttribute('class', 'event-listing__count events__count');
-
-                $teaserListNode = $dom->getElementById('teaser-list');
-                if ($teaserListNode instanceof \DOMElement && $teaserListNode->parentNode === $listing) {
-                    $listing->insertBefore($countNode, $teaserListNode);
-                } else {
-                    $listing->appendChild($countNode);
-                }
+                throw new \RuntimeException('Components System Error: event-listing fixture count missing.');
             }
             $countNode->nodeValue = $countLabel;
         } elseif ($countNode instanceof \DOMElement) {

@@ -1,25 +1,8 @@
 import { registerBlockType } from '@wordpress/blocks';
 import { InspectorControls, RichText, useBlockProps } from '@wordpress/block-editor';
 import { DatePicker, PanelBody, TextControl } from '@wordpress/components';
-
-function formatPreviewDate(value) {
-    const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!match) {
-        return '';
-    }
-
-    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-    if (Number.isNaN(date.getTime())) {
-        return '';
-    }
-
-    return new Intl.DateTimeFormat('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    }).format(date);
-}
+import { formatDate } from 'abcnorio-webcomponents/util/dates';
+import ComponentShell from './componentShell';
 
 registerBlockType('abcnorio/press-item', {
     edit({ attributes, setAttributes }) {
@@ -29,8 +12,11 @@ registerBlockType('abcnorio/press-item', {
         const title = String(attributes.title || '');
         const source = String(attributes.source || '');
         const sourceUrl = String(attributes.sourceUrl || '');
-        const sourceValue = sourceUrl ? `<a href="${sourceUrl}">${source}</a>` : source;
-        const displayDate = formatPreviewDate(date);
+        const sourceNode = document.createElement(sourceUrl ? 'a' : 'span');
+        sourceNode.textContent = source;
+        if (sourceUrl) sourceNode.setAttribute('href', sourceUrl);
+        const sourceValue = sourceUrl ? sourceNode.outerHTML : sourceNode.innerHTML;
+        const displayDate = formatDate(date);
 
         const updateSource = (value) => {
             const container = document.createElement('div');
@@ -44,7 +30,7 @@ registerBlockType('abcnorio/press-item', {
         };
 
         return (
-            <article {...blockProps}>
+            <>
                 <InspectorControls>
                     <PanelBody title="Press Item" initialOpen={true}>
                         <DatePicker
@@ -59,25 +45,40 @@ registerBlockType('abcnorio/press-item', {
                     </PanelBody>
                 </InspectorControls>
 
-                {displayDate ? <time dateTime={date}>{displayDate}</time> : fallbackDate ? <time>{fallbackDate}</time> : null}
-                <RichText
-                    tagName="h3"
-                    value={title}
-                    allowedFormats={[]}
-                    placeholder="Press item title"
-                    onChange={(value) => setAttributes({ title: value })}
+                <ComponentShell
+                    component="press-item"
+                    blockProps={blockProps}
+                    bindings={{
+                        date: {
+                            hidden: !displayDate && !fallbackDate,
+                            props: { dateTime: displayDate?.datetime },
+                            children: displayDate?.label_date || fallbackDate,
+                        },
+                        title: { render: ({ tag, props: { key, ...props } }) => (
+                            <RichText
+                                key={key}
+                                {...props}
+                                tagName={tag}
+                                value={title}
+                                allowedFormats={[]}
+                                placeholder="Press item title"
+                                onChange={(value) => setAttributes({ title: value })}
+                            />
+                        ) },
+                        source: { render: ({ tag, props: { key, ...props } }) => (
+                            <RichText
+                                key={key}
+                                {...props}
+                                tagName={tag}
+                                value={sourceValue}
+                                allowedFormats={['core/link']}
+                                placeholder="Source"
+                                onChange={updateSource}
+                            />
+                        ) },
+                    }}
                 />
-                <p>
-                    — <RichText
-                        tagName="span"
-                        className="source"
-                        value={sourceValue}
-                        allowedFormats={['core/link']}
-                        placeholder="Source"
-                        onChange={updateSource}
-                    />
-                </p>
-            </article>
+            </>
         );
     },
     save() {

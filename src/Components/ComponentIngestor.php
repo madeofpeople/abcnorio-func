@@ -5,6 +5,25 @@ class ComponentIngestor {
     private const COMPONENT_DIST_RELATIVE_PATH = 'resources/vendor/components/dist';
 
     private static ?array $manifest = null;
+    private static ?string $activeRelativePath = null;
+
+    private static function activeRelativePath(): string {
+        if (self::$activeRelativePath !== null) {
+            return self::$activeRelativePath;
+        }
+        $relative = self::COMPONENT_DIST_RELATIVE_PATH;
+        $root = plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE);
+        $pointer = $root . 'resources/vendor/components/dev-current.json';
+        if (in_array(wp_get_environment_type(), ['local', 'development'], true) && is_file($pointer)) {
+            $generation = json_decode((string) file_get_contents($pointer), true, 512, JSON_THROW_ON_ERROR);
+            if (!is_string($generation) || !preg_match('/^dev-[a-f0-9]{24}$/D', $generation)) {
+                throw new \RuntimeException('Components System Error: Invalid development generation pointer.');
+            }
+            $relative = 'resources/vendor/components/' . $generation;
+        }
+        // Pin both filesystem reads and asset URLs to one immutable generation per request.
+        return self::$activeRelativePath = $relative;
+    }
 
     /**
      * Load manifest from plugin-local dist artifacts. Fail loudly if missing.
@@ -32,7 +51,7 @@ class ComponentIngestor {
     }
 
     public static function distDir(): string {
-        $component_dist_dir = plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . self::COMPONENT_DIST_RELATIVE_PATH;
+        $component_dist_dir = plugin_dir_path(ABCNORIO_CUSTOM_FUNC_FILE) . self::activeRelativePath();
 
         if (!is_dir($component_dist_dir)) {
             throw new \RuntimeException("Components System Error: Dist directory missing at '{$component_dist_dir}'.");
@@ -42,7 +61,7 @@ class ComponentIngestor {
     }
 
     public static function distUrl(): string {
-        return plugin_dir_url(ABCNORIO_CUSTOM_FUNC_FILE) . self::COMPONENT_DIST_RELATIVE_PATH . '/';
+        return plugin_dir_url(ABCNORIO_CUSTOM_FUNC_FILE) . self::activeRelativePath() . '/';
     }
 
     public static function enqueueRuntimeStyles(): void {
@@ -82,28 +101,6 @@ class ComponentIngestor {
     }
 
     private static function styleUrl(string $path): string {
-        if (!is_admin() || !in_array(wp_get_environment_type(), ['local', 'development'], true)) {
-            return self::distUrl() . ltrim($path, '/');
-        }
-        $origin = (string) getenv('DEV_FRONTEND_URL');
-        $parts = wp_parse_url($origin);
-        if (!is_array($parts) || !in_array($parts['scheme'] ?? '', ['http', 'https'], true)
-            || empty($parts['host']) || isset($parts['user']) || isset($parts['pass'])
-            || isset($parts['query']) || isset($parts['fragment']) || !in_array($parts['path'] ?? '', ['', '/'], true)) {
-            throw new \RuntimeException('Components System Error: Development requires DEV_FRONTEND_URL as a browser-accessible HTTP(S) origin.');
-        }
-        $entries = self::load()['styleEntries'] ?? null;
-        if (!is_array($entries) || $entries === []) {
-            throw new \RuntimeException('Components System Error: Live styles require manifest.styleEntries. Rebuild and ingest the webcomponents package once.');
-        }
-        foreach ($entries as $id => $entry) {
-            if (($entry['css'] ?? null) === $path) {
-                return rtrim($origin, '/') . '/__abcnorio/styles/' . rawurlencode($id) . '.css';
-            }
-            if (($entry['editorCss'] ?? null) === $path) {
-                return rtrim($origin, '/') . '/__abcnorio/styles/' . rawurlencode($id) . '-editor.css';
-            }
-        }
         return self::distUrl() . ltrim($path, '/');
     }
 
@@ -155,8 +152,8 @@ class ComponentIngestor {
     }
 
     public static function readDistHtml(string $relative_path): string {
-        $dist_dir = self::distDir();
         $normalized_path = ltrim($relative_path, '/');
+        $dist_dir = self::distDir();
         $absolute_path = $dist_dir . '/' . $normalized_path;
 
         if (!file_exists($absolute_path)) {
@@ -164,6 +161,22 @@ class ComponentIngestor {
         }
 
         return trim((string) file_get_contents($absolute_path));
+    }
+
+    public static function editorShells(): array {
+        $shells = [];
+        foreach (self::load()['components'] as $name => $component) {
+            $fixture = $name . '/editor';
+            if (in_array($fixture, $component['fixtures'], true)) {
+                $shells[$name] = self::readDistHtml($fixture . '.html');
+            }
+        }
+        foreach (['hero', 'announcement-tout', 'gallery', 'newsletter-signup', 'public-form', 'press-item'] as $required) {
+            if (!isset($shells[$required])) {
+                throw new \RuntimeException("Components System Error: Required editor shell missing for '{$required}'. Rebuild component assets.");
+            }
+        }
+        return $shells;
     }
 
     private static function sanitizeComponentHandle(string $component_name): string {

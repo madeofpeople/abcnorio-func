@@ -5,13 +5,9 @@
   "title": "ABCNorio Gallery",
   "category": "media",
   "icon": "images-alt2",
-  "description": "Gallery block with preview parity and item/page navigation modes.",
+  "description": "Gallery block with preview parity and page navigation.",
   "keywords": ["gallery", "images", "abcnorio"],
   "attributes": {
-    "navigationMode": {
-      "type": "string",
-      "default": "item"
-    },
     "variant": {
       "type": "string",
       "default": "slider"

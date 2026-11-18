@@ -34,4 +34,13 @@ foreach ([false, true] as $slider) {
     }
 }
 
+foreach ([false, true] as $slider) {
+    foreach ([null, 'Displaying 3 items.'] as $label) {
+        $dom = HtmlFragmentSupport::loadHtmlFragment($render->invoke(null, $label, '', $slider, '', false, '', ''));
+        $counts = (new DOMXPath($dom))->query('//*[contains(concat(" ", normalize-space(@class), " "), " event-listing__count ")]');
+        $verify($counts->length === ($label === null ? 0 : 1), 'Count visibility must use the component count node.');
+        if ($label !== null) $verify($counts->item(0)->textContent === $label, 'Count must replace fixture text.');
+    }
+}
+
 echo "Event listing template checks passed.\n";

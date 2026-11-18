@@ -2,6 +2,8 @@
 
 namespace abcnorio\CustomFunc\Blocks;
 
+use abcnorio\CustomFunc\Components\ComponentIngestor;
+
 final class Gallery
 {
     public static function registerHooks(): void
@@ -27,54 +29,16 @@ final class Gallery
     {
         unset($block);
 
-        $navigationMode = strtolower(sanitize_key((string) ($attributes['navigationMode'] ?? 'item')));
-        if ($navigationMode !== 'page') {
-            $navigationMode = 'item';
-        }
-
         $variant = strtolower(sanitize_key((string) ($attributes['variant'] ?? 'slider')));
-        if ($variant === '') {
+        if (!in_array($variant, ['default', 'slider', 'captioned', 'paged-grid', 'masonry'], true)) {
             $variant = 'slider';
         }
 
         $itemsPerPage = absint((int) ($attributes['itemsPerPage'] ?? 6));
         $itemsPerPage = min(24, max(8, $itemsPerPage ?: 8));
-        $isPagedGrid = $variant === 'paged-grid';
-        $usesBlaze = ! $isPagedGrid && $variant !== 'masonry';
-
         $className = trim((string) ($attributes['className'] ?? ''));
-        $classes = array_filter([
-            'gallery',
-            $usesBlaze ? 'blaze-slider' : null,
-            'gallery--' . $variant,
-            'gallery--nav-' . $navigationMode,
-            'abcnorio-gallery',
-            'abcnorio-gallery--' . $variant,
-            'abcnorio-gallery-nav-' . $navigationMode,
-            $className !== '' ? $className : null,
-        ]);
-
-        $containerClass = $usesBlaze ? 'blaze-container' : '';
-        $trackContainerClass = $usesBlaze ? 'blaze-track-container' : '';
-        $trackClass = $usesBlaze ? 'images blaze-track' : 'images';
-
-        $dom = HtmlFragmentSupport::loadHtmlFragment(
-            '<gallery-listing class="' . esc_attr(implode(' ', $classes)) . '" data-variant="' . esc_attr($variant) . '" data-navigation-mode="' . esc_attr($navigationMode) . '" data-items-per-page="' . esc_attr((string) $itemsPerPage) . '">' .
-                '<div' . ($containerClass !== '' ? ' class="' . esc_attr($containerClass) . '"' : '') . '>' .
-                    '<div' . ($trackContainerClass !== '' ? ' class="' . esc_attr($trackContainerClass) . '"' : '') . '>' .
-                        '<div class="' . esc_attr($trackClass) . '"></div>' .
-                    '</div>' .
-                    ($usesBlaze ?
-                        '<a href="javascript:void(0)" role="button" class="blaze-prev"><span>Previous!</span></a>' .
-                        '<a href="javascript:void(0)" role="button" class="blaze-next"><span>Next!</span></a>' .
-                        '<div class="blaze-pagination"></div>' : ''
-                    ) .
-                '</div>' .
-                ($isPagedGrid
-                    ? '<nav class="gallery-pagination" aria-label="Gallery pagination" hidden></nav>'
-                    : ($usesBlaze ? '<nav class="blaze-slide-dots" aria-label="Slide navigation"></nav>' : '')) .
-            '</gallery-listing>'
-        );
+        $fixture = $variant === 'default' ? 'gallery.html' : "gallery/{$variant}.html";
+        $dom = HtmlFragmentSupport::loadHtmlFragment('<?xml encoding="UTF-8">' . ComponentIngestor::readDistHtml($fixture));
 
         $root = $dom->getElementsByTagName('gallery-listing')->item(0);
         if (! $root instanceof \DOMElement) {
@@ -82,13 +46,21 @@ final class Gallery
         }
 
         HtmlFragmentSupport::addClass($root, 'wp-block-abcnorio-gallery');
+        foreach (array_filter(['abcnorio-gallery', 'abcnorio-gallery--' . $variant, 'abcnorio-gallery-nav-page', $className]) as $class) {
+            HtmlFragmentSupport::addClass($root, $class);
+        }
+        $root->setAttribute('data-items-per-page', (string) $itemsPerPage);
 
         $track = (new \DOMXPath($dom))->query('.//*[contains(concat(" ", normalize-space(@class), " "), " images ")]', $root)->item(0);
         if (! $track instanceof \DOMElement) {
             throw new \RuntimeException('Components System Error: gallery track missing.');
         }
 
-        self::appendGalleryItems($dom, $track, $content, self::imageSizeFor($variant));
+        $template = (new \DOMXPath($dom))->query('.//template[@data-gallery-template="item"]/*[1]', $root)->item(0);
+        if (!$template instanceof \DOMElement) {
+            throw new \RuntimeException('Components System Error: gallery item template missing.');
+        }
+        self::appendGalleryItems($dom, $track, $content, self::imageSizeFor($variant), $template);
 
         return trim((string) $dom->saveHTML($root));
     }
@@ -105,13 +77,13 @@ final class Gallery
         return $sizes[$variant];
     }
 
-    private static function appendGalleryItems(\DOMDocument $dom, \DOMElement $track, string $content, string $imageSize): void
+    private static function appendGalleryItems(\DOMDocument $dom, \DOMElement $track, string $content, string $imageSize, \DOMElement $template): void
     {
         if (trim($content) === '') {
             return;
         }
 
-        $fragment = HtmlFragmentSupport::loadHtmlFragment('<wrapper>' . $content . '</wrapper>');
+        $fragment = HtmlFragmentSupport::loadHtmlFragment('<?xml encoding="UTF-8"><wrapper>' . $content . '</wrapper>');
         $wrapper = $fragment->getElementsByTagName('wrapper')->item(0);
         if (! $wrapper instanceof \DOMElement) {
             return;
@@ -135,8 +107,7 @@ final class Gallery
                 continue;
             }
 
-            $item = $dom->createElement('div');
-            HtmlFragmentSupport::addClass($item, 'gallery-item');
+            $item = $template->cloneNode(true);
             $item->appendChild($dom->importNode($child, true));
             self::applyPreferredSliderImageSize($dom, $item, $imageSize);
             $track->appendChild($item);
@@ -173,7 +144,7 @@ final class Gallery
                 continue;
             }
 
-            $replacementDom = HtmlFragmentSupport::loadHtmlFragment('<wrapper>' . $preferredImage . '</wrapper>');
+            $replacementDom = HtmlFragmentSupport::loadHtmlFragment('<?xml encoding="UTF-8"><wrapper>' . $preferredImage . '</wrapper>');
             $replacementImage = $replacementDom->getElementsByTagName('img')->item(0);
             if (! $replacementImage instanceof \DOMElement) {
                 continue;

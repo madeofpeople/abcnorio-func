@@ -195,6 +195,15 @@ final class Plugin
             $asset['version'],
             false
         );
+
+        wp_add_inline_script(
+            'abcnorio-custom-func-editor',
+            'window.abcnorioEditorShells = ' . wp_json_encode(
+                ComponentIngestor::editorShells(),
+                JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+            ) . ';',
+            'before'
+        );
     }
 
     public static function enqueueBlockComponentAssets(): void

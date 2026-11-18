@@ -1,9 +1,9 @@
 const TRANSITION_MS = 200;
 
-export function getGallerySlideOffsets(starts, viewportWidth, contentWidth, mode) {
+export function getGallerySlideOffsets(starts, viewportWidth, contentWidth) {
     const maximum = Math.max(0, contentWidth - viewportWidth);
     const offsets = [...new Set([0, ...starts.map((start) => Math.min(maximum, Math.max(0, start))), maximum])];
-    if (mode !== 'page' || maximum === 0) {
+    if (maximum === 0) {
         return offsets;
     }
 
@@ -49,7 +49,7 @@ export function showGalleryPage(gallery, page, pageSize, previousPage, animate) 
 }
 
 // Scroll the editable track; never let a frontend carousel clone or reparent InnerBlocks.
-export function createGallerySliderPreview(gallery, navigationMode, onChange) {
+export function createGallerySliderPreview(gallery, onChange) {
     const track = gallery.querySelector('.images');
     const viewport = track.parentElement;
     const view = gallery.ownerDocument.defaultView;
@@ -72,7 +72,7 @@ export function createGallerySliderPreview(gallery, navigationMode, onChange) {
         const starts = slides.map((item) => Math.round(item.getBoundingClientRect().left - firstLeft));
         const last = slides[slides.length - 1];
         const contentWidth = last ? Math.ceil(last.getBoundingClientRect().right - left + viewport.scrollLeft) : 0;
-        offsets = getGallerySlideOffsets(starts, viewport.clientWidth, contentWidth, navigationMode);
+        offsets = getGallerySlideOffsets(starts, viewport.clientWidth, contentWidth);
         publish();
     };
     const scheduleMeasure = () => {

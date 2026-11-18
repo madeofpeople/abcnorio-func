@@ -12,7 +12,6 @@ function setup(t) {
   mkdirSync(path.join(root, 'bin'));
   copyFileSync(new URL('../scripts/build-components.sh', import.meta.url), path.join(root, 'scripts/build-components.sh'));
   writeFileSync(path.join(root, 'scripts/ingest-components-dist.sh'), 'echo ingest >> "$BUILD_TEST_LOG"\n');
-  writeFileSync(path.join(root, 'bin/npm'), '#!/bin/sh\nprintf "%s\\n" "$*" >> "$BUILD_TEST_LOG"\nexit "${BUILD_TEST_EXIT:-0}"\n', { mode: 0o755 });
   return root;
 }
 
@@ -32,7 +31,7 @@ function run(root, source, exit = '0') {
 function addSource(source) {
   mkdirSync(path.join(source, 'scripts'), { recursive: true });
   writeFileSync(path.join(source, 'astro.config.mjs'), '');
-  writeFileSync(path.join(source, 'scripts/sync-font-assets.sh'), '');
+  writeFileSync(path.join(source, 'scripts/build.sh'), 'echo build >> "$BUILD_TEST_LOG"\nexit "${BUILD_TEST_EXIT:-0}"\n');
 }
 
 test('default build compiles installed source before ingestion without requiring dist', (t) => {
@@ -41,7 +40,7 @@ test('default build compiles installed source before ingestion without requiring
   addSource(source);
   const result = run(root);
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(readFileSync(path.join(root, 'calls'), 'utf8'), `--prefix ${source} run build\ningest\n`);
+  assert.equal(readFileSync(path.join(root, 'calls'), 'utf8'), 'build\ningest\n');
 });
 
 test('local source override uses the same build and stops before ingestion on failure', (t) => {
@@ -50,7 +49,7 @@ test('local source override uses the same build and stops before ingestion on fa
   addSource(source);
   const result = run(root, source, '17');
   assert.equal(result.status, 17);
-  assert.equal(readFileSync(path.join(root, 'calls'), 'utf8'), `--prefix ${source} run build\n`);
+  assert.equal(readFileSync(path.join(root, 'calls'), 'utf8'), 'build\n');
 });
 
 test('old dist without build sources fails explicitly instead of ingesting stale output', (t) => {

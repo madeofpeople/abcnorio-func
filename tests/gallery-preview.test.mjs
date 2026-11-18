@@ -8,11 +8,10 @@ const { getGallerySlideOffsets, showGalleryPage, createGallerySliderPreview } = 
 );
 
 test('slider offsets clamp variable-width slides and page steps to the viewport', () => {
-    assert.deepEqual(getGallerySlideOffsets([0, 300, 620, 950], 600, 1250, 'item'), [0, 300, 620, 650]);
-    assert.deepEqual(getGallerySlideOffsets([0, 300, 620, 950], 600, 1250, 'page'), [0, 300, 650]);
-    assert.deepEqual(getGallerySlideOffsets([0, 900], 600, 1800, 'page'), [0, 900, 1200]);
-    assert.deepEqual(getGallerySlideOffsets([0, 300], 800, 600, 'item'), [0]);
-    assert.deepEqual(getGallerySlideOffsets([], 800, 0, 'page'), [0]);
+    assert.deepEqual(getGallerySlideOffsets([0, 300, 620, 950], 600, 1250), [0, 300, 650]);
+    assert.deepEqual(getGallerySlideOffsets([0, 900], 600, 1800), [0, 900, 1200]);
+    assert.deepEqual(getGallerySlideOffsets([0, 300], 800, 600), [0]);
+    assert.deepEqual(getGallerySlideOffsets([], 800, 0), [0]);
 });
 
 function fixture(reducedMotion = false) {
@@ -118,8 +117,8 @@ test('slider scrolls existing blocks, reveals selections and releases observers/
             matchMedia: () => ({ matches: false }),
         } },
     };
-    const preview = createGallerySliderPreview(gallery, 'item', (state) => { navigation = state; });
-    assert.deepEqual(navigation, { index: 0, count: 4 });
+    const preview = createGallerySliderPreview(gallery, (state) => { navigation = state; });
+    assert.deepEqual(navigation, { index: 0, count: 3 });
     preview.goTo(1);
     assert.equal(viewport.scrollLeft, 300);
     preview.goTo(99);

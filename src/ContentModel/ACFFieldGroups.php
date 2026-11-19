@@ -9,6 +9,27 @@ final class ACFFieldGroups
         add_action('acf/init', [self::class, 'register']);
         add_filter('acf/validate_value', [self::class, 'validateFieldMessage'], 10, 4);
         add_filter('acf/validate_value/key=field_event_end', [self::class, 'validateEventEnd'], 10, 4);
+        add_filter('acf/prepare_field/key=field_event_venue_id', [self::class, 'prepareEventVenue']);
+    }
+
+    public static function prepareEventVenue(array $field): array
+    {
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if ($screen?->base !== 'post' || $screen->action !== 'add' || !empty($field['value'])) {
+            return $field;
+        }
+
+        $post = get_post();
+        if ($post?->post_type !== 'event' || $post->post_status !== 'auto-draft') {
+            return $field;
+        }
+
+        $venue = get_page_by_path('abc-no-rio-event-space', OBJECT, ['venue']);
+        if ($venue?->post_status === 'publish') {
+            $field['value'] = $venue->ID;
+        }
+
+        return $field;
     }
 
     public static function validateEventEnd($valid, $value, array $field, string $input)

@@ -29,17 +29,39 @@ return [
         // ACFFieldGroups.php is canonical for editor-managed fields.
         // Only add a fields array here when explicit core meta registration
         // is needed outside ACF.
-        'template' => array(
-            array('core/image'),
-            array('core/paragraph', array(
-                'placeholder' => 'Add blurb about the event here.',
-            )),
-            array('core/list', array(
-                'placeholder' => 'Participant Links',
-            )),
-        ),
-
-
+        'template' => [
+            ['core/paragraph', ['placeholder' => __('Add a short introduction to the event.', 'abcnorio-func')]],
+            ['core/group', [
+                'className' => 'compressed emphasis dark',
+                'layout' => ['type' => 'flex', 'flexWrap' => 'nowrap'],
+            ], [
+                ['core/group', ['layout' => ['type' => 'constrained']], [
+                    ['core/heading', ['placeholder' => __('Event Defailts', 'abcnorio-func')]],
+                    ['core/paragraph', ['placeholder' => __('Details', 'abcnorio-func')]],
+                ]],
+                ['core/group', ['layout' => ['type' => 'constrained']], [
+                    ['core/heading', ['placeholder' => __('Event Details', 'abcnorio-func')]],
+                    ['core/paragraph', ['placeholder' => __('Details', 'abcnorio-func')]],
+                ]],
+                ['core/group', ['layout' => ['type' => 'constrained']], [
+                    ['core/heading', ['placeholder' => __('Event Details', 'abcnorio-func')]],
+                    ['core/paragraph', ['placeholder' => __('Details', 'abcnorio-func')]],
+                ]],
+            ]],
+            ['core/paragraph', ['placeholder' => __('Further event description.', 'abcnorio-func')]],
+            ['core/heading', ['placeholder' => __('Heading', 'abcnorio-func')]],
+            ['core/paragraph', ['placeholder' => __('Details.', 'abcnorio-func')]],
+            ['core/list', [], [
+                ['core/list-item', ['placeholder' => __('Add a participant or link.', 'abcnorio-func')]],
+            ]],
+            ['core/group', [
+                'className' => 'gallery dark',
+                'layout' => ['type' => 'constrained'],
+            ], [
+                ['core/heading', ['placeholder' => __('Optional Gallery', 'abcnorio-func')]],
+                ['abcnorio/gallery', ['variant' => 'captioned']],
+            ]],
+        ],
     ],
     'venue' => [
         'name' => 'Venues',

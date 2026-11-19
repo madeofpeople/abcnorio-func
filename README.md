@@ -60,6 +60,18 @@ This plugin is Composer-first, PSR-4 autoloaded, and structured around declarati
   been removed. Listing styles come from the component manifest for both saved
   blocks and newly inserted editor previews.
 
+### New event starter
+
+The unlocked starter in `src/ContentModel/post-types.php` uses an introduction,
+an event details row, a description, a participant list, an empty captioned
+gallery, and credits. It does not depend on an example post. Dates and the
+ticket URL start blank; date validation is unchanged. The new-event editor
+preselects the published `abc-no-rio-event-space` venue when available, without
+changing existing events.
+New events also start with the `event` sidebar scope, including the initial
+editor auto-draft. An explicitly assigned scope is preserved, and later saves
+do not reset or restore the default.
+
 ### Local WordPress development
 
 Install host Node dependencies in this repository and the sibling

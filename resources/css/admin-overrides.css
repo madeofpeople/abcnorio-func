@@ -1,13 +1,24 @@
 body.wp-admin {
-	color: var(--color-text)
+	background-color: var(--color-page-bg) !important;
+
+	h1, h2, h3, h4 {
+		color: var(--color-text);
+	}
+
+	.postbox {
+		h1, h2, h3, h4 {
+			color: var(--color-gray--darkest);
+		}
+	} 
+	.card {
+		background-color: var(--color-sheet) !important;
+	}
 }
 
-body.wp-admin :where(.wrap, .editor-styles-wrapper, .acf-fields) {
-	color: var(--color-text)
-}
+
 
 body.wp-admin :where(a, a:visited) {
-	color: var(--color-nav-link)
+	color: var(--color-accent);
 }
 
 .editor-styles-wrapper {
@@ -22,7 +33,7 @@ body.wp-admin :where(a, a:visited) {
 
 .components-panel__body .abcnorio-manual-order__empty,
 .components-panel__body .abcnorio-manual-order__hint {
-	color: #666;
+	color: var(--color-gray-5);
 	font-size: 12px;
 }
 
@@ -32,20 +43,21 @@ body.wp-admin :where(a, a:visited) {
 }
 
 .components-panel__body .abcnorio-manual-order__heading {
-	color: #333;
+	color: var(--color-gray-2);
 	font-size: 12px;
 	font-weight: 600;
 }
 
 .abcnorio-manual-order__list {
-	border: 1px solid #ddd;
+
+	border: 1px solid var(--color-gray-1);
 	border-radius: 4px;
-	background-color: #fafafa;
+	border: 1px solid var(--color-gray-3);
 }
 
 .abcnorio-manual-order__item {
 	padding: 8px 12px;
-	border-bottom: 1px solid #eee;
+	border-bottom: 1px solid var(--color-gray-2);
 	cursor: move;
 	display: flex;
 	align-items: center;
@@ -58,7 +70,7 @@ body.wp-admin :where(a, a:visited) {
 }
 
 .abcnorio-manual-order__handle {
-	color: #999;
+	color: var(--color-gray-3);
 	font-size: 18px;
 	margin-right: 4px;
 }
@@ -69,7 +81,7 @@ body.wp-admin :where(a, a:visited) {
 }
 
 .abcnorio-manual-order__meta {
-	color: #999;
+	color:var(--color-gray-3);
 	margin-left: 4px;
 }
 
@@ -91,7 +103,7 @@ body.abcnorio-gallery-image-selected .block-editor-block-inspector .components-b
 	display: block;
 	font-size: 11px;
 	font-weight: 600;
-	color: #50575e;
+	color: var(--color-gray-3);
 }
 
 .abcnorio-term-editor__select {
@@ -102,15 +114,15 @@ body.abcnorio-gallery-image-selected .block-editor-block-inspector .components-b
 .abcnorio-term-editor__status {
 	margin: 0;
 	font-size: 11px;
-	color: #50575e;
+	color: var(--color-gray-2);
 }
 
 .abcnorio-term-editor__status.is-success {
-	color: #1d6f42;
+	color: var(--color-accent--secondary);
 }
 
 .abcnorio-term-editor__status.is-error {
-	color: #b32d2e;
+	color: var(--color-accent);
 }
 
 .deployment-tab {
@@ -129,20 +141,20 @@ body.abcnorio-gallery-image-selected .block-editor-block-inspector .components-b
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	background-color: #fcfcfc;
+	background-color: var(--color-gray-lightest);
 }
 
 .js-backup-list .backup-item:nth-child(even) {
-	background-color: #fff;
+	background-color: var(--color-page-bg);
 }
 
 @keyframes abcnorio-highlight-new {
 	0% {
-		background-color: #ffffff;
+		background-color: var(--color-page-bg);
 	}
 
 	60% {
-		background-color: #e3fdc7;
+		background-color: #fff79b;
 	}
 
 	100% {

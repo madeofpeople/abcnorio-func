@@ -83,4 +83,72 @@ foreach (['asc', 'desc', 'manual'] as $order) {
     $verify($actual === array_map(static fn($entry) => get_permalink($entry['id']), $expected), 'Block must preserve endpoint item ordering for ' . $order . '.');
 }
 
-echo "Content listing render checks passed (populated variants, empty results, controls, excerpts, dates, images and endpoint ordering).\n";
+$created = [];
+$tagSlug = 'content-listing-order-' . wp_generate_uuid4();
+$tag = wp_insert_term($tagSlug, 'post_tag');
+$verify(!is_wp_error($tag), 'Regression tag must be created.');
+$create = static function (string $postType, string $date, bool $tagged = true) use (&$created, $tag, $verify): int {
+    $id = wp_insert_post([
+        'post_type' => $postType, 'post_status' => 'publish',
+        'post_title' => 'Content listing order regression', 'post_date' => $date,
+    ], true);
+    $verify(!is_wp_error($id), 'Regression content must be created.');
+    $created[] = $id;
+    if ($tagged) {
+        $result = wp_set_object_terms($id, [(int) $tag['term_id']], 'post_tag');
+        $verify(!is_wp_error($result), 'Regression tag must be assigned.');
+    }
+    return $id;
+};
+try {
+    for ($day = 1; $day <= 25; $day++) {
+        $id = $create('article', sprintf('2000-01-%02d 10:00:00', $day));
+        if ($day === 1) {
+            $oldArticle = $id;
+        }
+    }
+    $eventId = $create('event', '2001-01-01 10:00:00');
+    update_post_meta($eventId, 'event_start_date', '2029-07-04 19:30:00');
+    $excludedId = $create('article', '2000-01-01 10:00:00', false);
+    $request->set_param('post_types', ['event', 'article']);
+    $request->set_param('tags', [$tagSlug]);
+    $request->set_param('count', 6);
+    $request->set_param('order', 'desc');
+    $request->set_param('orderIds', []);
+    $recentIds = array_column(ContentListingEndpoint::serve($request)->get_data(), 'id');
+    $verify(!in_array($oldArticle, $recentIds, true), 'Old article must be outside the default limited query.');
+    $request->set_param('orderIds', [$excludedId, $oldArticle, $eventId]);
+    $manualItems = ContentListingEndpoint::serve($request)->get_data();
+    $manualIds = array_column($manualItems, 'id');
+    $verify(array_slice($manualIds, 0, 2) === [$oldArticle, $eventId], 'Matching saved IDs must be prioritized even outside the latest query window.');
+    $verify(count($manualIds) === 6 && !in_array($excludedId, $manualIds, true), 'Tag filters must apply before manual ordering and unranked items must fill remaining slots.');
+    $request->set_param('post_types', ['article']);
+    $articleIds = array_column(ContentListingEndpoint::serve($request)->get_data(), 'id');
+    $verify($articleIds[0] === $oldArticle && !in_array($eventId, $articleIds, true), 'Post-type filters must exclude manually ranked events.');
+
+    foreach ([1 => 6, 24 => 24, 99 => 24] as $savedCount => $expectedCount) {
+        $request->set_param('count', $expectedCount);
+        $expected = ContentListingEndpoint::serve($request)->get_data();
+        $html = ContentListingQuery::render([
+            'listingCount' => $savedCount, 'listingPostTypes' => ['article'],
+            'listingTagFilter' => [$tagSlug], 'order' => 'manual',
+            'sortOrderPostIds' => [$excludedId, $oldArticle, $eventId], 'variant' => 'grid',
+        ]);
+        $xpath = new DOMXPath(HtmlFragmentSupport::loadHtmlFragment($html));
+        $links = [];
+        foreach ($xpath->query('//article-teaser/a') as $link) {
+            $links[] = $link->getAttribute('href');
+        }
+        $verify(count($links) === $expectedCount, 'Block count must respect the 6-24 bounds.');
+        $verify($links === array_map(static fn($entry) => get_permalink($entry['id']), $expected), 'Manual preview must match the actual filtered endpoint selection and order.');
+    }
+    $request->set_param('tags', [$tagSlug . '-missing']);
+    $verify(ContentListingEndpoint::serve($request)->get_data() === [], 'Saved manual IDs must not bypass an unmatched tag filter.');
+} finally {
+    foreach ($created as $id) {
+        wp_delete_post($id, true);
+    }
+    wp_delete_term($tag['term_id'], 'post_tag');
+}
+
+echo "Content listing render checks passed (variants, fields, filtered manual selection/order and 6-24 count bounds).\n";

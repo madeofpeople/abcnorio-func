@@ -93,24 +93,22 @@ export function useQueryPostManualOrder({
             return;
         }
 
-        const { value, fromIndex } = draggedItemRef.current;
+        const { fromIndex } = draggedItemRef.current;
         draggedItemRef.current = null;
 
         if (fromIndex === -1 || fromIndex === toIndex) {
             return;
         }
 
-        const nextOrder = [...orderedValues];
-        const currentIndex = nextOrder.indexOf(value);
+        const nextOrder = draggableRecords.map(valueSelector);
+        const visibleValues = new Set(nextOrder);
+        const [entry] = nextOrder.splice(fromIndex, 1);
+        nextOrder.splice(toIndex, 0, entry);
 
-        if (currentIndex !== -1) {
-            const [entry] = nextOrder.splice(currentIndex, 1);
-            nextOrder.splice(toIndex, 0, entry);
-        } else {
-            nextOrder.splice(toIndex, 0, value);
-        }
-
-        onOrderChange(nextOrder);
+        onOrderChange([
+            ...nextOrder,
+            ...orderedValues.filter((orderedValue) => !visibleValues.has(orderedValue)),
+        ]);
     };
 
     return {

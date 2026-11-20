@@ -56,14 +56,21 @@ final class ContentListingEndpoint
                 $queryArgs['tax_query'] = $taxQuery;
             }
 
-            $query = new \WP_Query($queryArgs);
-
-            if (! $query->have_posts()) {
-                continue;
+            $queries = [new \WP_Query($queryArgs)];
+            if ($orderIds !== []) {
+                $queries[] = new \WP_Query(array_merge($queryArgs, [
+                    'post__in' => $orderIds,
+                    'posts_per_page' => $count,
+                    'orderby' => 'post__in',
+                ]));
             }
 
-            foreach ($query->posts as $post) {
-                $items[] = self::mapItem($post);
+            foreach ($queries as $query) {
+                foreach ($query->posts as $post) {
+                    if (! isset($items[$post->ID])) {
+                        $items[$post->ID] = self::mapItem($post);
+                    }
+                }
             }
         }
 

@@ -1,11 +1,11 @@
 import { registerBlockType } from '@wordpress/blocks';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import { CheckboxControl, PanelBody, RangeControl, SelectControl, TextControl } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
+import { CheckboxControl, Notice, PanelBody, RangeControl, SelectControl, Spinner, TextControl } from '@wordpress/components';
+import { useEffect, useState } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
+import { addQueryArgs } from '@wordpress/url';
 import ServerSideRender from '@wordpress/server-side-render';
 import {
-    QUERY_BLOCK_MAX_ITEM_COUNT,
-    QUERY_BLOCK_MIN_ITEM_COUNT,
     parseCommaSeparatedValues,
     stripHtmlTags,
 } from './blockHelpers';
@@ -16,8 +16,11 @@ import { listingLayout, ListingLayoutControls } from './listingLayout';
 const ORDER_OPTIONS = [
     { label: 'Ascending', value: 'asc' },
     { label: 'Descending', value: 'desc' },
-    { label: 'Manual - Upcoming', value: 'manual' },
+    { label: 'Manual - Filtered Items', value: 'manual' },
 ];
+
+const MIN_ITEM_COUNT = 6;
+const MAX_ITEM_COUNT = 24;
 
 const VARIANT_OPTIONS = [
     { label: 'Grid', value: 'grid' },
@@ -54,22 +57,6 @@ function getRecordTitle(record) {
     return slug !== '' ? slug : `Post ${record?.id ?? ''}`;
 }
 
-function isUpcomingForDayOrBeyond(dateValue) {
-    if (typeof dateValue !== 'string' || dateValue.trim() === '') {
-        return false;
-    }
-
-    const parsedDate = Date.parse(dateValue);
-    if (Number.isNaN(parsedDate)) {
-        return false;
-    }
-
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
-    return parsedDate >= todayStart.getTime();
-}
-
 registerBlockType('abcnorio/content-listing', {
     edit({ attributes, setAttributes }) {
         const layout = listingLayout(attributes, blockMetadata.attributes);
@@ -81,58 +68,62 @@ registerBlockType('abcnorio/content-listing', {
             : ['event', 'article'];
         const orderIds = isManualOrder ? normalizeUniqueValues(attributes.sortOrderPostIds, parsePositiveInt) : [];
         const listingCount = Math.max(
-            QUERY_BLOCK_MIN_ITEM_COUNT,
-            Math.min(QUERY_BLOCK_MAX_ITEM_COUNT, Number.parseInt(attributes.listingCount, 10) || 5)
+            MIN_ITEM_COUNT,
+            Math.min(MAX_ITEM_COUNT, Number.parseInt(attributes.listingCount, 10) || blockMetadata.attributes.listingCount.default)
         );
+        const candidatePath = isManualOrder ? addQueryArgs('/abcnorio/v1/content-listing', {
+            post_types: selectedPostTypes,
+            tags: attributes.listingTagFilter || [],
+            count: listingCount,
+            order: 'desc',
+            orderIds,
+        }) : '';
+        const [candidateState, setCandidateState] = useState({ path: '', records: [], error: '' });
+        const isLoading = isManualOrder && candidateState.path !== candidatePath;
+        const candidateRecords = isLoading ? [] : candidateState.records;
+        const candidateError = isLoading ? '' : candidateState.error;
 
-        const candidateRecords = useSelect(
-            (select) => {
-                const coreStore = select('core');
-                if (!coreStore) {
-                    return [];
-                }
+        useEffect(() => {
+            if (!candidatePath) {
+                return;
+            }
 
-                const records = [];
-
-                selectedPostTypes.forEach((postType) => {
-                    const items = coreStore.getEntityRecords('postType', postType, {
-                        per_page: 100,
-                        status: 'publish',
-                        orderby: 'date',
-                        order: 'desc',
-                        _fields: 'id,title,slug,date',
-                    });
-
-                    if (!Array.isArray(items)) {
+            let isMounted = true;
+            apiFetch({ path: candidatePath })
+                .then((items) => {
+                    if (!isMounted) {
                         return;
                     }
-
-                    items.forEach((item) => {
-                        records.push({
-                            id: Number.parseInt(item?.id, 10),
-                            postType,
+                    if (!Array.isArray(items) || items.some((item) =>
+                        !Number.isInteger(item?.id) || item.id < 1
+                        || !POST_TYPE_OPTIONS.some((option) => option.value === item.post_type)
+                    )) {
+                        throw new Error('Could not load matching content: invalid response.');
+                    }
+                    setCandidateState({
+                        path: candidatePath,
+                        records: items.map((item) => ({
+                            id: item.id,
+                            postType: item.post_type,
                             title: getRecordTitle(item),
-                            date: typeof item?.date === 'string' ? item.date : '',
-                        });
+                        })),
+                        error: '',
                     });
+                })
+                .catch((error) => {
+                    if (isMounted) {
+                        setCandidateState({
+                            path: candidatePath,
+                            records: [],
+                            error: String(error?.message || 'Could not load matching content.'),
+                        });
+                    }
                 });
 
-                return records
-                    .filter((item) => Number.isFinite(item.id) && item.id > 0)
-                    .sort((left, right) => {
-                        const leftDate = Date.parse(left.date || '');
-                        const rightDate = Date.parse(right.date || '');
-                        const leftScore = Number.isNaN(leftDate) ? 0 : leftDate;
-                        const rightScore = Number.isNaN(rightDate) ? 0 : rightDate;
-                        if (leftScore === rightScore) {
-                            return right.id - left.id;
-                        }
-
-                        return rightScore - leftScore;
-                    });
-            },
-            [selectedPostTypes.join(',')]
-        );
+            return () => {
+                isMounted = false;
+            };
+        }, [candidatePath]);
 
         const {
             draggableRecords,
@@ -140,9 +131,7 @@ registerBlockType('abcnorio/content-listing', {
             handleDragOver,
             handleDrop,
         } = useQueryPostManualOrder({
-            candidateRecords: isManualOrder
-                ? candidateRecords.filter((record) => isUpcomingForDayOrBeyond(record.date))
-                : candidateRecords,
+            candidateRecords,
             orderedValues: orderIds,
             valueSelector: (record) => record.id,
             limit: listingCount,
@@ -226,19 +215,21 @@ registerBlockType('abcnorio/content-listing', {
                         <RangeControl
                             label="Item Count"
                             value={listingCount}
-                            min={QUERY_BLOCK_MIN_ITEM_COUNT}
-                            max={QUERY_BLOCK_MAX_ITEM_COUNT}
+                            min={MIN_ITEM_COUNT}
+                            max={MAX_ITEM_COUNT}
                             onChange={(value) => setAttributes({ listingCount: value ?? listingCount })}
                         />
                     </PanelBody>
                     {isManualOrder && (
                         <PanelBody title="Manual Item Order" initialOpen={true}>
-                        {draggableRecords.length === 0 ? (
+                        {isLoading ? <Spinner /> : candidateError ? (
+                            <Notice status="error" isDismissible={false}>{candidateError}</Notice>
+                        ) : draggableRecords.length === 0 ? (
                             <p className="abcnorio-manual-order__empty">No matching items found</p>
                         ) : (
                             <div>
                                 <p className="abcnorio-manual-order__hint">
-                                    only shows upcoming entries for the day of and beyond
+                                    Shows the current filtered selection, in the same order as the preview.
                                 </p>
                                 <p className="abcnorio-manual-order__heading">
                                     Drag to reorder (showing first {draggableRecords.length} items)

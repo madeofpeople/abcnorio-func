@@ -32,7 +32,7 @@ final class ContentListingQuery
 
         self::enqueueComponentAssets();
 
-        $count = max(1, min(50, (int) ($attributes['listingCount'] ?? 5)));
+        $count = max(6, min(24, (int) ($attributes['listingCount'] ?? 6)));
         $order = strtolower(sanitize_key((string) ($attributes['order'] ?? 'desc')));
 
         $request = new \WP_REST_Request('GET', '/abcnorio/v1/content-listing');

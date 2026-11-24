@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       ABC No Rio Custom Functionality
  * Description:       Headless site functionality plugin for abcnorio.org.
- * Version:           1.11.1
+ * Version:           1.11.2
  * Requires PHP:      8.3
  * Author:            abcnorio
  * Text Domain:       custom-func
